@@ -431,29 +431,58 @@ Return ONLY raw valid JSON (no markdown formatting, no code fences):
     // Do NOT automatically dump all 48 gallery images into resultData.extractedImages!
     resultData.extractedImages = [];
 
-    // Enterprise Section 2 Location Deep Auto-Parser
+    // Enterprise Section 2 Location Deep Auto-Parser & Geographical Conflict Detector
     const deepLoc = parseDeepLocationInfo(targetUrl, visitedPages);
-    if (deepLoc.address) {
-      resultData.address = { value: deepLoc.address, confidence: "HIGH", sourceUrl: deepLoc.sourceUrl, verified: true, status: "Verified from Official Website" };
-    }
-    if (deepLoc.landmark) {
-      resultData.landmark = { value: deepLoc.landmark, confidence: "HIGH", sourceUrl: deepLoc.sourceUrl, verified: true, status: "Verified from Official Website" };
-    }
-    if (deepLoc.city) {
-      resultData.city = { value: deepLoc.city, confidence: "HIGH", sourceUrl: deepLoc.sourceUrl, verified: true, status: "Verified from Official Website" };
-      resultData.district = { value: deepLoc.district || deepLoc.city, confidence: "HIGH", sourceUrl: deepLoc.sourceUrl, verified: true, status: "Verified from Official Website" };
-    }
-    if (deepLoc.state) {
-      resultData.state = { value: deepLoc.state, confidence: "HIGH", sourceUrl: deepLoc.sourceUrl, verified: true, status: "Verified from Official Website" };
-    }
-    if (deepLoc.pincode) {
-      resultData.pincode = { value: deepLoc.pincode, confidence: "HIGH", sourceUrl: deepLoc.sourceUrl, verified: true, status: "Verified from Official Website" };
-    }
-    if (deepLoc.latitude) {
-      resultData.latitude = { value: deepLoc.latitude, confidence: "HIGH", sourceUrl: deepLoc.sourceUrl, verified: true, status: "Verified from Google Maps" };
-    }
-    if (deepLoc.longitude) {
-      resultData.longitude = { value: deepLoc.longitude, confidence: "HIGH", sourceUrl: deepLoc.sourceUrl, verified: true, status: "Verified from Google Maps" };
+    const locValidation = validateGeographicalConsistency({
+      address: deepLoc.address || (resultData.address?.value as string),
+      city: deepLoc.city || (resultData.city?.value as string),
+      district: deepLoc.district || (resultData.district?.value as string),
+      state: deepLoc.state || (resultData.state?.value as string),
+      pincode: deepLoc.pincode || (resultData.pincode?.value as string),
+      googleMapUrl: deepLoc.googleMapUrl || (resultData.googleMapUrl?.value as string),
+      latitude: deepLoc.latitude || (resultData.latitude?.value as number),
+      longitude: deepLoc.longitude || (resultData.longitude?.value as number),
+      landmark: deepLoc.landmark || (resultData.landmark?.value as string),
+      sourceUrl: deepLoc.sourceUrl || targetUrl,
+    });
+
+    if (locValidation.isConflict) {
+      console.warn(`[LOCATION ENGINE] ❌ GEOGRAPHICAL CONFLICT DETECTED: ${locValidation.conflictReason}. Rejecting auto-fill.`);
+      resultData.address = makeUnverifiedField("⚠ Location Conflict Detected — Please Enter Manually");
+      resultData.city = makeUnverifiedField("⚠ Location Conflict Detected — Please Enter Manually");
+      resultData.district = makeUnverifiedField("⚠ Location Conflict Detected — Please Enter Manually");
+      resultData.state = makeUnverifiedField("⚠ Location Conflict Detected — Please Enter Manually");
+      resultData.pincode = makeUnverifiedField("⚠ Location Conflict Detected — Please Enter Manually");
+      resultData.latitude = makeUnverifiedField("⚠ Location Conflict Detected — Please Enter Manually");
+      resultData.longitude = makeUnverifiedField("⚠ Location Conflict Detected — Please Enter Manually");
+      resultData.googleMapUrl = makeUnverifiedField("⚠ Location Conflict Detected — Please Enter Manually");
+      resultData.landmark = makeUnverifiedField("⚠ Location Conflict Detected — Please Enter Manually");
+    } else {
+      if (locValidation.address) {
+        resultData.address = makeVerifiedField(locValidation.address, locValidation.sourceUrl, locValidation.confidenceScore);
+      }
+      if (locValidation.city) {
+        resultData.city = makeVerifiedField(locValidation.city, locValidation.sourceUrl, locValidation.confidenceScore);
+        resultData.district = makeVerifiedField(locValidation.district || locValidation.city, locValidation.sourceUrl, locValidation.confidenceScore);
+      }
+      if (locValidation.state) {
+        resultData.state = makeVerifiedField(locValidation.state, locValidation.sourceUrl, locValidation.confidenceScore);
+      }
+      if (locValidation.pincode) {
+        resultData.pincode = makeVerifiedField(locValidation.pincode, locValidation.sourceUrl, locValidation.confidenceScore);
+      }
+      if (locValidation.latitude) {
+        resultData.latitude = makeVerifiedField(locValidation.latitude, locValidation.sourceUrl, locValidation.confidenceScore);
+      }
+      if (locValidation.longitude) {
+        resultData.longitude = makeVerifiedField(locValidation.longitude, locValidation.sourceUrl, locValidation.confidenceScore);
+      }
+      if (locValidation.googleMapUrl) {
+        resultData.googleMapUrl = makeVerifiedField(locValidation.googleMapUrl, locValidation.sourceUrl, locValidation.confidenceScore);
+      }
+      if (locValidation.landmark) {
+        resultData.landmark = makeVerifiedField(locValidation.landmark, locValidation.sourceUrl, locValidation.confidenceScore);
+      }
     }
     // Enterprise Section 4 Courses Deep Extractor
     const deepCourses = extractDeepCoursesFromWebsite(targetUrl, visitedPages);
@@ -749,7 +778,7 @@ function parseDeepLocationInfo(
   if (stateMatch) {
     state = stateMatch[1];
   } else {
-    state = "Tamil Nadu";
+    state = null; // NEVER HARDCODE TAMIL NADU FALLBACK TO PREVENT DATA CONTAMINATION
   }
 
   // 6. Full Address Extractor
@@ -759,13 +788,13 @@ function parseDeepLocationInfo(
     const addrMatch = contactPage.content.match(/(?:Address|Location|Campus|Contact Us)[:\s\-]+([A-Za-z0-9\s,\.\-/#]{20,200}?)(?:\b[1-9][0-9]{5}\b|Phone|Email|Website)/i);
     if (addrMatch) {
       fullAddress = addrMatch[1].replace(/\s+/g, " ").trim();
-    } else if (city) {
+    } else if (city && state) {
       fullAddress = `${city}, ${state}${pincode ? " - " + pincode : ""}`;
     }
   }
 
   if (!googleMapUrl && (fullAddress || city)) {
-    googleMapUrl = `https://maps.google.com/?q=${encodeURIComponent(fullAddress || (city + ", " + state))}`;
+    googleMapUrl = `https://maps.google.com/?q=${encodeURIComponent(fullAddress || (city + ", " + (state || "India")))}`;
   }
 
   return {
@@ -781,6 +810,106 @@ function parseDeepLocationInfo(
     longitude,
     googleMapUrl,
     sourceUrl: locationSourceUrl,
+  };
+}
+
+const CITY_STATE_RULES: Record<string, { state: string; pinStart: string[] }> = {
+  chennai: { state: "Tamil Nadu", pinStart: ["600", "601", "602", "603"] },
+  coimbatore: { state: "Tamil Nadu", pinStart: ["641"] },
+  madurai: { state: "Tamil Nadu", pinStart: ["625"] },
+  tiruchirappalli: { state: "Tamil Nadu", pinStart: ["620"] },
+  trichy: { state: "Tamil Nadu", pinStart: ["620"] },
+  salem: { state: "Tamil Nadu", pinStart: ["636"] },
+  erode: { state: "Tamil Nadu", pinStart: ["638"] },
+  vellore: { state: "Tamil Nadu", pinStart: ["632"] },
+  thanjavur: { state: "Tamil Nadu", pinStart: ["613"] },
+  kanchipuram: { state: "Tamil Nadu", pinStart: ["631"] },
+  chengalpattu: { state: "Tamil Nadu", pinStart: ["603"] },
+  tirunelveli: { state: "Tamil Nadu", pinStart: ["627"] },
+  bengaluru: { state: "Karnataka", pinStart: ["560", "561", "562"] },
+  bangalore: { state: "Karnataka", pinStart: ["560", "561", "562"] },
+  mysuru: { state: "Karnataka", pinStart: ["570"] },
+  mangaluru: { state: "Karnataka", pinStart: ["575"] },
+  kochi: { state: "Kerala", pinStart: ["682"] },
+  trivandrum: { state: "Kerala", pinStart: ["695"] },
+  hyderabad: { state: "Telangana", pinStart: ["500", "501", "502"] },
+  mumbai: { state: "Maharashtra", pinStart: ["400"] },
+  pune: { state: "Maharashtra", pinStart: ["411"] },
+  delhi: { state: "Delhi", pinStart: ["110"] },
+  "new delhi": { state: "Delhi", pinStart: ["110"] },
+  guwahati: { state: "Assam", pinStart: ["781"] },
+};
+
+function validateGeographicalConsistency(loc: {
+  address?: string | null;
+  city?: string | null;
+  district?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+  googleMapUrl?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  landmark?: string | null;
+  sourceUrl: string;
+}) {
+  let isConflict = false;
+  let conflictReason = "";
+
+  const city = loc.city ? loc.city.trim() : null;
+  const state = loc.state ? loc.state.trim() : null;
+  const pincode = loc.pincode ? loc.pincode.trim() : null;
+  const address = loc.address ? loc.address.trim() : null;
+
+  // 1. City vs State Rule Check
+  if (city && state) {
+    const cityRule = CITY_STATE_RULES[city.toLowerCase()];
+    if (cityRule && cityRule.state.toLowerCase() !== state.toLowerCase()) {
+      isConflict = true;
+      conflictReason = `City '${city}' belongs to ${cityRule.state}, but extracted state was '${state}'`;
+    }
+  }
+
+  // 2. Pincode vs City / State Check
+  if (pincode && city) {
+    const cityRule = CITY_STATE_RULES[city.toLowerCase()];
+    if (cityRule) {
+      const matchPin = cityRule.pinStart.some((prefix) => pincode.startsWith(prefix));
+      if (!matchPin) {
+        isConflict = true;
+        conflictReason = `Pincode '${pincode}' does not match city '${city}' (Expected prefix: ${cityRule.pinStart.join(", ")})`;
+      }
+    }
+  }
+
+  // 3. Contamination Check in Address (e.g. Address contains both "Chennai" and "Delhi")
+  if (address) {
+    if (/chennai/i.test(address) && /delhi/i.test(address)) {
+      isConflict = true;
+      conflictReason = "Address string contains conflicting cities (Chennai and Delhi)";
+    }
+  }
+
+  let confidenceScore = 80;
+  if (!isConflict && city && state && pincode && loc.googleMapUrl) {
+    confidenceScore = 98;
+  } else if (!isConflict && city && state) {
+    confidenceScore = 90;
+  }
+
+  return {
+    isConflict,
+    conflictReason,
+    address: isConflict ? null : address,
+    city: isConflict ? null : city,
+    district: isConflict ? null : (loc.district || city),
+    state: isConflict ? null : state,
+    pincode: isConflict ? null : pincode,
+    latitude: isConflict ? null : loc.latitude,
+    longitude: isConflict ? null : loc.longitude,
+    googleMapUrl: isConflict ? null : loc.googleMapUrl,
+    landmark: isConflict ? null : loc.landmark,
+    sourceUrl: loc.sourceUrl,
+    confidenceScore: isConflict ? 30 : confidenceScore,
   };
 }
 
