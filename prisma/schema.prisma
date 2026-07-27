@@ -1,0 +1,293 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  COLLEGE_MANAGER
+  STUDENT
+  COLLEGE
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  ADMITTED
+  CLOSED
+}
+
+model User {
+  id           String          @id @default(uuid())
+  email        String          @unique
+  passwordHash String
+  role         Role            @default(ADMIN)
+  name         String?         @default("Administrator")
+  googleId     String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  student      StudentProfile?
+  college      CollegeProfile?
+}
+
+model StudentProfile {
+  id                       String        @id @default(uuid())
+  userId                   String        @unique
+  user                     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                     String
+  location                 String?
+  board12th                String?       // CBSE, State Board, etc.
+  score12th                Float?        // Percentage
+  stream12th               String?       // Science, Commerce, Arts
+  entranceExamName         String?       // JEE Main, TNEA rank, etc.
+  entranceExamScore        Float?
+  budgetLimit              Float?        // Maximum annual fees
+  hostelPreference         Boolean       @default(false)
+  specializationPreference String?       // CSE, Biotech, MBA, etc.
+  expectedPackage          Float?        // Expected packages in LPA
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+  applications             Application[]
+  leads                    Lead[]
+  reviews                  Review[]
+}
+
+model CollegeProfile {
+  id                      String             @id @default(uuid())
+  userId                  String             @unique
+  user                    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                    String
+  shortName               String?
+  slug                    String?            @unique
+  description             String
+  location                String
+  address                 String?
+  landmark                String?
+  area                    String?
+  city                    String?
+  district                String?
+  state                   String             @default("Tamil Nadu")
+  pincode                 String?
+  latitude                Float?
+  longitude               Float?
+  googleMapUrl            String?
+  phone                   String?
+  mobile                  String?
+  email                   String?
+  website                 String?
+  facebook                String?
+  instagram               String?
+  linkedin                String?
+  youtube                 String?
+  rating                  Float              @default(4.0)
+  type                    String             // Government, Private, Govt-Aided
+  ownership               String?            // Public, Private, Deemed, etc.
+  categories              String?            // Comma separated categories e.g. "Engineering, Autonomous, Co-Ed"
+  affiliatedUniversity    String?
+  isAutonomous            Boolean            @default(false)
+  accreditation           String?
+  approval                String?            // AICTE, UGC, etc.
+  aicteApproved           Boolean            @default(true)
+  ugcApproved             Boolean            @default(true)
+  naacGrade               String?            // e.g. A++
+  nirfRank                Int?
+  feesPerYear             Float
+  courseWiseFees          String?
+  hostelFees              Float?
+  transportFees           Float?
+  scholarshipDetails      String?
+  educationLoanDetails    String?
+  facilities              String?            // Comma-separated list e.g. "Hostel,Library,Sports,WiFi"
+  avgPackage              Float              // in LPA
+  highestPackage          Float              // in LPA
+  placementPercentage     Float?
+  internshipDetails       String?
+  topRecruiters           String?
+  admissionEligibility    String?
+  admissionProcess        String?
+  documentsRequired       String?
+  counsellingInfo         String?
+  admissionEntranceExams  String?
+  importantDates          String?
+  hostelAvailable         Boolean            @default(false)
+  boysHostel              Boolean            @default(false)
+  girlsHostel             Boolean            @default(false)
+  acRooms                 Boolean            @default(false)
+  messAvailable           Boolean            @default(false)
+  hostelFeePerYear        Float?
+  image                   String             // Banner/Main logo
+  logo                    String?
+  banner                  String?
+  collegeVideo            String?
+  estYear                 Int?
+  seoTitle                String?
+  seoDescription          String?
+  metaKeywords            String?
+  status                  String             @default("PUBLISHED") // DRAFT, PUBLISHED
+  featured                Boolean            @default(false)
+  trending                Boolean            @default(false)
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  courses                 Course[]
+  placements              PlacementOutcome[]
+  leads                   Lead[]
+  applications            Application[]
+  reviews                 Review[]
+  galleryImages           GalleryImage[]
+  enquiryLeads            EnquiryLead[]
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model NewsArticle {
+  id        String   @id @default(uuid())
+  title     String
+  slug      String   @unique
+  content   String
+  category  String   @default("Admissions")
+  image     String?
+  author    String?  @default("Super Admin")
+  status    String   @default("PUBLISHED") // DRAFT, PUBLISHED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EnquiryLead {
+  id        String          @id @default(uuid())
+  name      String
+  email     String
+  phone     String
+  collegeId String?
+  college   CollegeProfile? @relation(fields: [collegeId], references: [id], onDelete: SetNull)
+  message   String?
+  status    String          @default("NEW")
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model GalleryImage {
+  id        String         @id @default(uuid())
+  collegeId String
+  college   CollegeProfile @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  url       String
+  altText   String?
+  caption   String?
+  tags      String?
+  createdAt DateTime       @default(now())
+}
+
+model Course {
+  id           String         @id @default(uuid())
+  collegeId    String
+  college      CollegeProfile @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  title        String
+  duration     String         // e.g. "4 Years"
+  careerPath   String?
+  demand       String?        // Exponential, Very High, High, etc.
+  feesPerYear  Float
+  minGpa       Float?         // Min percentage required
+  eligibility  String?
+  seats        Int?
+  entranceExam String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  applications Application[]
+}
+
+model Scholarship {
+  id          String   @id @default(uuid())
+  name        String
+  provider    String
+  eligibility String
+  value       String   // e.g. "100% tuition waiver"
+  deadline    DateTime
+  type        String   // Government, Private
+  applyLink   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Application {
+  id         String            @id @default(uuid())
+  studentId  String
+  student    StudentProfile    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  collegeId  String
+  college    CollegeProfile    @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  courseId   String
+  course     Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status     ApplicationStatus @default(SUBMITTED)
+  appliedAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+}
+
+model Lead {
+  id        String         @id @default(uuid())
+  collegeId String
+  college   CollegeProfile @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status    LeadStatus     @default(NEW)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model PlacementOutcome {
+  id               String         @id @default(uuid())
+  collegeId        String
+  college          CollegeProfile @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  year             Int
+  eligibleStudents Int
+  placedStudents   Int
+  highestCtc       Float          // in LPA
+  averageCtc       Float          // in LPA
+  topRecruiters    String         // comma-separated or text
+  createdAt        DateTime       @default(now())
+}
+
+model Review {
+  id         String         @id @default(uuid())
+  collegeId  String
+  college    CollegeProfile @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  rating     Float
+  content    String
+  isVerified Boolean        @default(false)
+  createdAt  DateTime       @default(now())
+}
+
+model DuplicateAttempt {
+  id                 String   @id @default(uuid())
+  attemptedName      String
+  attemptedUrl       String?
+  attemptedEmail     String?
+  attemptedPhone     String?
+  matchedCollegeId   String
+  matchedCollegeName String
+  matchReason        String
+  similarityScore    Float
+  attemptedBy        String   @default("Admin")
+  createdAt          DateTime @default(now())
+}
+
