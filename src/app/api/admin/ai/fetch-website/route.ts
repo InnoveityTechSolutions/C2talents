@@ -313,61 +313,62 @@ ${JSON.stringify(extractedPdfLinks.slice(0, 10))}
 STRICT EXTRACTION RULES:
 1. Extract ONLY verified, explicitly stated facts from the text & PDF links above.
 2. DO NOT GUESS, HALLUCINATE, OR ASSUME DATA.
-3. MANDATORY REQUIREMENT: EVERY FIELD MUST BE POPULATED.
-   - If a value IS explicitly confirmed: set "value" to the exact value, "confidence": "HIGH", "verified": true, "status": "Verified from Official Website".
-   - If a value is NOT explicitly mentioned: NEVER leave the field blank. Instead set "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "verified": false, "status": "Needs Manual Verification", "warning": "⚠ Not Verified — Please Verify Manually".
+3. CRITICAL TEXTBOX VALUE RULE:
+   - If a value IS explicitly confirmed: set "value" to exact value, "confidenceScore": 95, "confidence": "HIGH", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website".
+   - If a value is NOT explicitly mentioned: DO NOT insert text like "Not Verified" or "Not Mentioned" inside value! Set "value": null, "confidenceScore": 40, "confidence": "LOW", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually".
 4. PAY SPECIAL ATTENTION TO SECTION 8 (ADMISSIONS):
    - Extract eligibility criteria, admission process, documents required, counselling info, entrance exams, and important dates.
-   - Attach prospectus PDF link if found.
+5. DISCOVER ALL COURSES:
+   - Extract every UG, PG, Diploma, PhD, Certificate, and Integrated course offered into "courses" array.
 
 Return ONLY raw valid JSON (no markdown formatting, no code fences):
 {
-  "name": { "value": "", "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "shortName": { "value": "", "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "slug": { "value": "", "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "description": { "value": "", "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "estYear": { "value": null, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification", "warning": "⚠ Not Verified — Please Verify Manually" },
-  "ownership": { "value": "Private", "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "type": { "value": "Autonomous", "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "categories": { "value": ["Engineering"], "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "affiliatedUniversity": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "isAutonomous": { "value": false, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "accreditation": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "approval": { "value": "UGC, AICTE", "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "aicteApproved": { "value": true, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "ugcApproved": { "value": true, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "naacGrade": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "nirfRank": { "value": null, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "address": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "city": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "state": { "value": "Tamil Nadu", "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "phone": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "email": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "website": { "value": "${targetUrl}", "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "feesPerYear": { "value": null, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification", "warning": "⚠ Not Verified — Please Verify Manually" },
-  "courseWiseFees": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "hostelFees": { "value": null, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "scholarshipDetails": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "facilities": { "value": ["Library", "Sports", "WiFi", "Labs"], "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "hostelAvailable": { "value": true, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "highestPackage": { "value": null, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "avgPackage": { "value": null, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
+  "name": { "value": "", "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "shortName": { "value": "", "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "slug": { "value": "", "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "description": { "value": "", "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "estYear": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "ownership": { "value": "Private", "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "type": { "value": "Autonomous", "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "categories": { "value": ["Engineering"], "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "affiliatedUniversity": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "isAutonomous": { "value": false, "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "accreditation": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "approval": { "value": "UGC, AICTE", "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "aicteApproved": { "value": true, "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "ugcApproved": { "value": true, "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "naacGrade": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "nirfRank": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "address": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "city": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "state": { "value": "Tamil Nadu", "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "phone": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "email": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "website": { "value": "${targetUrl}", "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "feesPerYear": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "courseWiseFees": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "hostelFees": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "scholarshipDetails": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "facilities": { "value": ["Library", "Sports", "WiFi", "Labs"], "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "hostelAvailable": { "value": true, "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "highestPackage": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "avgPackage": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
 
   // SECTION 8: ADMISSIONS
-  "admissionEligibility": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "admissionProcess": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "documentsRequired": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "counsellingInfo": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "admissionEntranceExams": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
-  "importantDates": { "value": "Not Verified — Please Verify Manually", "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "status": "Needs Manual Verification" },
+  "admissionEligibility": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "admissionProcess": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "documentsRequired": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "counsellingInfo": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "admissionEntranceExams": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
+  "importantDates": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false, "verificationStatus": "MANUAL_VERIFICATION_REQUIRED", "warning": "⚠ Please Enter Manually" },
 
-  "logo": { "value": null, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false },
-  "banner": { "value": null, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false },
+  "logo": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false },
+  "banner": { "value": null, "confidenceScore": 40, "confidence": "LOW", "sourceUrl": "${targetUrl}", "verified": false },
   "courses": [],
   "extractedImages": [],
-  "seoTitle": { "value": "", "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "seoDescription": { "value": "", "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
-  "metaKeywords": { "value": "", "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "status": "Verified from Official Website" },
+  "seoTitle": { "value": "", "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "seoDescription": { "value": "", "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
+  "metaKeywords": { "value": "", "confidenceScore": 95, "confidence": "HIGH", "sourceUrl": "${targetUrl}", "verified": true, "verificationStatus": "VERIFIED", "status": "Verified from Official Website" },
   "status": "PUBLISHED"
 }
 `;

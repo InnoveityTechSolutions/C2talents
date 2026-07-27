@@ -124,42 +124,49 @@ export function CollegeForm({ initialData, collegeId }: { initialData?: any; col
       setFieldMetadata((prev) => ({
         ...prev,
         [key]: {
-          confidence: item.confidence || "HIGH",
+          confidenceScore: item.confidenceScore ?? (item.verified ? 95 : 50),
+          confidence: item.confidence || (item.verified ? "HIGH" : "LOW"),
           sourceUrl: item.sourceUrl || "",
+          sourcePage: item.sourcePage || "",
           verified: Boolean(item.verified),
-          warning: item.warning,
+          verificationStatus: item.verificationStatus || (item.verified ? "VERIFIED" : "MANUAL_VERIFICATION_REQUIRED"),
+          warning: item.warning || (item.verified ? undefined : "⚠ Please Enter Manually"),
         },
       }));
+      // NEVER insert "Not Verified" text inside textbox value itself! Keep empty string "" for unverified values
+      if (item.value === null || (typeof item.value === "string" && /^Not (Verified|Stated|Published|Mentioned)/i.test(item.value))) {
+        return "";
+      }
       return item.value;
     }
     return item;
   }
 
   const renderBadge = (key: string) => {
-    const meta = fieldMetadata[key];
+    const meta = fieldMetadata[key] as any;
     if (!meta) return null;
 
-    if (meta.verified && meta.confidence === "HIGH") {
+    if (meta.verified || meta.verificationStatus === "VERIFIED" || (meta.confidenceScore && meta.confidenceScore >= 95)) {
       return (
         <span
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 text-[10px] font-extrabold border border-emerald-300 ml-2"
-          title={`Source Confirmed: ${meta.sourceUrl || "Official Website"}`}
+          title={`Verified Source: ${meta.sourceUrl || "Official Website"} (Confidence: ${meta.confidenceScore || 95}%)`}
         >
           <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-          <span>✓ Verified</span>
+          <span>✓ Verified ({meta.confidenceScore || 95}%)</span>
         </span>
       );
     }
 
-    if (meta.confidence === "MEDIUM") {
+    if (meta.verificationStatus === "NEEDS_REVIEW" || (meta.confidenceScore && meta.confidenceScore >= 80)) {
       return (
         <span
           onClick={() => markFieldVerified(key)}
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-yellow-100 text-yellow-900 text-[10px] font-extrabold border border-yellow-300 ml-2 cursor-pointer hover:bg-yellow-200 transition-colors"
-          title="Click to manually confirm and mark this field as verified"
+          title="Click to manually confirm and mark as verified"
         >
           <AlertCircle className="w-3 h-3 text-yellow-700" />
-          <span>⚠ Verification Required</span>
+          <span>⚠ Needs Review ({meta.confidenceScore || 85}%)</span>
         </span>
       );
     }
@@ -168,7 +175,7 @@ export function CollegeForm({ initialData, collegeId }: { initialData?: any; col
       <span
         onClick={() => markFieldVerified(key)}
         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-100 text-orange-950 text-[10px] font-extrabold border border-orange-300 ml-2 cursor-pointer hover:bg-orange-200 transition-colors"
-        title="Click to confirm and enter manually"
+        title="Click to manually enter or confirm value"
       >
         <AlertCircle className="w-3 h-3 text-orange-700" />
         <span>{meta.warning || "⚠ Please Enter Manually"}</span>
