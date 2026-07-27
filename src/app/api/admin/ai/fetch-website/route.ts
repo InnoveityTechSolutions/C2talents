@@ -119,6 +119,33 @@ export interface ExtractedCollegeData {
   status: string;
 }
 
+export function makeVerifiedField<T>(value: T, sourceUrl: string, score = 95, page = ""): FieldMetadata<T> {
+  return {
+    value,
+    confidenceScore: score,
+    confidence: score >= 90 ? "HIGH" : "MEDIUM",
+    sourceUrl,
+    sourcePage: page || sourceUrl,
+    verified: true,
+    verificationStatus: score >= 95 ? "VERIFIED" : "NEEDS_REVIEW",
+    status: score >= 95 ? "Verified from Official Website" : "Needs Review",
+  };
+}
+
+export function makeUnverifiedField<T>(warningMsg = "⚠ Please Enter Manually"): FieldMetadata<T> {
+  return {
+    value: null,
+    confidenceScore: 40,
+    confidence: "LOW",
+    sourceUrl: "",
+    sourcePage: "",
+    verified: false,
+    verificationStatus: "MANUAL_VERIFICATION_REQUIRED",
+    warning: warningMsg,
+    status: "Needs Manual Verification",
+  };
+}
+
 export async function POST(req: Request) {
   let targetUrl = "";
   console.log("\n====================================================");
