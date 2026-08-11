@@ -7,13 +7,14 @@ import { ExploreTools } from "./home/ExploreTools";
 import { TopRankedTable } from "./home/TopRankedTable";
 import { CollegesGrid } from "./home/CollegesGrid";
 import { AdmissionBanner } from "./home/AdmissionBanner";
+import { CareerExcellenceBanner } from "./home/CareerExcellenceBanner";
 import { RankingsCompare } from "./home/RankingsCompare";
 import { NewsletterBanner } from "./home/NewsletterBanner";
+import { CommunityBanner } from "./home/CommunityBanner";
 import { TopDestinations } from "./home/TopDestinations";
+import { WhyChooseUs } from "./home/WhyChooseUs";
 import { ExploreCourses } from "./home/ExploreCourses";
-import { CourseFinderPromo } from "./home/CourseFinderPromo";
 import { TopExams } from "./home/TopExams";
-import { QuickLinks } from "./home/QuickLinks";
 import { NewsStories } from "./home/NewsStories";
 import { StudyAbroad } from "./home/StudyAbroad";
 import { TrendingTags } from "./home/TrendingTags";
@@ -52,7 +53,8 @@ interface Review {
   rating: number;
   content: string;
   isVerified: boolean;
-  student: { name: string };
+  studentName?: string | null;
+  student?: { name: string } | null;
   college: { name: string };
 }
 
@@ -80,7 +82,10 @@ export function LandingPageClient({ initialColleges }: Props) {
       {/* Section 6 ── Top Colleges Grid */}
       <CollegesGrid colleges={initialColleges} />
 
-      {/* Section 7 ── Admission Chances CTA Banner */}
+      {/* Section 7 ── Learning for Career Excellence Banner (SRM-style background design) */}
+      <CareerExcellenceBanner />
+
+      {/* Section 8 ── Admission Chances CTA Banner */}
       <AdmissionBanner />
 
       {/* Section 8 ── College Rankings (NIRF / Multi-Agency Compare) */}
@@ -89,20 +94,17 @@ export function LandingPageClient({ initialColleges }: Props) {
       {/* Section 9 ── Newsletter/Alerts Banner */}
       <NewsletterBanner />
 
-      {/* Section 10 ── Top Study Destinations (Cities) */}
+      {/* Section 10 ── Why Choose C2Talents Cards */}
+      <WhyChooseUs />
+
+      {/* Section 11 ── Top Study Destinations (Cities) */}
       <TopDestinations />
 
       {/* Section 11 ── Explore Courses by Level */}
       <ExploreCourses />
 
-      {/* Section 12 ── Course Finder Promo Banner */}
-      <CourseFinderPromo />
-
       {/* Section 13 ── Top Exams Corner */}
       <TopExams />
-
-      {/* Section 14 ── Admission Year Quick Links */}
-      <QuickLinks />
 
       {/* Section 15 ── Latest News & Stories */}
       <NewsStories />
@@ -112,9 +114,6 @@ export function LandingPageClient({ initialColleges }: Props) {
 
       {/* Section 17 ── Trending Course Tags */}
       <TrendingTags />
-
-      {/* Persistent floating AI chat button */}
-      <FloatingCounselorButton />
 
       {/* Floating scroll-progress button */}
       <ScrollToTopButton />

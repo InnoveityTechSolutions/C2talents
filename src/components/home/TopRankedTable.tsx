@@ -2,52 +2,57 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Star, MapPin, ChevronRight, Loader2 } from "lucide-react";
+import { Star, MapPin, ChevronRight, ArrowRight, ArrowUpRight, GitCompare, ChevronLeft } from "lucide-react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
-import { collegesData } from "@/data/colleges";
-
-interface College {
-  id: string;
-  name: string;
-  location: string;
-  rating: number;
-  type: string;
-  naacGrade: string | null;
-  nirfRank: number | null;
-  feesPerYear: number;
-  avgPackage: number;
-  highestPackage: number;
-  image: string;
-}
+import { collegesData, RankedCollege } from "@/data/colleges";
+import { useCompare } from "@/context/CompareContext";
 
 interface Props {
-  colleges: College[];
+  colleges?: RankedCollege[];
 }
 
-const formatFees = (fees: number) => {
-  if (fees >= 100000) {
-    return `₹${(fees / 100000).toFixed(2)}L`;
-  }
-  return `₹${fees.toLocaleString()}`;
-};
+const streamTabs = [
+  { id: "btech", label: "B.Tech" },
+  { id: "mba", label: "MBA" },
+  { id: "mbbs", label: "MBBS" },
+  { id: "arts", label: "Arts & Science" },
+  { id: "commerce", label: "Commerce" },
+  { id: "law", label: "Law" },
+  { id: "bpharma", label: "B.Pharma" },
+  { id: "bba", label: "BBA" },
+  { id: "bca", label: "BCA" },
+  { id: "mtech", label: "M.Tech" },
+];
 
-export function TopRankedTable({ colleges: dbColleges }: Props) {
-  const [activeTab, setActiveTab] = React.useState<"btech" | "mba" | "mbbs">("btech");
+export function TopRankedTable({ colleges: propColleges }: Props) {
+  const [activeTab, setActiveTab] = React.useState<string>("btech");
   const [loading, setLoading] = React.useState(false);
+  const { toggleCollege, isSelected } = useCompare();
+  const tabsContainerRef = React.useRef<HTMLDivElement>(null);
 
-  const handleTabChange = (tab: "btech" | "mba" | "mbbs") => {
-    if (tab === activeTab) return;
+  const handleTabChange = (tabId: string) => {
+    if (tabId === activeTab) return;
     setLoading(true);
-    setActiveTab(tab);
+    setActiveTab(tabId);
     setTimeout(() => {
       setLoading(false);
-    }, 600); // Simulate network latency to demonstrate skeleton load
+    }, 300);
+  };
+
+  const scrollTabs = (direction: "left" | "right") => {
+    if (tabsContainerRef.current) {
+      const scrollAmount = direction === "left" ? -200 : 200;
+      tabsContainerRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
   };
 
   const currentColleges = React.useMemo(() => {
-    return collegesData
-      .filter((c) => c.stream === activeTab)
-      .sort((a, b) => a.nirfRank - b.nirfRank);
+    const filtered = collegesData.filter((c) => c.stream === activeTab);
+    if (filtered.length > 0) {
+      return filtered.sort((a, b) => (a.nirfRank || 99) - (b.nirfRank || 99));
+    }
+    // Fallback if specific stream sub-filter has few items
+    return collegesData.slice(0, 6).sort((a, b) => (a.nirfRank || 99) - (b.nirfRank || 99));
   }, [activeTab]);
 
   const { ref, hasRevealed } = useScrollReveal<HTMLDivElement>();
@@ -55,158 +60,236 @@ export function TopRankedTable({ colleges: dbColleges }: Props) {
   return (
     <section
       ref={ref}
-      className={`py-20 px-6 bg-white border-b border-stone-200/40 scroll-reveal ${
+      className={`py-20 px-6 bg-white border-b border-stone-200/40 font-sans scroll-reveal ${
         hasRevealed ? "revealed" : ""
       }`}
     >
-      <div className="max-w-7xl mx-auto space-y-10">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="space-y-2">
-            <h2 className="text-3xl font-serif text-brand-navy font-semibold">Top Ranked Institutions</h2>
-            <p className="text-sm text-stone-500 font-sans max-w-md">
-              A comprehensive view of cutoffs, annual fees, and admission criteria filtered by stream.
-            </p>
-          </div>
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Section Header */}
+        <div className="text-center space-y-3 max-w-2xl mx-auto flex flex-col items-center">
+          <h2 className="text-3xl md:text-4xl font-serif text-brand-navy font-bold tracking-tight">
+            Course wise <span className="bg-gradient-to-r from-orange-600 via-amber-500 to-indigo-900 bg-clip-text text-transparent">Top Colleges in India</span>
+          </h2>
 
-          {/* Program Tabs */}
-          <div className="flex bg-[#FAF9F5] p-1 border border-stone-200/60 rounded-xl font-sans text-xs font-semibold">
-            {[
-              { id: "btech", label: "B.Tech" },
-              { id: "mba", label: "MBA" },
-              { id: "mbbs", label: "MBBS" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id as any)}
-                className={`px-4 py-2 rounded-lg transition-all ${
-                  activeTab === tab.id
-                    ? "bg-indigo-900 text-white shadow-sm"
-                    : "text-stone-600 hover:text-indigo-900"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <div className="w-16 h-1 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full mx-auto" />
+
+          <p className="text-sm text-stone-500 font-sans max-w-xl mx-auto leading-relaxed">
+            A comprehensive view of rankings, cutoffs, placements, and annual fees filtered by discipline.
+          </p>
         </div>
 
-        {/* Table/Skeleton Area */}
-        <div className="border border-stone-200/60 rounded-2xl overflow-hidden bg-white shadow-[0_8px_30px_rgb(0,0,0,0.015)] font-sans">
+        {/* Stream Filter Pills Bar (matching Image 2 style) */}
+        <div className="relative flex items-center max-w-5xl mx-auto">
+          <button
+            onClick={() => scrollTabs("left")}
+            aria-label="Scroll left"
+            className="hidden sm:flex shrink-0 w-8 h-8 items-center justify-center rounded-full bg-white border border-stone-200/80 text-stone-600 hover:text-orange-600 hover:border-orange-200 shadow-2xs mr-2 transition-colors cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <div
+            ref={tabsContainerRef}
+            className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1 w-full scroll-smooth"
+          >
+            {streamTabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                    isActive
+                      ? "bg-[#3b2075] text-white shadow-md shadow-purple-950/20 scale-[1.02]"
+                      : "bg-[#FAF9F5] text-stone-600 border border-stone-200/70 hover:bg-orange-50/70 hover:text-orange-600 hover:border-orange-200"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => scrollTabs("right")}
+            aria-label="Scroll right"
+            className="hidden sm:flex shrink-0 w-8 h-8 items-center justify-center rounded-full bg-white border border-stone-200/80 text-stone-600 hover:text-orange-600 hover:border-orange-200 shadow-2xs ml-2 transition-colors cursor-pointer"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Table Container (matching Website UI Colors & Square Card Hover Effect) */}
+        <div className="border border-stone-200/80 rounded-2xl overflow-hidden bg-white shadow-[0_8px_30px_rgb(0,0,0,0.03)] p-2">
           {loading ? (
-            /* Skeleton Loader */
+            /* Skeleton Loading State */
             <div className="divide-y divide-stone-100">
-              <div className="bg-[#FAF9F5]/70 h-14 animate-pulse-subtle" />
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="p-6 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 w-1/3">
-                    <div className="w-6 h-6 bg-stone-100 rounded-full animate-pulse-subtle" />
-                    <div className="w-12 h-12 bg-stone-100 rounded-xl animate-pulse-subtle" />
-                    <div className="space-y-2 w-full">
-                      <div className="h-4 bg-stone-100 rounded w-3/4 animate-pulse-subtle" />
-                      <div className="h-3 bg-stone-100 rounded w-1/2 animate-pulse-subtle" />
-                    </div>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="p-6 flex items-center justify-between gap-4 animate-pulse">
+                  <div className="w-8 h-6 bg-stone-100 rounded" />
+                  <div className="w-12 h-12 bg-stone-100 rounded-xl" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-stone-100 rounded w-2/3" />
+                    <div className="h-3 bg-stone-100 rounded w-1/3" />
                   </div>
-                  <div className="h-4 bg-stone-100 rounded w-20 animate-pulse-subtle" />
-                  <div className="h-4 bg-stone-100 rounded w-24 animate-pulse-subtle" />
-                  <div className="h-4 bg-stone-100 rounded w-24 animate-pulse-subtle" />
-                  <div className="h-4 bg-stone-100 rounded w-16 animate-pulse-subtle" />
-                  <div className="h-8 bg-stone-100 rounded-lg w-20 animate-pulse-subtle" />
+                  <div className="w-32 h-8 bg-stone-100 rounded-lg" />
+                  <div className="w-28 h-8 bg-stone-100 rounded-lg" />
                 </div>
               ))}
             </div>
           ) : (
-            /* Active Table */
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-separate border-spacing-y-2.5 min-w-[920px]">
+                <colgroup>
+                  <col className="w-20" />
+                  <col className="w-[36%]" />
+                  <col className="w-[260px]" />
+                  <col className="w-[200px]" />
+                  <col className="w-28" />
+                </colgroup>
                 <thead>
-                  <tr className="bg-[#FAF9F5]/70 border-b border-stone-200/50 text-[11px] font-bold text-stone-500 uppercase tracking-wider">
-                    <th className="py-4.5 px-6 w-16 text-center">Rank</th>
-                    <th className="py-4.5 px-6">College</th>
-                    <th className="py-4.5 px-6 w-28 text-center">Rating</th>
-                    <th className="py-4.5 px-6 w-48">Expected Cutoff</th>
-                    <th className="py-4.5 px-6 w-44">Deadline</th>
-                    <th className="py-4.5 px-6 w-36">Total Fees</th>
-                    <th className="py-4.5 px-6 w-36 text-center">Action</th>
+                  <tr className="bg-[#FAF9F5] text-[11px] font-extrabold text-stone-500 uppercase tracking-wider rounded-xl select-none">
+                    <th className="py-3.5 px-4 text-center rounded-l-xl border-y border-l border-stone-200/80">Rank</th>
+                    <th className="py-3.5 px-6 text-left border-y border-stone-200/80">College</th>
+                    <th className="py-3.5 px-4 text-center border-y border-stone-200/80">Compare / Actions</th>
+                    <th className="py-3.5 px-4 text-center border-y border-stone-200/80">Placements</th>
+                    <th className="py-3.5 px-4 text-center rounded-r-xl border-y border-r border-stone-200/80">Rating</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-100 text-stone-700 text-[13px] font-medium">
-                  {currentColleges.map((college, idx) => (
-                    <tr
-                      key={college.id}
-                      className="hover:bg-indigo-50/10 transition-colors"
-                    >
-                      {/* Rank */}
-                      <td className="py-5 px-6 text-center font-bold text-stone-400">
-                        #{college.nirfRank || idx + 1}
-                      </td>
+                <tbody className="font-sans text-stone-700 text-xs font-medium">
+                  {currentColleges.map((college, idx) => {
+                    const isCompared = isSelected(college.id);
+                    const rankNum = college.nirfRank || idx + 1;
+                    
+                    return (
+                      <tr
+                        key={college.id}
+                        className="group bg-white border border-stone-200/80 rounded-xl shadow-xs transition-all duration-300 hover:shadow-xl hover:shadow-purple-950/10 hover:-translate-y-1 hover:ring-2 hover:ring-[#3b2075]/30 hover:border-transparent relative cursor-pointer"
+                      >
+                        {/* Rank Column */}
+                        <td className="py-5 px-4 text-center border-y border-l border-stone-200/80 rounded-l-xl group-hover:border-transparent transition-all">
+                          <span className="font-extrabold text-stone-400 text-sm group-hover:text-[#3b2075] group-hover:scale-110 transition-all duration-200 inline-block">
+                            #{rankNum}
+                          </span>
+                        </td>
 
-                      {/* College details */}
-                      <td className="py-5 px-6">
-                        <div className="flex items-center gap-3.5">
-                          <div className="w-12 h-12 rounded-xl border border-stone-200/60 overflow-hidden bg-stone-50 flex-shrink-0">
-                            <img
-                              src={college.image}
-                              alt={college.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="space-y-1">
+                        {/* College Info Column (Logo + Brand Title + Location + Animated Straight Arrow) */}
+                        <td className="py-5 px-6 border-y border-stone-200/80 group-hover:border-transparent transition-all">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3.5">
+                              <div className="w-12 h-12 rounded-xl border border-stone-200/80 overflow-hidden bg-white shrink-0 p-0.5 shadow-2xs group-hover:border-[#3b2075]/30 transition-colors">
+                                <img
+                                  src={college.image}
+                                  alt={college.name}
+                                  className="w-full h-full object-cover rounded-lg"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Link
+                                  href={`/colleges/${college.id}`}
+                                  className="font-bold text-[14px] text-[#1f0c3d] group-hover:text-[#ea580c] transition-colors leading-snug block"
+                                >
+                                  {college.name}
+                                </Link>
+                                <div className="flex items-center gap-1.5 text-stone-400 text-[11px] font-semibold">
+                                  <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0 group-hover:text-[#ea580c] transition-colors" />
+                                  <span>{college.location}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Animated Straight Arrow (→) on Hover/Select */}
                             <Link
                               href={`/colleges/${college.id}`}
-                              className="font-serif font-bold text-[14px] text-brand-navy hover:text-indigo-900 leading-tight"
+                              className="text-stone-300 group-hover:text-[#3b2075] group-hover:translate-x-1.5 transition-all duration-300 p-1 shrink-0"
+                              aria-label={`View ${college.name}`}
                             >
-                              {college.name}
+                              <ArrowRight className="w-5 h-5 shrink-0 stroke-[2]" />
                             </Link>
-                            <div className="flex items-center gap-1.5 text-stone-400 text-xs font-semibold">
-                              <MapPin className="w-3.5 h-3.5" />
-                              <span>{college.location}</span>
+                          </div>
+                        </td>
+
+                        {/* Compare / Actions Column (Apply Now + Compare buttons) */}
+                        <td className="py-5 px-4 text-center border-y border-stone-200/80 group-hover:border-transparent transition-all">
+                          <div className="flex items-center justify-center gap-2">
+                            {/* Apply Now Button (Vibrant SRM Gold/Orange CTA) */}
+                            <Link
+                              href={`/colleges/${college.id}#apply`}
+                              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#f59e0b] hover:bg-[#ea580c] text-white font-extrabold text-xs rounded-xl shadow-2xs transition-all duration-200 shrink-0 cursor-pointer hover:scale-[1.03]"
+                            >
+                              <span>Apply Now</span>
+                              <ArrowUpRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                            </Link>
+
+                            {/* Compare Button (Royal Purple CTA) */}
+                            <button
+                              onClick={() =>
+                                toggleCollege({
+                                  id: college.id,
+                                  name: college.name,
+                                  location: college.location,
+                                  rating: college.rating,
+                                  type: college.type || "College",
+                                  feesPerYear: college.feesPerYear,
+                                  avgPackage: college.avgPackage,
+                                  highestPackage: college.highestPackage,
+                                  image: college.image,
+                                })
+                              }
+                              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 shrink-0 cursor-pointer hover:scale-[1.03] ${
+                                isCompared
+                                  ? "bg-emerald-600 text-white shadow-sm"
+                                  : "bg-[#3b2075] hover:bg-[#2d1659] text-white shadow-2xs"
+                              }`}
+                            >
+                              <GitCompare className="w-3.5 h-3.5" />
+                              <span>{isCompared ? "Added" : "Compare"}</span>
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* Placements Column (HIGHEST & AVERAGE LPA centered under header) */}
+                        <td className="py-5 px-4 text-center border-y border-stone-200/80 group-hover:border-transparent transition-all">
+                          <div className="flex flex-col items-center justify-center">
+                            <div className="space-y-1 text-left inline-block">
+                              <div className="text-[11px] font-bold">
+                                <span className="text-stone-400 font-semibold mr-1.5 uppercase tracking-wider text-[10px]">HIGHEST:</span>
+                                <span className="font-extrabold text-[#3b2075] text-[12.5px]">₹{college.highestPackage} LPA</span>
+                              </div>
+                              <div className="text-[11px] font-bold">
+                                <span className="text-stone-400 font-semibold mr-1.5 uppercase tracking-wider text-[10px]">AVERAGE:</span>
+                                <span className="font-extrabold text-[#3b2075] text-[12.5px]">₹{college.avgPackage} LPA</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Rating */}
-                      <td className="py-5 px-6 text-center">
-                        <div className="inline-flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg text-amber-700 font-bold text-[11px]">
-                          <Star className="w-3 h-3 fill-amber-700" />
-                          <span>{college.rating.toFixed(1)}</span>
-                        </div>
-                      </td>
-
-                      {/* Cutoff */}
-                      <td className="py-5 px-6 font-semibold text-stone-600">
-                        {college.cutoff}
-                      </td>
-
-                      {/* Deadline */}
-                      <td className="py-5 px-6 text-stone-500 font-semibold">
-                        {college.deadline}
-                      </td>
-
-                      {/* Fees */}
-                      <td className="py-5 px-6">
-                        <div className="space-y-0.5">
-                          <div className="font-extrabold text-stone-900">
-                            {formatFees(college.feesPerYear)}
+                        {/* Rating Column (Yellow Stars + Score centered under header) */}
+                        <td className="py-5 px-4 text-center border-y border-r border-stone-200/80 rounded-r-xl group-hover:border-transparent transition-all">
+                          <div className="flex flex-col items-center justify-center gap-1">
+                            <div className="flex items-center gap-0.5 text-amber-400">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-3.5 h-3.5 ${
+                                    star <= Math.round(college.rating)
+                                      ? "fill-amber-400 text-amber-400"
+                                      : "fill-stone-200 text-stone-200"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="font-extrabold text-stone-800 text-xs">
+                              {college.rating.toFixed(1)}
+                            </span>
+                            <span className="text-[9.5px] font-extrabold text-stone-400 uppercase tracking-widest block">
+                              RATING
+                            </span>
                           </div>
-                          <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">
-                            Per Year
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Action */}
-                      <td className="py-5 px-6 text-center">
-                        <Link
-                          href={`/colleges/${college.id}`}
-                          className="inline-flex items-center justify-center px-4 py-2 border border-indigo-900/10 bg-indigo-900/5 hover:bg-indigo-900 hover:text-white text-indigo-900 text-xs font-bold rounded-xl transition-all"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -31,32 +31,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = React.useCallback(async () => {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      if (!token) {
+      
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch("/api/auth/me", {
+        headers,
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("token");
+        }
         setUser(null);
         setLoading(false);
         return;
       }
-      
-      const res = await fetch("/api/auth/me", {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      if (!res.ok) {
-        throw new Error("Session expired");
-      }
 
       const me = await res.json();
+      if (me.token && typeof window !== "undefined") {
+        localStorage.setItem("token", me.token);
+      }
+
       setUser({
         id: me.id,
         email: me.email,
         role: me.role as Role,
-        name: me.role === "STUDENT" ? me.student?.name : me.college?.name || "User",
+        name: me.name || (me.role === "STUDENT" ? me.student?.name : me.college?.name) || me.email?.split("@")[0] || "User Account",
         profileId: me.role === "STUDENT" ? me.student?.id : me.role === "COLLEGE" ? me.college?.id : null,
       });
     } catch (err) {
-      console.error("Failed to load user session:", err);
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
       }

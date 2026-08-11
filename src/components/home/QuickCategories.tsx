@@ -23,14 +23,14 @@ const categories: Category[] = [
 
 export function QuickCategories() {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2.5 max-w-4xl mx-auto pt-2">
+    <div className="flex flex-wrap items-center justify-center gap-2 max-w-6xl mx-auto pt-1 pb-1">
       {categories.map((cat) => {
         const Icon = cat.icon;
         return (
           <Link
             key={cat.name}
             href={cat.href}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-stone-200 hover:border-indigo-900 hover:text-indigo-900 text-stone-700 text-xs font-semibold shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all hover:-translate-y-0.5"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-xs border border-stone-200 hover:border-indigo-900 hover:text-indigo-900 text-stone-700 text-xs font-semibold shadow-xs transition-all hover:-translate-y-0.5 whitespace-nowrap shrink-0"
           >
             <Icon className="w-3.5 h-3.5 text-stone-500 group-hover:text-indigo-900" />
             <span>{cat.name}</span>

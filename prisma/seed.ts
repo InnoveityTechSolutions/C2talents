@@ -1,28 +1,22 @@
 import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { collegesData } from '../src/data/colleges';
+import { assertSafeDatabaseOperation } from '../src/lib/env-guard';
+import { createDatabaseBackup } from '../src/lib/backup';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding started...');
+  console.log('🌱 Safe Seeding Started...');
 
-  // Clean old data in correct order of dependency
-  await prisma.review.deleteMany();
-  await prisma.lead.deleteMany();
-  await prisma.enquiryLead.deleteMany();
-  await prisma.application.deleteMany();
-  await prisma.placementOutcome.deleteMany();
-  await prisma.course.deleteMany();
-  await prisma.scholarship.deleteMany();
-  await prisma.studentProfile.deleteMany();
-  await prisma.collegeProfile.deleteMany();
-  await prisma.galleryImage.deleteMany();
-  await prisma.newsArticle.deleteMany();
-  await prisma.category.deleteMany();
-  await prisma.user.deleteMany();
+  // Block destructive seed in production or without explicit safety flag
+  assertSafeDatabaseOperation('prisma db seed', true);
 
-  console.log('Old database records cleared.');
+  // Automatically create a SQL backup before running seed
+  console.log('📦 Triggering automatic pre-seed database backup...');
+  await createDatabaseBackup('pre-seed');
+
+  console.log('ℹ️ Running non-destructive seed (Upserts only)...');
 
   // 1. Create Super Admin Account (Email: superadmin@c2talents.com, Password: Admin@123)
   const superAdminPasswordHash = await bcrypt.hash('Admin@123', 10);
@@ -96,7 +90,7 @@ async function main() {
   ];
 
   let colIdx = 1;
-  for (const mock of collegesData) {
+  for (const mock of collegesData as any[]) {
     const uniqueSlug = mock.slug ? `${mock.slug}-${colIdx}` : `college-${colIdx}`;
     const colUser = await prisma.user.create({
       data: {

@@ -2,9 +2,20 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { PlusCircle, Bell, Sparkles, ShieldCheck, LogOut, User, ChevronDown } from "lucide-react";
+import {
+  PlusCircle,
+  Bell,
+  Sparkles,
+  ShieldCheck,
+  LogOut,
+  ChevronDown,
+  Settings,
+  MailCheck,
+  Lock,
+  Key,
+} from "lucide-react";
 
-export function AdminHeader() {
+export function AdminHeader({ title }: { title?: string }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -15,7 +26,9 @@ export function AdminHeader() {
       try {
         const res = await fetch("/api/admin/auth/me");
         const data = await res.json();
-        if (data.user) setUser(data.user);
+        if (data.authenticated && data.user) {
+          setUser(data.user);
+        }
       } catch (e) {}
     }
     fetchUser();
@@ -38,16 +51,28 @@ export function AdminHeader() {
     window.location.href = "/manager/login";
   }
 
+  const roleFormatted = user?.role
+    ? user.role.replace("_", " ").toUpperCase()
+    : "SUPER ADMIN";
+
+  const adminName = user?.name || "System Administrator";
+  const adminEmail = user?.email || "admin@c2talents.com";
+
   return (
     <header className="h-16 bg-white/95 backdrop-blur-md border-b border-purple-100 px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs font-sans">
       {/* Title / Breadcrumb */}
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-[#3b2075] text-amber-300 flex items-center justify-center font-extrabold text-xs shadow-xs">
-          <ShieldCheck className="w-4 h-4 text-amber-300" />
+        <div className="w-8.5 h-8.5 rounded-xl bg-[#1c0b36] text-amber-400 flex items-center justify-center font-extrabold text-xs shadow-xs border border-purple-900/30">
+          <ShieldCheck className="w-4.5 h-4.5 text-amber-400" />
         </div>
         <div>
-          <h2 className="text-xs font-extrabold text-[#1f0c3d] tracking-wide uppercase">Admin Portal Control Center</h2>
-          <p className="text-[10px] text-purple-600/70 font-medium">C2Talents CMS Manager</p>
+          <h2 className="text-xs font-extrabold text-[#1c0b36] tracking-wide uppercase">
+            {title || "Admin Control Console"}
+          </h2>
+          <p className="text-[10px] text-purple-700/80 font-bold flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+            Private Enterprise Panel
+          </p>
         </div>
       </div>
 
@@ -55,9 +80,9 @@ export function AdminHeader() {
       <div className="flex items-center gap-3">
         <Link
           href="/manager/colleges/new"
-          className="flex items-center gap-2 bg-[#3b2075] hover:bg-[#4c1d95] text-white font-extrabold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all hover:scale-[1.01]"
+          className="flex items-center gap-2 bg-[#1c0b36] hover:bg-[#2a104e] text-amber-300 font-extrabold px-3.5 py-2 rounded-xl text-xs border border-amber-500/30 shadow-xs transition-all transform hover:scale-[1.01]"
         >
-          <PlusCircle className="w-3.5 h-3.5 text-amber-300" />
+          <PlusCircle className="w-3.5 h-3.5 text-amber-400" />
           <span>Add College</span>
           <span className="bg-amber-400 text-stone-950 px-1.5 py-0.5 rounded text-[9px] font-extrabold flex items-center gap-0.5">
             <Sparkles className="w-2.5 h-2.5" /> AI
@@ -70,46 +95,67 @@ export function AdminHeader() {
           <span className="w-2 h-2 rounded-full bg-amber-500 absolute top-1.5 right-1.5 ring-2 ring-white"></span>
         </button>
 
-        {/* User Profile Badge (Clicking triggers Logout / Dropdown) */}
+        {/* Admin Profile Dropdown Badge */}
         <div className="relative pl-3 border-l border-stone-200" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-purple-50 transition-all cursor-pointer group"
-            title="Click to manage profile or log out"
+            title="Administrator Account Settings"
           >
-            <div className="w-8 h-8 rounded-full bg-[#3b2075] text-amber-300 font-extrabold flex items-center justify-center text-xs ring-2 ring-amber-500/20 group-hover:ring-amber-500/50 transition-all">
-              {user?.name ? user.name.slice(0, 2).toUpperCase() : "AD"}
+            <div className="w-8 h-8 rounded-full bg-[#1c0b36] text-amber-400 font-extrabold flex items-center justify-center text-xs ring-2 ring-amber-400/30 group-hover:ring-amber-400/60 transition-all shadow-xs">
+              {adminName.slice(0, 2).toUpperCase()}
             </div>
             <div className="hidden sm:block text-left">
-              <p className="text-xs font-bold text-[#1f0c3d] leading-tight group-hover:text-[#4c1d95] transition-colors">
-                {user?.name || "Admin CMS"}
+              <p className="text-xs font-extrabold text-[#1c0b36] leading-tight group-hover:text-purple-900 transition-colors">
+                {adminName}
               </p>
-              <p className="text-[10px] text-stone-400 font-medium">
-                {user?.role || "Super Administrator"}
+              <p className="text-[10px] text-amber-600 font-bold uppercase tracking-wider">
+                {roleFormatted}
               </p>
             </div>
-            <ChevronDown className={`w-3.5 h-3.5 text-stone-400 transition-transform duration-200 ${dropdownOpen ? "rotate-180 text-[#3b2075]" : ""}`} />
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-stone-400 transition-transform duration-200 ${
+                dropdownOpen ? "rotate-180 text-[#1c0b36]" : ""
+              }`}
+            />
           </button>
 
           {/* Profile & Logout Dropdown Menu */}
           {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-[#1f0c3d] text-white rounded-2xl p-2 shadow-2xl border border-[#3b2075] animate-slide-up z-50">
-              <div className="p-2.5 border-b border-[#3b2075] mb-1">
-                <p className="text-xs font-extrabold text-white truncate">{user?.name || "Super Administrator"}</p>
-                <p className="text-[10px] text-purple-200/70 font-medium truncate">{user?.email || "superadmin@c2talents.com"}</p>
-                <span className="inline-block mt-1.5 px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[9px] font-extrabold uppercase tracking-wider border border-amber-500/30">
-                  {user?.role || "SUPER_ADMIN"}
-                </span>
+            <div className="absolute right-0 mt-2 w-64 bg-[#1c0b36] text-white rounded-2xl p-2 shadow-2xl border border-purple-900/60 animate-in fade-in zoom-in-95 z-50">
+              {/* Header Profile Card */}
+              <div className="p-3 bg-purple-950/70 rounded-xl border border-purple-800/40 mb-1.5">
+                <div className="flex items-center gap-2.5 mb-2">
+                  <div className="w-9 h-9 rounded-full bg-amber-400 text-stone-950 font-black flex items-center justify-center text-xs shadow-md">
+                    {adminName.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-extrabold text-white truncate">{adminName}</p>
+                    <p className="text-[10px] text-purple-200/80 font-mono truncate">{adminEmail}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-purple-800/40">
+                  <span className="text-[9.5px] font-black bg-amber-400/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    {roleFormatted}
+                  </span>
+                  <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Verified Session
+                  </span>
+                </div>
               </div>
 
-              <button
-                onClick={handleLogout}
-                disabled={loggingOut}
-                className="w-full text-left px-3 py-2 rounded-xl text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 font-extrabold text-xs flex items-center gap-2 transition-all cursor-pointer"
-              >
-                <LogOut className="w-4 h-4 text-rose-400" />
-                <span>{loggingOut ? "Logging Out..." : "Log Out of Admin CMS"}</span>
-              </button>
+              {/* Logout Button ONLY */}
+              <div className="pt-1">
+                <button
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                  className="w-full text-left px-3.5 py-2.5 rounded-xl text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 font-extrabold text-xs flex items-center gap-2.5 transition-all cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 text-rose-400" />
+                  <span>{loggingOut ? "Logging Out..." : "Log Out of Admin Panel"}</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

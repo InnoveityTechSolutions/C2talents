@@ -21,7 +21,18 @@ async function testAuthAPIs() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email: "superadmin@c2talents.com", password: "Admin@123" }),
   });
+  const cookies = r3.headers.getSetCookie ? r3.headers.getSetCookie().join("; ") : r3.headers.get("set-cookie") || "";
   console.log("Status:", r3.status, await r3.json());
+  console.log("Set-Cookie returned:", cookies);
+
+  console.log("\n=== 4. TESTING /api/admin/auth/me WITH COOKIE ===");
+  const r4 = await fetch("http://localhost:3000/api/admin/auth/me", {
+    headers: { cookie: cookies },
+  });
+  const text = await r4.text();
+  console.log("Status:", r4.status, text);
 }
 
 testAuthAPIs().catch(console.error);
+
+

@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { AdminDashboardView } from "@/components/admin/AdminDashboardView";
 
 export default function ManagerRootPage() {
-  redirect("/manager/dashboard");
+  return <AdminDashboardView />;
 }

@@ -1,0 +1,15 @@
+{
+  "targetUrl": "https://autmdu.in/",
+  "domainOrigin": "https://autmdu.in",
+  "visitedPages": [],
+  "discoveredPdfs": [],
+  "discoveredImages": [],
+  "crawledContentSummaryText": "",
+  "logs": [
+    "[2026-07-31T10:07:14.817Z] Initiating official website crawl for: https://autmdu.in/",
+    "[2026-07-31T10:07:14.818Z] Connecting to: https://autmdu.in/...",
+    "[2026-07-31T10:07:18.366Z] Connected successfully to https://autmdu.in/ (982 bytes HTML).",
+    "[2026-07-31T10:07:18.376Z] Discovered 33 priority subpages. Crawling top 15...",
+    "[2026-07-31T10:07:18.646Z] Crawl completed. Visited 0 official web pages."
+  ]
+}

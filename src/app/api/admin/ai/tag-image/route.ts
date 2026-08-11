@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(req: Request) {
+  let collegeName = "";
   try {
-    const { imageUrl, fileName, collegeName } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { imageUrl, fileName } = body;
+    collegeName = body.collegeName || "";
 
     if (!imageUrl && !fileName) {
       return NextResponse.json({ error: "Image URL or fileName is required." }, { status: 400 });

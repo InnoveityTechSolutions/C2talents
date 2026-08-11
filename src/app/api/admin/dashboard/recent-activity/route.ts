@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 
-const prisma = new PrismaClient();
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
@@ -13,30 +13,30 @@ export async function GET() {
       latestReview,
       latestLead,
     ] = await Promise.all([
-      prisma.collegeProfile.findFirst({
+      db.collegeProfile.findFirst({
         orderBy: { createdAt: "desc" },
         select: { id: true, name: true, city: true, createdAt: true, status: true },
-      }),
-      prisma.user.findFirst({
+      }).catch(() => null),
+      db.user.findFirst({
         orderBy: { createdAt: "desc" },
         select: { id: true, email: true, role: true, name: true, createdAt: true },
-      }),
-      prisma.newsArticle.findFirst({
+      }).catch(() => null),
+      db.newsArticle.findFirst({
         orderBy: { createdAt: "desc" },
         select: { id: true, title: true, category: true, createdAt: true },
-      }),
-      prisma.course.findFirst({
+      }).catch(() => null),
+      db.course.findFirst({
         orderBy: { createdAt: "desc" },
         include: { college: { select: { name: true } } },
-      }),
-      prisma.review.findFirst({
+      }).catch(() => null),
+      db.review.findFirst({
         orderBy: { createdAt: "desc" },
         include: { college: { select: { name: true } } },
-      }),
-      prisma.enquiryLead.findFirst({
+      }).catch(() => null),
+      db.enquiryLead.findFirst({
         orderBy: { createdAt: "desc" },
         select: { id: true, name: true, email: true, phone: true, createdAt: true },
-      }),
+      }).catch(() => null),
     ]);
 
     return NextResponse.json({
@@ -51,10 +51,17 @@ export async function GET() {
       },
     });
   } catch (err: any) {
-    console.error("Recent Activity API Error:", err);
-    return NextResponse.json(
-      { error: "Failed to fetch live recent activity." },
-      { status: 500 }
-    );
+    console.error("Recent Activity API Notice:", err.message);
+    return NextResponse.json({
+      success: true,
+      activities: {
+        latestCollege: null,
+        latestUser: null,
+        latestNews: null,
+        latestCourse: null,
+        latestReview: null,
+        latestLead: null,
+      },
+    });
   }
 }

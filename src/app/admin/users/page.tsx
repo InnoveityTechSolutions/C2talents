@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Plus, ShieldCheck, Mail, Lock, UserPlus, RefreshCw } from "lucide-react";
+import { Users, Plus, ShieldCheck, Mail, Lock, UserPlus, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { PopupModal } from "@/components/ui/PopupModal";
 
 export default function AdminUsersPage() {
@@ -10,6 +10,7 @@ export default function AdminUsersPage() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState("ADMIN");
   const [saving, setSaving] = useState(false);
 
@@ -113,14 +114,24 @@ export default function AdminUsersPage() {
 
           <div>
             <label className="font-semibold text-stone-700 block mb-1">Password *</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              className="w-full bg-stone-50 px-3 py-2 rounded-xl border border-stone-200 text-stone-900"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full bg-stone-50 px-3 py-2 pr-10 rounded-xl border border-stone-200 text-stone-900"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 transition-colors p-1 cursor-pointer"
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4 text-purple-700" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           <div>

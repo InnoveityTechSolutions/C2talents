@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import StandaloneLoginPage from "@/app/manager/login/page";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { AppLoader } from "@/components/AppLoader";
 
 export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -20,23 +20,46 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    let isMounted = true;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+
     async function checkAuthStatus() {
       try {
-        const res = await fetch("/api/admin/auth/me", { cache: "no-store" });
-        const data = await res.json();
+        const res = await fetch("/api/admin/auth/me", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const data = await res.json().catch(() => ({ authenticated: false }));
 
-        if (res.ok && data.authenticated) {
-          setIsAuthenticated(true);
-          setUser(data.user);
-        } else {
-          setIsAuthenticated(false);
+        const ALLOWED_ROLES = ["SUPER_ADMIN", "ADMIN", "CONTENT_MANAGER"];
+        if (isMounted) {
+          if (res.ok && data.authenticated && data.user?.role && ALLOWED_ROLES.includes(data.user.role)) {
+            setIsAuthenticated(true);
+            setUser(data.user);
+          } else {
+            console.warn("[ADMIN AUTH GUARD]: Unverified or non-admin session detected. Redirecting to login.");
+            setIsAuthenticated(false);
+          }
         }
       } catch (err) {
-        setIsAuthenticated(false);
+        if (isMounted) {
+          console.warn("[AUTH GUARD]: Auth verification timed out or failed. Falling back to login.");
+          setIsAuthenticated(false);
+        }
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
 
     checkAuthStatus();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
   }, [pathname, isLoginPage]);
 
   // If visiting login page explicitly, render ONLY the standalone login page
@@ -46,17 +69,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
   // Loading state while checking authentication token
   if (isAuthenticated === null) {
-    return (
-      <div className="h-screen w-screen bg-slate-950 flex flex-col items-center justify-center text-white space-y-4 font-sans">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 animate-pulse">
-          <ShieldCheck className="w-7 h-7" />
-        </div>
-        <div className="flex items-center gap-2 text-xs font-extrabold text-slate-300 uppercase tracking-widest">
-          <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-          <span>Verifying Admin Manager Authentication...</span>
-        </div>
-      </div>
-    );
+    return <AppLoader submessage="Verifying Admin Manager Authentication..." />;
   }
 
   // If user is NOT authenticated: RENDER ONLY THE LOGIN PAGE!
@@ -70,7 +83,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
       <AdminSidebar />
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <AdminHeader />
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 overflow-y-auto w-full">
           {children}
         </main>
       </div>

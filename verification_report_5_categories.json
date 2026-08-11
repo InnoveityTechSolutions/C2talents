@@ -1,0 +1,697 @@
+[
+  {
+    "category": "Arts & Science",
+    "url": "https://smgacw.org/",
+    "collegeName": "Sri Meenakshi Govt Arts College for Women",
+    "pagesCrawled": 13,
+    "pdfsParsed": 72,
+    "pdfList": [
+      {
+        "url": "https://smgacw.org/wp-content/uploads/2025/06/Statutory-and-Non-statutory-committees-2023-2024.pdf",
+        "title": "Statutory and Non statutory committees 2023 2024",
+        "sourcePageUrl": "https://smgacw.org/"
+      },
+      {
+        "url": "https://smgacw.org/wp-content/uploads/2026/06/2025-2026_Statutory-and-Non-statutory-committees.pdf",
+        "title": "2025 2026 Statutory and Non statutory committees",
+        "sourcePageUrl": "https://smgacw.org/"
+      },
+      {
+        "url": "https://smgacw.org/wp-content/uploads/2026/06/2024-Statutory-and-Non-statutory-committees.pdf",
+        "title": "2024 Statutory and Non statutory committees",
+        "sourcePageUrl": "https://smgacw.org/"
+      },
+      {
+        "url": "https://smgacw.org/wp-content/uploads/2025/06/Statutory-and-Non-Statutory-Committees-2022-23.pdf",
+        "title": "Statutory and Non Statutory Committees 2022 23",
+        "sourcePageUrl": "https://smgacw.org/"
+      },
+      {
+        "url": "https://smgacw.org/wp-content/uploads/2025/06/Statutory-Committee-5.9.2023.pdf",
+        "title": "Statutory Committee 5.9.2023",
+        "sourcePageUrl": "https://smgacw.org/"
+      }
+    ],
+    "imagesDownloaded": 2,
+    "localLogoPath": "/uploads/colleges/smgacw-org-/logo_5f2e3ae6.webp",
+    "localBannerPath": "/uploads/colleges/smgacw-org-/banner_3f3c5976.jpg",
+    "isLocalFileValid": true,
+    "coursesExtractedCount": 15,
+    "coursesList": [
+      {
+        "title": "Ph.D Guided Ph",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma durai in the year 1965",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma durai",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "MBA &amp",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Bcom is part of the Tamilnadu",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "BA History EM",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be en offered since 1966 and an M",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be en offered since 2013",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be en part of it",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "M.A History was introduced",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be gan offering M",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma thematics has been offering B",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma thematics since 1966 and M",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma thematics since 1980",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma durai Kamaraj University",
+        "duration": "3-4 Years"
+      }
+    ],
+    "facilitiesExtracted": [
+      "Library",
+      "Sports"
+    ],
+    "placementInfo": {
+      "highestPackage": null,
+      "avgPackage": null,
+      "topRecruiters": null
+    },
+    "admissionsInfo": {
+      "eligibility": null
+    },
+    "sourcePagesMap": {
+      "naac": "https://smgacw.org/iqac-gallery/",
+      "contact": "https://smgacw.org/contact-us"
+    },
+    "verifiedFields": [
+      "collegeName",
+      "estYear",
+      "ownership",
+      "naacGrade",
+      "nirfRank",
+      "city",
+      "state",
+      "email"
+    ],
+    "missingFields": [
+      "affiliatedUniversity",
+      "address",
+      "phone",
+      "feesPerYear",
+      "highestPackage",
+      "avgPackage",
+      "topRecruiters",
+      "admissionEligibility",
+      "hostelFees"
+    ],
+    "confidenceScore": 47,
+    "validationWarnings": [
+      "⚠ affiliatedUniversity not confirmed on official website — Marked for Admin Review",
+      "⚠ address not confirmed on official website — Marked for Admin Review",
+      "⚠ phone not confirmed on official website — Marked for Admin Review",
+      "⚠ feesPerYear not confirmed on official website — Marked for Admin Review",
+      "⚠ highestPackage not confirmed on official website — Marked for Admin Review",
+      "⚠ avgPackage not confirmed on official website — Marked for Admin Review",
+      "⚠ topRecruiters not confirmed on official website — Marked for Admin Review",
+      "⚠ admissionEligibility not confirmed on official website — Marked for Admin Review",
+      "⚠ hostelFees not confirmed on official website — Marked for Admin Review"
+    ]
+  },
+  {
+    "category": "Engineering",
+    "url": "https://ceg.annauniv.edu/",
+    "collegeName": "College of Engineering Guindy (CEG)",
+    "pagesCrawled": 2,
+    "pdfsParsed": 3,
+    "pdfList": [
+      {
+        "url": "https://ceg.annauniv.edu/./files/dean/MCA Other State Upward movement.pdf",
+        "title": "MCA Other State Upward movement",
+        "sourcePageUrl": "https://ceg.annauniv.edu/"
+      },
+      {
+        "url": "https://ceg.annauniv.edu/./files/dean/MSC 2Y Upward Movement Circular.pdf",
+        "title": "MSC 2Y Upward Movement Circular",
+        "sourcePageUrl": "https://ceg.annauniv.edu/"
+      },
+      {
+        "url": "https://ceg.annauniv.edu/./files/dean/SCA to SC Circular.pdf",
+        "title": "SCA to SC Circular",
+        "sourcePageUrl": "https://ceg.annauniv.edu/"
+      }
+    ],
+    "imagesDownloaded": 2,
+    "localLogoPath": "https://ceg.annauniv.edu/./img/ceghead.png",
+    "localBannerPath": "/uploads/colleges/ceg-annauniv-edu-/banner_100a0b6e.jpg",
+    "isLocalFileValid": false,
+    "coursesExtractedCount": 5,
+    "coursesList": [
+      {
+        "title": "be treated as lapsed as per norms",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "ma ndatory for that process",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be attached in such cases",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be edited",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be entertained",
+        "duration": "3-4 Years"
+      }
+    ],
+    "facilitiesExtracted": [],
+    "placementInfo": {
+      "highestPackage": null,
+      "avgPackage": null,
+      "topRecruiters": null
+    },
+    "admissionsInfo": {
+      "eligibility": "Verified on Admissions Page"
+    },
+    "sourcePagesMap": {
+      "admissions": "https://ceg.annauniv.edu/admissions"
+    },
+    "verifiedFields": [
+      "collegeName",
+      "ownership",
+      "state",
+      "admissionEligibility"
+    ],
+    "missingFields": [
+      "estYear",
+      "affiliatedUniversity",
+      "naacGrade",
+      "nirfRank",
+      "address",
+      "city",
+      "phone",
+      "email",
+      "feesPerYear",
+      "highestPackage",
+      "avgPackage",
+      "topRecruiters",
+      "hostelFees"
+    ],
+    "confidenceScore": 24,
+    "validationWarnings": [
+      "⚠ estYear not confirmed on official website — Marked for Admin Review",
+      "⚠ affiliatedUniversity not confirmed on official website — Marked for Admin Review",
+      "⚠ naacGrade not confirmed on official website — Marked for Admin Review",
+      "⚠ nirfRank not confirmed on official website — Marked for Admin Review",
+      "⚠ address not confirmed on official website — Marked for Admin Review",
+      "⚠ city not confirmed on official website — Marked for Admin Review",
+      "⚠ phone not confirmed on official website — Marked for Admin Review",
+      "⚠ email not confirmed on official website — Marked for Admin Review",
+      "⚠ feesPerYear not confirmed on official website — Marked for Admin Review",
+      "⚠ highestPackage not confirmed on official website — Marked for Admin Review",
+      "⚠ avgPackage not confirmed on official website — Marked for Admin Review",
+      "⚠ topRecruiters not confirmed on official website — Marked for Admin Review",
+      "⚠ hostelFees not confirmed on official website — Marked for Admin Review"
+    ]
+  },
+  {
+    "category": "Medical",
+    "url": "https://mmc.ac.in/",
+    "collegeName": "Madras Medical College",
+    "pagesCrawled": 13,
+    "pdfsParsed": 32,
+    "pdfList": [
+      {
+        "url": "https://mmc.ac.in/media/Notification/pdfs/015145_tender.pdf",
+        "title": "015145 tender",
+        "sourcePageUrl": "https://mmc.ac.in/"
+      },
+      {
+        "url": "https://mmc.ac.in/media/Notification/pdfs/019134_tender.pdf",
+        "title": "019134 tender",
+        "sourcePageUrl": "https://mmc.ac.in/"
+      },
+      {
+        "url": "https://mmc.ac.in/media/Notification/pdfs/016142_tender_active_humidifier.pdf",
+        "title": "016142 tender active humidifier",
+        "sourcePageUrl": "https://mmc.ac.in/"
+      },
+      {
+        "url": "https://mmc.ac.in/media/Notification/pdfs/017414_tender_narcotics.pdf",
+        "title": "017414 tender narcotics",
+        "sourcePageUrl": "https://mmc.ac.in/"
+      },
+      {
+        "url": "https://mmc.ac.in/media/Notification/pdfs/011584.pdf",
+        "title": "011584",
+        "sourcePageUrl": "https://mmc.ac.in/"
+      }
+    ],
+    "imagesDownloaded": 2,
+    "localLogoPath": "/uploads/colleges/mmc-ac-in-/logo_059c185c.png",
+    "localBannerPath": "/uploads/colleges/mmc-ac-in-/banner_2c8ff827.png",
+    "isLocalFileValid": true,
+    "coursesExtractedCount": 15,
+    "coursesList": [
+      {
+        "title": "Ma dras Medical College",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "ba ck to 1664",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma dras grew",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ba sed Research",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be st decision",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "ma rket",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Be d-occupancy rate 93",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be tween MMC",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma dras",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be tween 1680 and 1688",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "ma ly for soldiers and sailors",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ba ndages in ready prepared",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma dras in 1757",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "ma de for the defence",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be tween it and the fort",
+        "duration": "3-4 Years"
+      }
+    ],
+    "facilitiesExtracted": [
+      "Library",
+      "Sports",
+      "Medical"
+    ],
+    "placementInfo": {
+      "highestPackage": null,
+      "avgPackage": null,
+      "topRecruiters": null
+    },
+    "admissionsInfo": {
+      "eligibility": null
+    },
+    "sourcePagesMap": {},
+    "verifiedFields": [
+      "collegeName",
+      "ownership",
+      "city",
+      "state"
+    ],
+    "missingFields": [
+      "estYear",
+      "affiliatedUniversity",
+      "naacGrade",
+      "nirfRank",
+      "address",
+      "phone",
+      "email",
+      "feesPerYear",
+      "highestPackage",
+      "avgPackage",
+      "topRecruiters",
+      "admissionEligibility",
+      "hostelFees"
+    ],
+    "confidenceScore": 24,
+    "validationWarnings": [
+      "⚠ estYear not confirmed on official website — Marked for Admin Review",
+      "⚠ affiliatedUniversity not confirmed on official website — Marked for Admin Review",
+      "⚠ naacGrade not confirmed on official website — Marked for Admin Review",
+      "⚠ nirfRank not confirmed on official website — Marked for Admin Review",
+      "⚠ address not confirmed on official website — Marked for Admin Review",
+      "⚠ phone not confirmed on official website — Marked for Admin Review",
+      "⚠ email not confirmed on official website — Marked for Admin Review",
+      "⚠ feesPerYear not confirmed on official website — Marked for Admin Review",
+      "⚠ highestPackage not confirmed on official website — Marked for Admin Review",
+      "⚠ avgPackage not confirmed on official website — Marked for Admin Review",
+      "⚠ topRecruiters not confirmed on official website — Marked for Admin Review",
+      "⚠ admissionEligibility not confirmed on official website — Marked for Admin Review",
+      "⚠ hostelFees not confirmed on official website — Marked for Admin Review"
+    ]
+  },
+  {
+    "category": "Law",
+    "url": "https://www.tndalu.ac.in/",
+    "collegeName": "Tamil Nadu Dr. Ambedkar Law University",
+    "pagesCrawled": 13,
+    "pdfsParsed": 142,
+    "pdfList": [
+      {
+        "url": "https://www.tndalu.ac.in/header/placement%20Activities.pdf",
+        "title": "placement%20Activities",
+        "sourcePageUrl": "https://www.tndalu.ac.in/"
+      },
+      {
+        "url": "https://www.tndalu.ac.in/pdf/2023/feb/nirf-2023.pdf",
+        "title": "nirf 2023",
+        "sourcePageUrl": "https://www.tndalu.ac.in/"
+      },
+      {
+        "url": "https://www.tndalu.ac.in/extracurricular/MUN.pdf",
+        "title": "MUN",
+        "sourcePageUrl": "https://www.tndalu.ac.in/"
+      },
+      {
+        "url": "https://www.tndalu.ac.in/extracurricular/YRC.pdf",
+        "title": "YRC",
+        "sourcePageUrl": "https://www.tndalu.ac.in/"
+      },
+      {
+        "url": "https://www.tndalu.ac.in/header/legal%20aid.pdf",
+        "title": "legal%20aid",
+        "sourcePageUrl": "https://www.tndalu.ac.in/"
+      }
+    ],
+    "imagesDownloaded": 2,
+    "localLogoPath": "/uploads/colleges/tndalu-ac-in-/logo_538a80e4.webp",
+    "localBannerPath": "/uploads/colleges/tndalu-ac-in-/banner_3a91b7e7.gif",
+    "isLocalFileValid": true,
+    "coursesExtractedCount": 12,
+    "coursesList": [
+      {
+        "title": "Ph.D . Admission 2024-25",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "MA RKS 2026-2027",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ba tch",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "MA THEMATICAL SCIENCES LL",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "B.Com . LL",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma nager Central Library",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "B.A .LL",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "B.Com .LL",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma durai",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be nefit of the larger society",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Be g a Law Varsity",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be affiliated to the University",
+        "duration": "3-4 Years"
+      }
+    ],
+    "facilitiesExtracted": [
+      "Library",
+      "Sports",
+      "Hostel"
+    ],
+    "placementInfo": {
+      "highestPackage": null,
+      "avgPackage": null,
+      "topRecruiters": null
+    },
+    "admissionsInfo": {
+      "eligibility": null
+    },
+    "sourcePagesMap": {
+      "naac": "https://www.tndalu.ac.in/naac",
+      "hostel": "https://www.tndalu.ac.in/hostel",
+      "admissions": "https://www.tndalu.ac.in/research-admission-2025-26",
+      "placements": "https://www.tndalu.ac.in/placements"
+    },
+    "verifiedFields": [
+      "collegeName",
+      "ownership",
+      "city",
+      "state",
+      "phone",
+      "email"
+    ],
+    "missingFields": [
+      "estYear",
+      "affiliatedUniversity",
+      "naacGrade",
+      "nirfRank",
+      "address",
+      "feesPerYear",
+      "highestPackage",
+      "avgPackage",
+      "topRecruiters",
+      "admissionEligibility",
+      "hostelFees"
+    ],
+    "confidenceScore": 35,
+    "validationWarnings": [
+      "⚠ estYear not confirmed on official website — Marked for Admin Review",
+      "⚠ affiliatedUniversity not confirmed on official website — Marked for Admin Review",
+      "⚠ naacGrade not confirmed on official website — Marked for Admin Review",
+      "⚠ nirfRank not confirmed on official website — Marked for Admin Review",
+      "⚠ address not confirmed on official website — Marked for Admin Review",
+      "⚠ feesPerYear not confirmed on official website — Marked for Admin Review",
+      "⚠ highestPackage not confirmed on official website — Marked for Admin Review",
+      "⚠ avgPackage not confirmed on official website — Marked for Admin Review",
+      "⚠ topRecruiters not confirmed on official website — Marked for Admin Review",
+      "⚠ admissionEligibility not confirmed on official website — Marked for Admin Review",
+      "⚠ hostelFees not confirmed on official website — Marked for Admin Review"
+    ]
+  },
+  {
+    "category": "Management",
+    "url": "https://www.tsm.ac.in/",
+    "collegeName": "Thiagarajar School of Management",
+    "pagesCrawled": 13,
+    "pdfsParsed": 13,
+    "pdfList": [
+      {
+        "url": "http://tsm.ac.in/wp-content/uploads/2020/11/tsmother_it_infra.pdf",
+        "title": "tsmother it infra",
+        "sourcePageUrl": "https://tsm.ac.in/about-us/infrastructure/information-technology/"
+      },
+      {
+        "url": "http://tsm.ac.in/wp-content/uploads/2023/01/E-resources.pdf",
+        "title": "E resources",
+        "sourcePageUrl": "https://tsm.ac.in/about-us/infrastructure/library/"
+      },
+      {
+        "url": "http://tsm.ac.in/wp-content/uploads/2020/11/library-rules.pdf",
+        "title": "library rules",
+        "sourcePageUrl": "https://tsm.ac.in/about-us/infrastructure/library/"
+      },
+      {
+        "url": "http://tsm.ac.in/wp-content/uploads/2023/01/OER-letter.pdf",
+        "title": "OER letter",
+        "sourcePageUrl": "https://tsm.ac.in/about-us/infrastructure/library/"
+      },
+      {
+        "url": "http://tsm.ac.in/wp-content/uploads/2020/11/Circular.pdf",
+        "title": "Circular",
+        "sourcePageUrl": "https://tsm.ac.in/about-us/statutory-committee/"
+      }
+    ],
+    "imagesDownloaded": 2,
+    "localLogoPath": "/uploads/colleges/tsm-ac-in-/logo_5ed8f2d7.webp",
+    "localBannerPath": "/uploads/colleges/tsm-ac-in-/banner_d41cc4de.webp",
+    "isLocalFileValid": true,
+    "coursesExtractedCount": 15,
+    "coursesList": [
+      {
+        "title": "MBA &amp",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma durai",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be st in the world",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "MBA would help me there",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "MBA journey",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be tter",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "ma ny counts",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be st. The power of feedback",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be lieve that success is teamwork",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "ma nagement fundamentals",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be haviour",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "ma rketing management",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "be yond thereafter",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma rketing",
+        "duration": "3-4 Years"
+      },
+      {
+        "title": "Ma x Retail Division",
+        "duration": "3-4 Years"
+      }
+    ],
+    "facilitiesExtracted": [
+      "Library"
+    ],
+    "placementInfo": {
+      "highestPackage": null,
+      "avgPackage": null,
+      "topRecruiters": null
+    },
+    "admissionsInfo": {
+      "eligibility": null
+    },
+    "sourcePagesMap": {
+      "contact": "https://tsm.ac.in/wp-content/plugins/contact-form-7/includes/css/styles.css?ver=5.9.6"
+    },
+    "verifiedFields": [
+      "collegeName",
+      "ownership",
+      "city",
+      "state",
+      "phone",
+      "email"
+    ],
+    "missingFields": [
+      "estYear",
+      "affiliatedUniversity",
+      "naacGrade",
+      "nirfRank",
+      "address",
+      "feesPerYear",
+      "highestPackage",
+      "avgPackage",
+      "topRecruiters",
+      "admissionEligibility",
+      "hostelFees"
+    ],
+    "confidenceScore": 35,
+    "validationWarnings": [
+      "⚠ estYear not confirmed on official website — Marked for Admin Review",
+      "⚠ affiliatedUniversity not confirmed on official website — Marked for Admin Review",
+      "⚠ naacGrade not confirmed on official website — Marked for Admin Review",
+      "⚠ nirfRank not confirmed on official website — Marked for Admin Review",
+      "⚠ address not confirmed on official website — Marked for Admin Review",
+      "⚠ feesPerYear not confirmed on official website — Marked for Admin Review",
+      "⚠ highestPackage not confirmed on official website — Marked for Admin Review",
+      "⚠ avgPackage not confirmed on official website — Marked for Admin Review",
+      "⚠ topRecruiters not confirmed on official website — Marked for Admin Review",
+      "⚠ admissionEligibility not confirmed on official website — Marked for Admin Review",
+      "⚠ hostelFees not confirmed on official website — Marked for Admin Review"
+    ]
+  }
+]

@@ -5,6 +5,8 @@ import { AuthProvider } from "@/providers/AuthProvider";
 import { AccessibilityProvider } from "@/providers/AccessibilityProvider";
 import { AccessibilityButton } from "@/components/accessibility/AccessibilityButton";
 import { AccessibilityPanel } from "@/components/accessibility/AccessibilityPanel";
+import { CompareProvider } from "@/context/CompareContext";
+import { CompareSideDrawer } from "@/components/compare/CompareSideDrawer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -21,7 +23,14 @@ const lora = Lora({
 export const metadata: Metadata = {
   title: "C2Talents | India's Premium College Discovery & AI Counselor",
   description: "Get personalized college matches based on your scores, budget, and placements, guided by India's first AI-powered admissions counselor.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
+
+import { FloatingCounselorButton } from "@/components/home/FloatingCounselorButton";
 
 export default function RootLayout({
   children,
@@ -36,7 +45,11 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans">
         <AccessibilityProvider>
           <AuthProvider>
-            {children}
+            <CompareProvider>
+              {children}
+              <CompareSideDrawer />
+              <FloatingCounselorButton />
+            </CompareProvider>
           </AuthProvider>
           
           {/* Global Accessibility Widgets */}
@@ -47,3 +60,4 @@ export default function RootLayout({
     </html>
   );
 }
+

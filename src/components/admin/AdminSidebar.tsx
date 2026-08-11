@@ -16,17 +16,31 @@ import {
   ChevronRight,
   GraduationCap,
   LogOut,
+  MailPlus,
+  CheckSquare,
+  Mail,
+  MailCheck,
+  ImageIcon,
+  Award,
+  UserCheck,
 } from "lucide-react";
 
 const navItems = [
   { name: "Dashboard", href: "/manager/dashboard", icon: LayoutDashboard },
+  { name: "Scholarships", href: "/manager/scholarships", icon: Award },
+  { name: "Registration Requests", href: "/manager/registration-requests", icon: MailPlus },
+  { name: "Submitted Colleges", href: "/manager/submitted-colleges", icon: CheckSquare },
+  { name: "Admission Leads", href: "/manager/admission-leads", icon: UserCheck },
   { name: "All Colleges", href: "/manager/colleges", icon: Building2 },
+  { name: "Header Images", href: "/manager/header-images", icon: ImageIcon },
   { name: "Add College (AI)", href: "/manager/colleges/new", icon: PlusCircle, highlight: true },
   { name: "Categories", href: "/manager/categories", icon: FolderTree },
   { name: "Courses", href: "/manager/courses", icon: BookOpen },
   { name: "News & Alerts", href: "/manager/news", icon: Newspaper },
   { name: "Users & Leads", href: "/manager/users", icon: Users },
   { name: "Analytics", href: "/manager/analytics", icon: BarChart3 },
+  { name: "Email Templates", href: "/manager/settings/email-templates", icon: MailCheck },
+  { name: "SMTP Settings", href: "/manager/settings/smtp", icon: Mail },
 ];
 
 export function AdminSidebar() {
@@ -45,15 +59,14 @@ export function AdminSidebar() {
       {/* Brand Header */}
       <div className="p-4 border-b border-[#3b2075]/40 flex items-center justify-between shrink-0 bg-[#16082d]">
         <Link href="/manager/dashboard" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#3b2075] to-[#7c3aed] flex items-center justify-center text-white shadow-md shadow-purple-900/40 group-hover:scale-105 transition-transform font-bold">
-            <GraduationCap className="w-4.5 h-4.5 text-amber-300" />
-          </div>
-          <div>
-            <span className="font-extrabold text-white tracking-tight text-sm block leading-tight">C2Talents</span>
-            <span className="text-[9px] uppercase tracking-wider text-amber-400 font-extrabold flex items-center gap-1">
-              <Sparkles className="w-2.5 h-2.5 text-amber-300 animate-pulse" /> Admin Portal
-            </span>
-          </div>
+          <img
+            src="/logo.png"
+            alt="C2Talents Logo"
+            className="h-7 w-auto object-contain brightness-0 invert opacity-95 group-hover:opacity-100 group-hover:scale-105 transition-all"
+          />
+          <span className="text-[9.5px] uppercase tracking-widest text-amber-400 font-black flex items-center gap-1 leading-tight shrink-0">
+            <Sparkles className="w-2.5 h-2.5 text-amber-300 animate-pulse" /> ADMIN PORTAL
+          </span>
         </Link>
       </div>
 

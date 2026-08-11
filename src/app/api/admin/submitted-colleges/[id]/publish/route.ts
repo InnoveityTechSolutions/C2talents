@@ -1,0 +1,332 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { sendEmail, generateCollegePublishedEmailHtml } from "@/lib/email";
+
+export const dynamic = "force-dynamic";
+
+function safeFloat(val: any, defaultVal: number | null = null): number | null {
+  if (val === null || val === undefined || val === "") return defaultVal;
+  const parsed = typeof val === "number" ? val : parseFloat(String(val).replace(/[^0-9.-]/g, ""));
+  return isNaN(parsed) ? defaultVal : parsed;
+}
+
+function safeInt(val: any, defaultVal: number | null = null): number | null {
+  if (val === null || val === undefined || val === "") return defaultVal;
+  const parsed = typeof val === "number" ? val : parseInt(String(val).replace(/[^0-9-]/g, ""), 10);
+  return isNaN(parsed) ? defaultVal : parsed;
+}
+
+function safeUrl(rawUrl: any, defaultFallback: string | null = null): string | null {
+  if (!rawUrl || typeof rawUrl !== "string") return defaultFallback;
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return defaultFallback;
+  return trimmed;
+}
+
+export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await context.params;
+
+    const registrationRequest = await db.collegeRegistrationRequest.findUnique({
+      where: { id },
+    });
+
+    if (!registrationRequest) {
+      return NextResponse.json({ error: "Registration request not found." }, { status: 404 });
+    }
+
+    if (!registrationRequest.submittedData) {
+      return NextResponse.json(
+        { error: "No profile data submitted yet for this college." },
+        { status: 400 }
+      );
+    }
+
+    let payload: any = {};
+    try {
+      payload = JSON.parse(registrationRequest.submittedData);
+    } catch (e) {
+      return NextResponse.json({ error: "Failed to parse submitted college profile data." }, { status: 400 });
+    }
+
+    const collegeName = payload.name || registrationRequest.collegeName;
+    let baseSlug = (payload.slug || collegeName).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    if (!baseSlug) baseSlug = `college-${Date.now()}`;
+
+    let finalSlug = baseSlug;
+    let attempts = 0;
+    while (attempts < 5) {
+      const existing = await db.collegeProfile.findUnique({ where: { slug: finalSlug } });
+      if (!existing || (registrationRequest.publishedCollegeId && existing.id === registrationRequest.publishedCollegeId)) {
+        break;
+      }
+      finalSlug = `${baseSlug}-${Math.floor(Math.random() * 9000 + 1000)}`;
+      attempts++;
+    }
+
+    let publishedCollege: any;
+
+    if (registrationRequest.publishedCollegeId) {
+      // Update existing published CollegeProfile
+      const targetId = registrationRequest.publishedCollegeId;
+      publishedCollege = await db.collegeProfile.update({
+        where: { id: targetId },
+        data: {
+          name: collegeName.trim(),
+          shortName: payload.shortName || collegeName.slice(0, 5).toUpperCase(),
+          slug: finalSlug,
+          description: payload.description || payload.aboutText || `${collegeName} is a leading institution in ${payload.location || registrationRequest.location}.`,
+          location: payload.location || registrationRequest.location,
+          address: payload.address || "",
+          landmark: payload.landmark || "",
+          area: payload.area || "",
+          city: payload.city || registrationRequest.location.split(",")[0] || "Chennai",
+          district: payload.district || payload.city || "Chennai",
+          state: payload.state || "Tamil Nadu",
+          pincode: payload.pincode || "",
+          latitude: safeFloat(payload.latitude),
+          longitude: safeFloat(payload.longitude),
+          googleMapUrl: safeUrl(payload.googleMapUrl),
+          phone: payload.phone || "",
+          mobile: payload.mobile || registrationRequest.mobile,
+          email: payload.email || registrationRequest.email,
+          website: safeUrl(payload.website || registrationRequest.website),
+          facebook: safeUrl(payload.facebook),
+          instagram: safeUrl(payload.instagram),
+          linkedin: safeUrl(payload.linkedin),
+          youtube: safeUrl(payload.youtube),
+          type: payload.type || payload.ownership || "Private",
+          ownership: payload.ownership || payload.type || "Private",
+          category: payload.category || "Engineering",
+          categories: Array.isArray(payload.categories) ? payload.categories.join(", ") : payload.categories || "",
+          affiliatedUniversity: payload.affiliatedUniversity || "",
+          isAutonomous: Boolean(payload.isAutonomous),
+          accreditation: payload.accreditation || "",
+          approval: payload.approval || "AICTE, UGC",
+          aicteApproved: Boolean(payload.aicteApproved ?? true),
+          ugcApproved: Boolean(payload.ugcApproved ?? true),
+          naacGrade: payload.naacGrade || "A",
+          nirfRank: safeInt(payload.nirfRank),
+          feesPerYear: safeFloat(payload.feesPerYear, 60000) ?? 60000,
+          courseWiseFees: payload.courseWiseFees || "",
+          hostelFees: safeFloat(payload.hostelFees),
+          transportFees: safeFloat(payload.transportFees),
+          scholarshipDetails: payload.scholarshipDetails || "",
+          educationLoanDetails: payload.educationLoanDetails || "",
+          facilities: Array.isArray(payload.facilities) ? payload.facilities.join(", ") : payload.facilities || "",
+          avgPackage: safeFloat(payload.avgPackage, 5.0) ?? 5.0,
+          highestPackage: safeFloat(payload.highestPackage, 12.0) ?? 12.0,
+          placementPercentage: safeFloat(payload.placementPercentage, 85.0),
+          internshipDetails: payload.internshipDetails || "",
+          topRecruiters: payload.topRecruiters || "",
+          admissionEligibility: payload.admissionEligibility || "",
+          admissionProcess: payload.admissionProcess || "",
+          documentsRequired: payload.documentsRequired || "",
+          counsellingInfo: payload.counsellingInfo || "",
+          admissionEntranceExams: payload.admissionEntranceExams || "",
+          importantDates: payload.importantDates || "",
+          hostelAvailable: Boolean(payload.hostelAvailable),
+          boysHostel: Boolean(payload.boysHostel),
+          girlsHostel: Boolean(payload.girlsHostel),
+          acRooms: Boolean(payload.acRooms),
+          messAvailable: Boolean(payload.messAvailable),
+          hostelFeePerYear: safeFloat(payload.hostelFeePerYear),
+          image: safeUrl(payload.image || payload.banner, "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80")!,
+          logo: safeUrl(payload.logo, "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=400&q=80"),
+          banner: safeUrl(payload.banner || payload.image, "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80"),
+          estYear: safeInt(payload.estYear),
+          seoTitle: payload.seoTitle || `${collegeName} Admissions, Courses & Fees`,
+          seoDescription: payload.seoDescription || `Official profile details for ${collegeName}.`,
+          metaKeywords: payload.metaKeywords || "",
+          status: "PUBLISHED",
+          featured: Boolean(payload.featured ?? true),
+          trending: Boolean(payload.trending ?? true),
+        },
+      });
+    } else {
+      // Create fresh User account and CollegeProfile record
+      const newUser = await db.user.create({
+        data: {
+          email: registrationRequest.email || `college_${Date.now()}@c2talents.com`,
+          passwordHash: "saas_verified_college_hash",
+          role: "COLLEGE",
+          name: collegeName,
+        },
+      });
+
+      publishedCollege = await db.collegeProfile.create({
+        data: {
+          userId: newUser.id,
+          name: collegeName.trim(),
+          shortName: payload.shortName || collegeName.slice(0, 5).toUpperCase(),
+          slug: finalSlug,
+          description: payload.description || payload.aboutText || `${collegeName} is a leading educational institution in ${payload.location || registrationRequest.location}.`,
+          location: payload.location || registrationRequest.location,
+          address: payload.address || "",
+          landmark: payload.landmark || "",
+          area: payload.area || "",
+          city: payload.city || registrationRequest.location.split(",")[0] || "Chennai",
+          district: payload.district || payload.city || "Chennai",
+          state: payload.state || "Tamil Nadu",
+          pincode: payload.pincode || "",
+          latitude: safeFloat(payload.latitude),
+          longitude: safeFloat(payload.longitude),
+          googleMapUrl: safeUrl(payload.googleMapUrl),
+          phone: payload.phone || "",
+          mobile: payload.mobile || registrationRequest.mobile,
+          email: payload.email || registrationRequest.email,
+          website: safeUrl(payload.website || registrationRequest.website),
+          facebook: safeUrl(payload.facebook),
+          instagram: safeUrl(payload.instagram),
+          linkedin: safeUrl(payload.linkedin),
+          youtube: safeUrl(payload.youtube),
+          type: payload.type || payload.ownership || "Private",
+          ownership: payload.ownership || payload.type || "Private",
+          category: payload.category || "Engineering",
+          categories: Array.isArray(payload.categories) ? payload.categories.join(", ") : payload.categories || "",
+          affiliatedUniversity: payload.affiliatedUniversity || "",
+          isAutonomous: Boolean(payload.isAutonomous),
+          accreditation: payload.accreditation || "",
+          approval: payload.approval || "AICTE, UGC",
+          aicteApproved: Boolean(payload.aicteApproved ?? true),
+          ugcApproved: Boolean(payload.ugcApproved ?? true),
+          naacGrade: payload.naacGrade || "A",
+          nirfRank: safeInt(payload.nirfRank),
+          feesPerYear: safeFloat(payload.feesPerYear, 60000) ?? 60000,
+          courseWiseFees: payload.courseWiseFees || "",
+          hostelFees: safeFloat(payload.hostelFees),
+          transportFees: safeFloat(payload.transportFees),
+          scholarshipDetails: payload.scholarshipDetails || "",
+          educationLoanDetails: payload.educationLoanDetails || "",
+          facilities: Array.isArray(payload.facilities) ? payload.facilities.join(", ") : payload.facilities || "",
+          avgPackage: safeFloat(payload.avgPackage, 5.0) ?? 5.0,
+          highestPackage: safeFloat(payload.highestPackage, 12.0) ?? 12.0,
+          placementPercentage: safeFloat(payload.placementPercentage, 85.0),
+          internshipDetails: payload.internshipDetails || "",
+          topRecruiters: payload.topRecruiters || "",
+          admissionEligibility: payload.admissionEligibility || "",
+          admissionProcess: payload.admissionProcess || "",
+          documentsRequired: payload.documentsRequired || "",
+          counsellingInfo: payload.counsellingInfo || "",
+          admissionEntranceExams: payload.admissionEntranceExams || "",
+          importantDates: payload.importantDates || "",
+          hostelAvailable: Boolean(payload.hostelAvailable),
+          boysHostel: Boolean(payload.boysHostel),
+          girlsHostel: Boolean(payload.girlsHostel),
+          acRooms: Boolean(payload.acRooms),
+          messAvailable: Boolean(payload.messAvailable),
+          hostelFeePerYear: safeFloat(payload.hostelFeePerYear),
+          image: safeUrl(payload.image || payload.banner, "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80")!,
+          logo: safeUrl(payload.logo, "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=400&q=80"),
+          banner: safeUrl(payload.banner || payload.image, "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80"),
+          estYear: safeInt(payload.estYear),
+          seoTitle: payload.seoTitle || `${collegeName} Admissions, Courses & Fees`,
+          seoDescription: payload.seoDescription || `Official profile details for ${collegeName}.`,
+          metaKeywords: payload.metaKeywords || "",
+          status: "PUBLISHED",
+          featured: Boolean(payload.featured ?? true),
+          trending: Boolean(payload.trending ?? true),
+          courses: {
+            create: Array.isArray(payload.courses) && payload.courses.length > 0
+              ? payload.courses.map((c: any) => ({
+                  title: c.title || "Undergraduate Course",
+                  duration: c.duration || "4 Years",
+                  feesPerYear: safeFloat(c.feesPerYear, 60000) ?? 60000,
+                  eligibility: c.eligibility || "10+2 Pass",
+                  seats: safeInt(c.seats, 60) ?? 60,
+                  entranceExam: c.entranceExam || "Merit Based",
+                }))
+              : [
+                  {
+                    title: "B.E. Computer Science and Engineering",
+                    duration: "4 Years",
+                    feesPerYear: safeFloat(payload.feesPerYear, 65000) ?? 65000,
+                    eligibility: "10+2 with 50% in PCM",
+                    seats: 120,
+                    entranceExam: "TNEA / Merit",
+                  },
+                ],
+          },
+          galleryImages: {
+            create: Array.isArray(payload.galleryImages) && payload.galleryImages.length > 0
+              ? payload.galleryImages.map((g: any) => ({
+                  url: typeof g === "string" ? g : g?.url || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80",
+                  altText: typeof g === "object" && g?.altText ? String(g.altText) : `${collegeName} Campus`,
+                  caption: typeof g === "object" && g?.caption ? String(g.caption) : "Campus Infrastructure",
+                  tags: typeof g === "object" && g?.tags ? String(g.tags) : "campus",
+                }))
+              : [],
+          },
+          content: payload.content || payload.overview || payload.about ? {
+            create: {
+              overview: payload.content?.overview || payload.overview || null,
+              about: payload.content?.about || payload.about || null,
+              history: payload.content?.history || null,
+              highlights: payload.content?.highlights || null,
+              whyChoose: payload.content?.whyChoose || null,
+              campusLife: payload.content?.campusLife || null,
+              facilitiesDescription: payload.content?.facilitiesDescription || null,
+              placementOverview: payload.content?.placementOverview || null,
+              topRecruiters: payload.content?.topRecruiters || null,
+              admissionGuide: payload.content?.admissionGuide || null,
+              eligibility: payload.content?.eligibility || null,
+              hostelLife: payload.content?.hostelLife || null,
+              scholarships: payload.content?.scholarships || null,
+              research: payload.content?.research || null,
+              studentActivities: payload.content?.studentActivities || null,
+              faq: payload.content?.faq || null,
+              seoArticle: payload.content?.seoArticle || null,
+              contentStatus: "PUBLISHED",
+            }
+          } : undefined,
+        },
+      });
+    }
+
+    // Update CollegeRegistrationRequest status to PUBLISHED
+    const updatedRequest = await db.collegeRegistrationRequest.update({
+      where: { id },
+      data: {
+        status: "PUBLISHED",
+        publishedCollegeId: publishedCollege.id,
+        adminNotes: "Profile reviewed and published live onto C2Talents.",
+      },
+    });
+
+    // Safely send live published confirmation email to college
+    try {
+      const recipientEmail = publishedCollege.email || registrationRequest.email;
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://c2talents.com";
+      const liveUrl = `${appUrl}/colleges/${publishedCollege.slug}`;
+
+      const { generateCollegePublishedEmailDetails } = await import("@/lib/email");
+      const { subject: dynamicSubject, html: emailHtml } = await generateCollegePublishedEmailDetails({
+        collegeName: publishedCollege.name,
+        contactPerson: registrationRequest.contactPerson,
+        collegeSlug: publishedCollege.slug,
+        liveUrl,
+      });
+
+      await sendEmail({
+        to: recipientEmail,
+        subject: dynamicSubject,
+        html: emailHtml,
+      });
+    } catch (emailErr: any) {
+      console.warn(`[PUBLISH EMAIL NOTICE]: Live publication email skipped for ${collegeName}:`, emailErr.message);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `${collegeName} has been published successfully and is now live on C2Talents!`,
+      publishedCollege,
+      request: updatedRequest,
+    });
+  } catch (err: any) {
+    console.error("[POST /api/admin/submitted-colleges/[id]/publish Error]:", err);
+    return NextResponse.json(
+      { error: "Failed to publish college profile: " + (err.message || "Unknown error") },
+      { status: 500 }
+    );
+  }
+}

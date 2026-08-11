@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Newspaper, Calendar, ArrowRight } from "lucide-react";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 type NewsTab = "exams" | "admissions" | "general";
 
@@ -30,12 +31,13 @@ const mockNews: Record<NewsTab, Array<{ date: string; title: string; desc: strin
 };
 
 export function NewsStories() {
+  const { ref, hasRevealed } = useScrollReveal<HTMLDivElement>();
   const [activeTab, setActiveTab] = React.useState<NewsTab>("exams");
 
   const currentNews = mockNews[activeTab] || [];
 
   return (
-    <section className="py-20 px-6 bg-white border-b border-stone-200/40 font-sans">
+    <section ref={ref} className={`py-20 px-6 bg-white border-b border-stone-200/40 font-sans scroll-reveal ${hasRevealed ? "revealed" : ""}`}>
       <div className="max-w-7xl mx-auto space-y-10">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">

@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Star, MapPin, Award, CheckCircle } from "lucide-react";
+import { Star, MapPin, Award, CheckCircle, ChevronRight } from "lucide-react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { useCompare } from "@/context/CompareContext";
 
 interface College {
   id: string;
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function CollegesGrid({ colleges }: Props) {
+  const { toggleCollege, isSelected } = useCompare();
   // Use first 6 colleges
   const featured = colleges.slice(0, 6);
 
@@ -32,19 +34,26 @@ export function CollegesGrid({ colleges }: Props) {
     <section className="py-20 px-6 bg-[#FAF9F5]/40 border-b border-stone-200/40">
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="space-y-2">
-            <h2 className="text-3xl font-serif text-brand-navy font-semibold">Featured Colleges</h2>
-            <p className="text-sm text-stone-500 font-sans max-w-md">
-              Top institutions selected for high student outcomes, verified placements, and NAAC accreditation.
-            </p>
+        <div className="text-center space-y-3.5 max-w-2xl mx-auto flex flex-col items-center">
+          <h2 className="text-3xl md:text-4xl font-serif text-brand-navy font-bold tracking-tight">
+            Featured <span className="bg-gradient-to-r from-orange-600 via-amber-500 to-indigo-900 bg-clip-text text-transparent">Colleges</span>
+          </h2>
+
+          <div className="w-16 h-1 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full mx-auto" />
+
+          <p className="text-sm md:text-base text-stone-500 font-sans max-w-xl mx-auto leading-relaxed">
+            Top institutions selected for high student outcomes, verified placements, and NAAC accreditation.
+          </p>
+
+          <div className="pt-1">
+            <Link
+              href="/colleges"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-stone-100 hover:bg-orange-50 hover:text-orange-600 text-xs font-bold text-stone-700 transition-all border border-stone-200/80 hover:border-orange-200 font-sans group shadow-2xs cursor-pointer uppercase tracking-wider"
+            >
+              <span>Browse All Colleges</span>
+              <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-orange-500 transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </div>
-          <Link
-            href="/colleges"
-            className="text-xs font-bold text-indigo-900 hover:text-indigo-950 uppercase tracking-wider font-sans"
-          >
-            Browse All Colleges &rarr;
-          </Link>
         </div>
 
         {/* Card Grid */}
@@ -53,12 +62,13 @@ export function CollegesGrid({ colleges }: Props) {
             const displayCourse = college.courses?.[0]?.title || "B.Tech Computer Science";
             const displayCourseFee = college.courses?.[0]?.feesPerYear || college.feesPerYear;
             const { ref, hasRevealed } = useScrollReveal<HTMLDivElement>({ delay: idx * 80 });
+            const checked = isSelected(college.id);
 
             return (
               <div
                 ref={ref}
                 key={college.id}
-                className={`group flex flex-col bg-white border border-stone-200/60 rounded-2xl overflow-hidden shadow-[0_4px_25px_-5px_rgba(0,0,0,0.02)] transition-all duration-300 hover:shadow-md hover:scale-[1.01] scroll-reveal ${
+                className={`group flex flex-col bg-white border ${checked ? "border-indigo-600 ring-2 ring-indigo-500/20" : "border-stone-200/60"} rounded-2xl overflow-hidden shadow-[0_4px_25px_-5px_rgba(0,0,0,0.02)] transition-all duration-300 hover:shadow-md hover:scale-[1.01] scroll-reveal ${
                   hasRevealed ? "revealed" : ""
                 }`}
               >
@@ -146,12 +156,16 @@ export function CollegesGrid({ colleges }: Props) {
 
                     {/* Action Row */}
                     <div className="flex items-center justify-between gap-3">
-                      <label className="flex items-center gap-2 cursor-pointer font-sans select-none shrink-0">
+                      <label className="flex items-center gap-2 cursor-pointer font-sans select-none shrink-0 group/cmp">
                         <input
                           type="checkbox"
-                          className="w-4.5 h-4.5 rounded border-stone-300 text-indigo-900 focus:ring-indigo-900/10 cursor-pointer"
+                          checked={checked}
+                          onChange={() => toggleCollege(college)}
+                          className="w-4.5 h-4.5 rounded border-stone-300 text-indigo-900 focus:ring-indigo-900/10 cursor-pointer accent-indigo-900"
                         />
-                        <span className="text-xs font-semibold text-stone-500 hover:text-stone-700">Compare</span>
+                        <span className={`text-xs font-semibold ${checked ? "text-indigo-900 font-bold" : "text-stone-500 group-hover/cmp:text-stone-700"}`}>
+                          {checked ? "Comparing" : "Compare"}
+                        </span>
                       </label>
                       <div className="flex gap-2 w-full justify-end">
                         <Link
@@ -162,7 +176,7 @@ export function CollegesGrid({ colleges }: Props) {
                         </Link>
                         <button
                           onClick={() => alert("Brochure download details would be opened.")}
-                          className="px-3.5 py-2 bg-indigo-900 hover:bg-indigo-950 text-white text-[11px] font-bold rounded-xl transition-all"
+                          className="px-3.5 py-2 bg-indigo-900 hover:bg-indigo-950 text-white text-[11px] font-bold rounded-xl transition-all cursor-pointer"
                         >
                           Brochure
                         </button>

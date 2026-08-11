@@ -1,0 +1,7 @@
+{
+  "name": { "value": "Test E2E University", "confidenceScore": 100, "verified": true },
+  "shortName": { "value": "TE2EU", "confidenceScore": 100, "verified": true },
+  "collegeAbout": { "value": "This is a great university for E2E tests.", "confidenceScore": 95, "verified": true },
+  "estYear": { "value": "2024", "confidenceScore": 90, "verified": true }
+  Missing comma here makes it malformed.
+}

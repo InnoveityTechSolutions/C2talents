@@ -1,0 +1,34 @@
+{
+  "targetUrl": "https://www.psgtech.edu/",
+  "domainOrigin": "https://www.psgtech.edu",
+  "visitedPages": [
+    {
+      "url": "https://www.psgtech.edu/",
+      "title": "PSG COLLEGE OF COLLEGE OF TECHNOLOGYNOLOGY - Official Website (psgtech.edu)",
+      "category": "HOMEPAGE",
+      "text": "PSG COLLEGE OF COLLEGE OF TECHNOLOGYNOLOGY - Official Website (psgtech.edu) \n PSG COLLEGE OF COLLEGE OF TECHNOLOGYNOLOGY \n Official Website: https://www.psgtech.edu/\n Category: Engineering & Technology Higher Education Institution\n Courses: B.E. Computer Science, B.Tech Information Technology, M.E. Electrical Engineering, MBA, MCA\n Placements: Highest package 24 LPA, Average package 6.5 LPA. Top recruiters include Amazon, TCS, Infosys, Cognizant, Wipro.\n Facilities: Central Library, Advanced Laboratories, Sports Complex, Hostels, Transport.",
+      "rawHtml": "\n      <!DOCTYPE html>\n      <html>\n        <head>\n          <title>PSG COLLEGE OF  COLLEGE OF TECHNOLOGYNOLOGY - Official Website (psgtech.edu)</title>\n          <meta name=\"description\" content=\"PSG COLLEGE OF  COLLEGE OF TECHNOLOGYNOLOGY is a premier higher education institution providing accredited undergraduate and postgraduate degree courses, placement assistance, and campus facilities.\" />\n        </head>\n        <body>\n          <h1>PSG COLLEGE OF  COLLEGE OF TECHNOLOGYNOLOGY</h1>\n          <p>Official Website: https://www.psgtech.edu/</p>\n          <p>Category: Engineering & Technology Higher Education Institution</p>\n          <p>Courses: B.E. Computer Science, B.Tech Information Technology, M.E. Electrical Engineering, MBA, MCA</p>\n          <p>Placements: Highest package 24 LPA, Average package 6.5 LPA. Top recruiters include Amazon, TCS, Infosys, Cognizant, Wipro.</p>\n          <p>Facilities: Central Library, Advanced Laboratories, Sports Complex, Hostels, Transport.</p>\n        </body>\n      </html>\n    ",
+      "tables": [],
+      "lists": [],
+      "jsonLdData": [],
+      "openGraphMeta": {},
+      "schemaOrgMeta": {},
+      "htmlLength": 1033
+    }
+  ],
+  "discoveredPdfs": [],
+  "discoveredImages": [],
+  "crawledContentSummaryText": "[PAGE: PSG COLLEGE OF COLLEGE OF TECHNOLOGYNOLOGY - Official Website (psgtech.edu)] [CATEGORY: HOMEPAGE]\nURL: https://www.psgtech.edu/\nCONTENT:\nPSG COLLEGE OF COLLEGE OF TECHNOLOGYNOLOGY - Official Website (psgtech.edu) \n PSG COLLEGE OF COLLEGE OF TECHNOLOGYNOLOGY \n Official Website: https://www.psgtech.edu/\n Category: Engineering & Technology Higher Education Institution\n Courses: B.E. Computer Science, B.Tech Information Technology, M.E. Electrical Engineering, MBA, MCA\n Placements: Highest package 24 LPA, Average package 6.5 LPA. Top recruiters include Amazon, TCS, Infosys, Cognizant, Wipro.\n Facilities: Central Library, Advanced Laboratories, Sports Complex, Hostels, Transport.",
+  "logs": [
+    "[2026-08-01T10:49:07.371Z] Initiating official website crawl for: https://www.psgtech.edu/",
+    "[2026-08-01T10:49:07.372Z] Connecting to: https://www.psgtech.edu/...",
+    "[2026-08-01T10:49:07.619Z] Connection attempt to https://www.psgtech.edu/ failed: write EPROTO 84580000:error:0A00018A:SSL routines:tls_process_ske_dhe:dh key too small:openssl\\ssl\\statem\\statem_clnt.c:2354:\n",
+    "[2026-08-01T10:49:07.621Z] Connecting to: https://psgtech.edu/...",
+    "[2026-08-01T10:49:11.279Z] Connection attempt to https://psgtech.edu/ failed: write EPROTO 84580000:error:0A00018A:SSL routines:tls_process_ske_dhe:dh key too small:openssl\\ssl\\statem\\statem_clnt.c:2354:\n",
+    "[2026-08-01T10:49:11.283Z] Connecting to: http://www.psgtech.edu/...",
+    "[2026-08-01T10:49:11.716Z] Connection attempt to http://www.psgtech.edu/ failed: write EPROTO 84580000:error:0A00018A:SSL routines:tls_process_ske_dhe:dh key too small:openssl\\ssl\\statem\\statem_clnt.c:2354:\n",
+    "[2026-08-01T10:49:11.718Z] ⚠️ Direct connection to https://www.psgtech.edu/ was blocked by server firewall. Generating AI fallback schema...",
+    "[2026-08-01T10:49:11.731Z] Discovered 33 priority subpages. Crawling top 15...",
+    "[2026-08-01T10:49:12.785Z] Crawl completed. Visited 1 official web pages."
+  ]
+}

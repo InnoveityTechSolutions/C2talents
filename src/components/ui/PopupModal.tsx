@@ -1,6 +1,5 @@
-"use client";
-
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { CheckCircle2, AlertTriangle, Info, XCircle, Sparkles, Globe, X } from "lucide-react";
 
 export interface PopupModalProps {
@@ -20,6 +19,12 @@ export function PopupModal({
   type = "success",
   icon,
 }: PopupModalProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -30,7 +35,7 @@ export function PopupModal({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const typeConfig = {
     success: {
@@ -69,10 +74,10 @@ export function PopupModal({
 
   const config = typeConfig[type];
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in font-sans">
       <div
-        className={`w-full max-w-md bg-slate-900/95 text-slate-100 border ${config.borderColor} rounded-3xl p-6 shadow-2xl backdrop-blur-2xl relative animate-slide-up space-y-5 overflow-hidden`}
+        className={`w-full max-w-md bg-slate-900/95 text-slate-100 border ${config.borderColor} rounded-3xl p-6 shadow-2xl backdrop-blur-2xl relative animate-slide-up space-y-5 overflow-hidden mx-auto`}
       >
         {/* Background Ambient Glow */}
         <div className={`absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br ${config.bgGradient} rounded-full blur-3xl pointer-events-none`}></div>
@@ -114,6 +119,8 @@ export function PopupModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
+

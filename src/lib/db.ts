@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { verifyDatabaseOnStartup } from "./startup-verifier";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -11,3 +12,8 @@ export const db =
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+
+// Run startup database verification automatically
+if (typeof window === "undefined") {
+  verifyDatabaseOnStartup().catch(console.error);
+}

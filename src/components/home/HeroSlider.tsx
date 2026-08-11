@@ -85,59 +85,102 @@ interface HeroSliderProps {
   children?: React.ReactNode; // For the search overlays and text
 }
 
-export function HeroSlider({ slides = DEFAULT_SLIDES, children }: HeroSliderProps) {
+export function HeroSlider({ slides: initialSlides, children }: HeroSliderProps) {
+  const [activeSlides, setActiveSlides] = React.useState<SlideData[]>(
+    initialSlides && initialSlides.length > 0 ? initialSlides : DEFAULT_SLIDES
+  );
   const [currentIndex, setCurrentIndex] = React.useState(0);
 
+  // Dynamic Fetching from Database (/api/header-images)
   React.useEffect(() => {
+    if (initialSlides && initialSlides.length > 0) return;
+
+    let isMounted = true;
+    async function loadDynamicHeaderImages() {
+      try {
+        const res = await fetch("/api/header-images");
+        const data = await res.json();
+        if (data.success && Array.isArray(data.images) && data.images.length > 0) {
+          const dbSlides: SlideData[] = data.images.map((img: any) => ({
+            image: img.imageUrl,
+            collegeName: img.title || "C2Talents Hero Banner",
+            city: "Tamil Nadu, India",
+            tagline: img.description || "Discover premier colleges, courses, and scholarships.",
+            exploreUrl: "/colleges",
+            applyUrl: "/register-college",
+          }));
+          if (isMounted) {
+            setActiveSlides(dbSlides);
+            setCurrentIndex(0);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load dynamic header images:", err);
+      }
+    }
+
+    loadDynamicHeaderImages();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialSlides]);
+
+  React.useEffect(() => {
+    if (activeSlides.length === 0) return;
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % slides.length);
+      setCurrentIndex((prev) => (prev + 1) % activeSlides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [activeSlides.length]);
 
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
+    if (activeSlides.length === 0) return;
+    setCurrentIndex((prev) => (prev - 1 + activeSlides.length) % activeSlides.length);
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % slides.length);
+    if (activeSlides.length === 0) return;
+    setCurrentIndex((prev) => (prev + 1) % activeSlides.length);
   };
 
-  const currentSlide = slides[currentIndex];
+  const currentSlide = activeSlides[currentIndex] || DEFAULT_SLIDES[0];
 
   return (
-    <div className="relative w-full h-[85vh] overflow-hidden flex items-center bg-stone-950">
-      {/* Background Images with Fade & Ken Burns Zoom */}
-      <div className="absolute inset-0 z-0 select-none">
+    <div className="relative w-full h-[calc(100vh-140px)] md:h-[calc(100vh-160px)] min-h-[580px] max-h-[850px] overflow-hidden flex items-center bg-stone-950">
+      {/* Edge-to-Edge Full-Width Hero Background Image with Color & Vibrancy Enhancement */}
+      <div className="absolute inset-0 z-0 select-none overflow-hidden bg-stone-900">
         <AnimatePresence mode="popLayout">
           <motion.div
             key={currentIndex}
-            initial={{ opacity: 0, scale: 1.08 }}
-            animate={{ opacity: 1, scale: 1.02 }}
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1.2, ease: "easeInOut" }}
+            transition={{ duration: 1.0, ease: "easeInOut" }}
             className="absolute inset-0 w-full h-full"
           >
+            {/* Color & Clarity Enhanced Campus Photography */}
             <img
               src={currentSlide.image}
               alt={currentSlide.collegeName}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-center filter brightness-[1.05] contrast-[1.08] saturate-[1.20] transition-all duration-700"
             />
           </motion.div>
         </AnimatePresence>
 
-        {/* 55% dark overlay for readability */}
-        <div className="absolute inset-0 bg-black/55 z-10" />
+        {/* Balanced Professional Gradient Scrim (Vibrant image + clear text readability) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0722]/85 via-[#190c38]/35 to-black/40 pointer-events-none z-10" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(26,12,58,0.45)_0%,rgba(15,8,38,0.15)_60%,transparent_100%)] pointer-events-none z-10" />
       </div>
 
       {/* Floating Center Search & Main Overlay Content */}
-      <div className="relative z-20 w-full max-w-7xl mx-auto px-6 flex flex-col justify-center items-center h-full pt-28 pb-16">
+      <div className="relative z-20 w-full max-w-7xl mx-auto px-6 flex flex-col justify-center items-center h-full py-6 md:py-8">
         {children}
       </div>
 
       <SliderControls
         currentIndex={currentIndex}
-        totalSlides={slides.length}
+        totalSlides={activeSlides.length}
         onPrev={handlePrev}
         onNext={handleNext}
         onSelect={setCurrentIndex}

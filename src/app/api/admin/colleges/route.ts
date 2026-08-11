@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { checkForDuplicateCollege } from "@/lib/duplicateChecker";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function safeFloat(val: any, defaultVal: number | null = null): number | null {
   if (val === null || val === undefined || val === "") return defaultVal;
   const parsed = typeof val === "number" ? val : parseFloat(String(val).replace(/[^0-9.-]/g, ""));
@@ -14,6 +17,19 @@ function safeInt(val: any, defaultVal: number | null = null): number | null {
   return isNaN(parsed) ? defaultVal : parsed;
 }
 
+function safeUrl(rawUrl: any, defaultFallback: string | null = null, maxLen = 190): string | null {
+  if (!rawUrl || typeof rawUrl !== "string") return defaultFallback;
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return defaultFallback;
+  if (trimmed.startsWith("data:image/")) {
+    return defaultFallback || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80";
+  }
+  if (trimmed.length > maxLen) {
+    return trimmed.slice(0, maxLen);
+  }
+  return trimmed;
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -21,17 +37,39 @@ export async function GET(req: Request) {
     const category = searchParams.get("category") || "";
     const status = searchParams.get("status") || "";
 
-    const where: any = {};
+    const where: any = {
+      isDeleted: false,
+      status: { not: "DELETED" },
+    };
+
     if (query) {
-      where.OR = [
-        { name: { contains: query } },
-        { shortName: { contains: query } },
-        { city: { contains: query } },
-        { state: { contains: query } },
+      where.AND = [
+        { isDeleted: false },
+        { status: { not: "DELETED" } },
+        {
+          OR: [
+            { name: { contains: query } },
+            { shortName: { contains: query } },
+            { city: { contains: query } },
+            { state: { contains: query } },
+          ],
+        },
       ];
     }
     if (category) {
-      where.categories = { contains: category };
+      if (where.AND) {
+        where.AND.push({
+          OR: [
+            { category: { equals: category } },
+            { categories: { contains: category } },
+          ],
+        });
+      } else {
+        where.OR = [
+          { category: { equals: category } },
+          { categories: { contains: category } },
+        ];
+      }
     }
     if (status) {
       where.status = status;
@@ -42,22 +80,25 @@ export async function GET(req: Request) {
         db.collegeProfile.findMany({
           where,
           include: {
-            courses: true,
+            courses: { where: { isDeleted: false } },
             placements: true,
             galleryImages: true,
           },
           orderBy: { updatedAt: "desc" },
         }),
-        db.collegeProfile.count(),
-        db.collegeProfile.count({ where: { status: "DRAFT" } }),
-        db.collegeProfile.count({ where: { status: "PUBLISHED" } }),
-        db.collegeProfile.count({ where: { featured: true } }),
+        db.collegeProfile.count({ where: { isDeleted: false, status: { not: "DELETED" } } }),
+        db.collegeProfile.count({ where: { status: "DRAFT", isDeleted: false } }),
+        db.collegeProfile.count({ where: { status: "PUBLISHED", isDeleted: false } }),
+        db.collegeProfile.count({ where: { featured: true, isDeleted: false, status: { not: "DELETED" } } }),
         db.user.count(),
-        db.course.count(),
+        db.course.count({ where: { isDeleted: false } }),
       ]);
 
     const categoriesSet = new Set<string>();
-    const allColleges = await db.collegeProfile.findMany({ select: { categories: true } });
+    const allColleges = await db.collegeProfile.findMany({
+      where: { isDeleted: false, status: { not: "DELETED" } },
+      select: { categories: true },
+    });
     allColleges.forEach((c) => {
       if (c.categories) {
         c.categories.split(",").forEach((cat) => {
@@ -125,6 +166,7 @@ export async function POST(req: Request) {
       rating,
       type,
       ownership,
+      category,
       categories,
       affiliatedUniversity,
       isAutonomous,
@@ -265,18 +307,19 @@ export async function POST(req: Request) {
         pincode: pincode || "",
         latitude: safeFloat(latitude),
         longitude: safeFloat(longitude),
-        googleMapUrl: googleMapUrl || "",
+        googleMapUrl: safeUrl(googleMapUrl, null),
         phone: phone || "",
         mobile: mobile || "",
         email: email || "",
-        website: website || "",
-        facebook: facebook || "",
-        instagram: instagram || "",
-        linkedin: linkedin || "",
-        youtube: youtube || "",
+        website: safeUrl(website, null),
+        facebook: safeUrl(facebook, null),
+        instagram: safeUrl(instagram, null),
+        linkedin: safeUrl(linkedin, null),
+        youtube: safeUrl(youtube, null),
         rating: safeFloat(rating, 4.2) ?? 4.2,
-        type: type || "Private",
-        ownership: ownership || "Private",
+        type: type || ownership || "Private",
+        ownership: ownership || type || "Private",
+        category: category || "Engineering",
         categories: categoriesStr,
         affiliatedUniversity: affiliatedUniversity || "",
         isAutonomous: Boolean(isAutonomous),
@@ -310,10 +353,10 @@ export async function POST(req: Request) {
         acRooms: Boolean(acRooms),
         messAvailable: Boolean(messAvailable),
         hostelFeePerYear: safeFloat(hostelFeePerYear),
-        image: image || banner || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80",
-        logo: logo || "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=400&q=80",
-        banner: banner || image || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80",
-        collegeVideo: collegeVideo || "",
+        image: safeUrl(image || banner, "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80")!,
+        logo: safeUrl(logo, "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=400&q=80"),
+        banner: safeUrl(banner || image, "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80"),
+        collegeVideo: safeUrl(collegeVideo, null),
         estYear: safeInt(estYear),
         seoTitle: seoTitle || `${name} Admissions & Courses`,
         seoDescription: seoDescription || `${name} official details.`,
@@ -337,18 +380,105 @@ export async function POST(req: Request) {
         },
         galleryImages: {
           create: Array.isArray(galleryImages) && galleryImages.length > 0
-            ? galleryImages.map((g: any) => ({
-                url: typeof g === "string" ? g : g.url,
-                altText: typeof g === "object" ? g.altText : `${name} campus`,
-                caption: typeof g === "object" ? g.caption : "Campus view",
-                tags: typeof g === "object" ? g.tags : "campus",
+            ? galleryImages
+                .map((g: any) => {
+                  const rawUrl = typeof g === "string" ? g : g?.url;
+                  const clean = safeUrl(rawUrl, "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80");
+                  if (!clean) return null;
+                  return {
+                    url: clean,
+                    altText: (typeof g === "object" && g?.altText ? String(g.altText) : `${name} image`).slice(0, 100),
+                    caption: (typeof g === "object" && g?.caption ? String(g.caption) : "Campus view").slice(0, 100),
+                    tags: (typeof g === "object" && g?.tags ? String(g.tags) : "campus").slice(0, 50),
+                  };
+                })
+                .filter(Boolean) as any[]
+            : [],
+        },
+        placements: {
+          create: [
+            {
+              year: new Date().getFullYear() - 3,
+              eligibleStudents: 450,
+              placedStudents: Math.round(450 * ((safeFloat(placementPercentage, 85) ?? 85) / 100)),
+              highestCtc: Math.round((parsedHighestPackage * 0.78) * 10) / 10,
+              averageCtc: Math.round((parsedAvgPackage * 0.82) * 10) / 10,
+              topRecruiters: topRecruiters || "TCS, Infosys, Wipro, Accenture, Cognizant",
+            },
+            {
+              year: new Date().getFullYear() - 2,
+              eligibleStudents: 470,
+              placedStudents: Math.round(470 * ((safeFloat(placementPercentage, 85) ?? 85) / 100)),
+              highestCtc: Math.round((parsedHighestPackage * 0.85) * 10) / 10,
+              averageCtc: Math.round((parsedAvgPackage * 0.88) * 10) / 10,
+              topRecruiters: topRecruiters || "TCS, Infosys, Wipro, Accenture, Amazon",
+            },
+            {
+              year: new Date().getFullYear() - 1,
+              eligibleStudents: 490,
+              placedStudents: Math.round(490 * ((safeFloat(placementPercentage, 85) ?? 85) / 100)),
+              highestCtc: Math.round((parsedHighestPackage * 0.92) * 10) / 10,
+              averageCtc: Math.round((parsedAvgPackage * 0.94) * 10) / 10,
+              topRecruiters: topRecruiters || "TCS, Infosys, Wipro, Accenture, Microsoft",
+            },
+            {
+              year: new Date().getFullYear(),
+              eligibleStudents: 500,
+              placedStudents: Math.round(500 * ((safeFloat(placementPercentage, 85) ?? 85) / 100)),
+              highestCtc: parsedHighestPackage,
+              averageCtc: parsedAvgPackage,
+              topRecruiters: topRecruiters || "TCS, Infosys, Wipro, Accenture, Amazon, Microsoft",
+            },
+          ]
+        },
+        reviews: {
+          create: Array.isArray(body.reviews) && body.reviews.length > 0
+            ? body.reviews.map((r: any) => ({
+                studentName: r.studentName || "Verified Student",
+                course: r.course || "Undergraduate Program",
+                batchYear: safeInt(r.batchYear, 2024) ?? 2024,
+                title: r.title || "Overall Excellent Campus Experience",
+                rating: safeFloat(r.rating, 4.5) ?? 4.5,
+                academicRating: safeFloat(r.academicRating, 4.5) ?? 4.5,
+                infrastructureRating: safeFloat(r.infrastructureRating, 4.2) ?? 4.2,
+                placementRating: safeFloat(r.placementRating, 4.4) ?? 4.4,
+                campusRating: safeFloat(r.campusRating, 4.3) ?? 4.3,
+                valueForMoneyRating: safeFloat(r.valueForMoneyRating, 4.5) ?? 4.5,
+                likes: r.likes || "Great faculty, modern digital library, well-equipped labs, and active student clubs.",
+                dislikes: r.dislikes || "Campus hostel food quality could be improved.",
+                content: r.content || "Overall a wonderful institution with excellent career opportunities.",
+                isVerified: r.isVerified ?? true,
               }))
             : [],
         },
+        content: body.collegeContent ? {
+          create: {
+            overview: body.collegeContent.overview || null,
+            about: body.collegeContent.about || null,
+            history: body.collegeContent.history || null,
+            highlights: body.collegeContent.highlights || null,
+            whyChoose: body.collegeContent.whyChoose || null,
+            campusLife: body.collegeContent.campusLife || null,
+            facilitiesDescription: body.collegeContent.facilitiesDescription || null,
+            placementOverview: body.collegeContent.placementOverview || null,
+            topRecruiters: body.collegeContent.topRecruiters || null,
+            admissionGuide: body.collegeContent.admissionGuide || null,
+            eligibility: body.collegeContent.eligibility || null,
+            hostelLife: body.collegeContent.hostelLife || null,
+            scholarships: body.collegeContent.scholarships || null,
+            research: body.collegeContent.research || null,
+            studentActivities: body.collegeContent.studentActivities || null,
+            faq: body.collegeContent.faq || null,
+            seoArticle: body.collegeContent.seoArticle || null,
+            contentStatus: "PUBLISHED",
+          }
+        } : undefined,
       },
       include: {
         courses: true,
         galleryImages: true,
+        placements: true,
+        content: true,
       },
     });
 

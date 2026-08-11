@@ -131,9 +131,13 @@ export async function checkForDuplicateCollege(params: DuplicateCheckParams): Pr
   const normTargetPhone = normalizePhone(phone);
   const normTargetName = normalizeName(name);
 
-  // Fetch candidate colleges from Database
+  // Fetch candidate colleges from Database (excluding deleted & excluded IDs)
   const existingColleges = await db.collegeProfile.findMany({
-    where: excludeId ? { id: { not: excludeId } } : {},
+    where: {
+      isDeleted: false,
+      status: { not: "DELETED" },
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
     select: {
       id: true,
       name: true,

@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -41,6 +41,7 @@ model User {
   updatedAt    DateTime        @updatedAt
   student      StudentProfile?
   college      CollegeProfile?
+  admissionLeads AdmissionLead[]
 }
 
 model StudentProfile {
@@ -72,7 +73,7 @@ model CollegeProfile {
   name                    String
   shortName               String?
   slug                    String?            @unique
-  description             String
+  description             String             @db.Text
   location                String
   address                 String?
   landmark                String?
@@ -83,18 +84,19 @@ model CollegeProfile {
   pincode                 String?
   latitude                Float?
   longitude               Float?
-  googleMapUrl            String?
+  googleMapUrl            String?            @db.Text
   phone                   String?
   mobile                  String?
   email                   String?
-  website                 String?
-  facebook                String?
-  instagram               String?
-  linkedin                String?
-  youtube                 String?
+  website                 String?            @db.Text
+  facebook                String?            @db.Text
+  instagram               String?            @db.Text
+  linkedin                String?            @db.Text
+  youtube                 String?            @db.Text
   rating                  Float              @default(4.0)
   type                    String             // Government, Private, Govt-Aided
-  ownership               String?            // Public, Private, Deemed, etc.
+  ownership               String?            // Government, Private, Aided, Deemed, Autonomous
+  category                String?            @default("Engineering") // Engineering, Medical, Arts & Science, Commerce, Law, Management, Polytechnic, etc.
   categories              String?            // Comma separated categories e.g. "Engineering, Autonomous, Co-Ed"
   affiliatedUniversity    String?
   isAutonomous            Boolean            @default(false)
@@ -105,40 +107,42 @@ model CollegeProfile {
   naacGrade               String?            // e.g. A++
   nirfRank                Int?
   feesPerYear             Float
-  courseWiseFees          String?
+  courseWiseFees          String?            @db.Text
   hostelFees              Float?
   transportFees           Float?
-  scholarshipDetails      String?
-  educationLoanDetails    String?
-  facilities              String?            // Comma-separated list e.g. "Hostel,Library,Sports,WiFi"
+  scholarshipDetails      String?            @db.Text
+  educationLoanDetails    String?            @db.Text
+  facilities              String?            @db.Text // Comma-separated list e.g. "Hostel,Library,Sports,WiFi"
   avgPackage              Float              // in LPA
   highestPackage          Float              // in LPA
   placementPercentage     Float?
-  internshipDetails       String?
-  topRecruiters           String?
-  admissionEligibility    String?
-  admissionProcess        String?
-  documentsRequired       String?
-  counsellingInfo         String?
-  admissionEntranceExams  String?
-  importantDates          String?
+  internshipDetails       String?            @db.Text
+  topRecruiters           String?            @db.Text
+  admissionEligibility    String?            @db.Text
+  admissionProcess        String?            @db.Text
+  documentsRequired       String?            @db.Text
+  counsellingInfo         String?            @db.Text
+  admissionEntranceExams  String?            @db.Text
+  importantDates          String?            @db.Text
   hostelAvailable         Boolean            @default(false)
   boysHostel              Boolean            @default(false)
   girlsHostel             Boolean            @default(false)
   acRooms                 Boolean            @default(false)
   messAvailable           Boolean            @default(false)
   hostelFeePerYear        Float?
-  image                   String             // Banner/Main logo
-  logo                    String?
-  banner                  String?
-  collegeVideo            String?
+  image                   String             @db.Text // Banner/Main logo
+  logo                    String?            @db.Text
+  banner                  String?            @db.Text
+  collegeVideo            String?            @db.Text
   estYear                 Int?
-  seoTitle                String?
-  seoDescription          String?
-  metaKeywords            String?
+  seoTitle                String?            @db.Text
+  seoDescription          String?            @db.Text
+  metaKeywords            String?            @db.Text
   status                  String             @default("PUBLISHED") // DRAFT, PUBLISHED
   featured                Boolean            @default(false)
   trending                Boolean            @default(false)
+  isDeleted               Boolean            @default(false)
+  deletedAt               DateTime?
   createdAt               DateTime           @default(now())
   updatedAt               DateTime           @updatedAt
   courses                 Course[]
@@ -148,6 +152,8 @@ model CollegeProfile {
   reviews                 Review[]
   galleryImages           GalleryImage[]
   enquiryLeads            EnquiryLead[]
+  content                 CollegeContent?
+  admissionLeads          AdmissionLead[]
 }
 
 model Category {
@@ -164,9 +170,9 @@ model NewsArticle {
   id        String   @id @default(uuid())
   title     String
   slug      String   @unique
-  content   String
+  content   String   @db.Text
   category  String   @default("Admissions")
-  image     String?
+  image     String?  @db.Text
   author    String?  @default("Super Admin")
   status    String   @default("PUBLISHED") // DRAFT, PUBLISHED
   createdAt DateTime @default(now())
@@ -190,7 +196,7 @@ model GalleryImage {
   id        String         @id @default(uuid())
   collegeId String
   college   CollegeProfile @relation(fields: [collegeId], references: [id], onDelete: Cascade)
-  url       String
+  url       String         @db.Text
   altText   String?
   caption   String?
   tags      String?
@@ -210,22 +216,53 @@ model Course {
   eligibility  String?
   seats        Int?
   entranceExam String?
+  isDeleted    Boolean        @default(false)
+  deletedAt    DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   applications Application[]
+  admissionLeads AdmissionLead[]
 }
 
 model Scholarship {
-  id          String   @id @default(uuid())
-  name        String
-  provider    String
-  eligibility String
-  value       String   // e.g. "100% tuition waiver"
-  deadline    DateTime
-  type        String   // Government, Private
-  applyLink   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                    String    @id @default(uuid())
+  name                  String
+  provider              String    // National Testing Agency, Reliance Foundation, Tata Capital, AICTE, DoTE, etc.
+  category              String    @default("Central Government") // Central Government, State Government, Private
+  scholarshipType       String    @default("Merit-Based") // Merit-Based, Need-Based, Minority, SC/ST, BC/MBC, Girl Students, Sports, EWS, etc.
+  description           String    @db.Text
+  eligibilityCriteria   String    @db.Text
+  minPercentage         Float?    // 50.0, 60.0, 75.0, 80.0
+  eligibleCourses       String    @default("All Courses") // B.Tech, BE, B.Sc, MBBS, MBA, Diploma, All UG, All PG
+  eligibleStates        String    @default("All India") // All India, Tamil Nadu, etc.
+  familyIncomeLimit     Float?    // Max annual income in INR (e.g. 250000, 800000, 1500000)
+  familyIncomeLimitText String?   // "Below ₹2.5 Lakhs", "Below ₹15 Lakhs"
+  amount                String    // "₹2,00,000", "Up to ₹50,000/yr", "100% Tuition Fee Waiver"
+  amountValue           Float?    // 200000
+  deadline              String?   // "December 31, 2026"
+  deadlineDate          DateTime? // For automatic status (Open, Closing Soon, Closed, Upcoming)
+  officialWebsite       String    @db.Text
+  applyLink             String    @db.Text
+  requiredDocuments     String    @db.Text
+  selectionProcess      String?   @db.Text
+  renewalAvailable      Boolean   @default(true)
+  status                String    @default("OPEN") // OPEN | CLOSING_SOON | CLOSED | UPCOMING
+  isPublished           Boolean   @default(true)
+  isFeatured            Boolean   @default(false)
+  bannerUrl             String?   @db.Text
+  faqs                  String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Legacy compatibility fields
+  eligibility           String?
+  value                 String?
+  type                  String?
+
+  @@index([category])
+  @@index([scholarshipType])
+  @@index([status])
+  @@index([isPublished])
 }
 
 model Application {
@@ -266,15 +303,27 @@ model PlacementOutcome {
 }
 
 model Review {
-  id         String         @id @default(uuid())
-  collegeId  String
-  college    CollegeProfile @relation(fields: [collegeId], references: [id], onDelete: Cascade)
-  studentId  String
-  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  rating     Float
-  content    String
-  isVerified Boolean        @default(false)
-  createdAt  DateTime       @default(now())
+  id                   String          @id @default(uuid())
+  collegeId            String
+  college              CollegeProfile  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  studentId            String?
+  student              StudentProfile? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  studentName          String?         // e.g. "Praveen Natarajan"
+  course               String?         // e.g. "B.E. Computer Science and Engineering"
+  batchYear            Int?            // e.g. 2024
+  title                String?         // Review Headline
+  rating               Float           @default(4.5)
+  academicRating       Float?          @default(4.5)
+  infrastructureRating Float?          @default(4.0)
+  placementRating      Float?          @default(4.5)
+  campusRating         Float?          @default(4.2)
+  valueForMoneyRating  Float?          @default(4.4)
+  likes                String?         @db.Text // Pros / What they liked
+  dislikes             String?         @db.Text // Cons / What could be improved
+  content              String          @db.Text // Detailed review text
+  helpfulCount         Int             @default(12)
+  isVerified           Boolean         @default(true)
+  createdAt            DateTime        @default(now())
 }
 
 model DuplicateAttempt {
@@ -290,4 +339,247 @@ model DuplicateAttempt {
   attemptedBy        String   @default("Admin")
   createdAt          DateTime @default(now())
 }
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorId      String?
+  actorEmail   String?
+  action       String   // CREATE, UPDATE, SOFT_DELETE, HARD_DELETE, BULK_IMPORT, MIGRATION, RESTORE
+  entity       String   // CollegeProfile, Course, Database, User
+  entityId     String?
+  details      String?  @db.Text
+  scriptName   String?
+  rowsAffected Int      @default(0)
+  createdAt    DateTime @default(now())
+}
+
+model CollegeContent {
+  id                    String         @id @default(uuid())
+  collegeId             String         @unique
+  college               CollegeProfile @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  overview              String?        @db.Text
+  about                 String?        @db.Text
+  history               String?        @db.Text
+  highlights            String?        @db.Text
+  whyChoose             String?        @db.Text
+  campusLife            String?        @db.Text
+  facilitiesDescription String?        @db.Text
+  placementOverview     String?        @db.Text
+  topRecruiters         String?        @db.Text
+  admissionGuide        String?        @db.Text
+  eligibility           String?        @db.Text
+  hostelLife            String?        @db.Text
+  scholarships          String?        @db.Text
+  research              String?        @db.Text
+  studentActivities     String?        @db.Text
+  faq                   String?        @db.Text
+  seoArticle            String?        @db.Text
+  contentStatus         String         @default("DRAFT") // DRAFT, AI_GENERATED, VERIFIED, PUBLISHED
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+}
+
+enum CollegeRegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DATA_SUBMITTED
+  NEEDS_REVISION
+  PUBLISHED
+}
+
+model CollegeRegistrationRequest {
+  id                 String                    @id @default(uuid())
+  collegeName        String
+  contactPerson      String
+  email              String
+  mobile             String
+  website            String?                   @db.Text
+  location           String
+  additionalNotes    String?                   @db.Text
+  status             CollegeRegistrationStatus @default(PENDING)
+  adminNotes         String?                   @db.Text
+  accessToken        String                    @unique @default(uuid())
+  tokenExpiresAt     DateTime?
+  submittedData      String?                   @db.LongText
+  publishedCollegeId String?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+}
+
+model SmtpConfig {
+  id             String   @id @default("default")
+  smtpHost       String
+  smtpPort       Int      @default(587)
+  smtpUser       String
+  smtpPass       String   @db.Text
+  senderName     String   @default("C2Talents Platform")
+  encryptionType String   @default("TLS")
+  fromEmail      String
+  isEncrypted    Boolean  @default(true)
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+}
+
+model HeaderImage {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?  @db.Text
+  altText      String?
+  imageUrl     String   @db.Text
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model EmailTemplate {
+  id             String   @id @default(uuid())
+  templateKey    String   @unique
+  templateName   String
+  category       String   @default("Notifications")
+  subject        String
+  preheader      String?  @db.Text
+  headerTitle    String?
+  greeting       String?
+  bodyHtml       String   @db.Text
+  buttonText     String?
+  buttonUrl      String?
+  footerHtml     String?  @db.Text
+  status         String   @default("PUBLISHED")
+  version        Int      @default(1)
+  updatedBy      String   @default("Super Admin")
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Legacy backwards compatibility fields
+  name           String?
+  title          String?
+  bodyParagraphs String?  @db.Text
+  ctaText        String?
+  noticeText     String?  @db.Text
+}
+
+model EmailTemplateVersion {
+  id            String   @id @default(uuid())
+  templateKey   String
+  version       Int
+  subject       String
+  preheader     String?  @db.Text
+  headerTitle   String?
+  greeting      String?
+  bodyHtml      String   @db.Text
+  buttonText    String?
+  buttonUrl     String?
+  footerHtml    String?  @db.Text
+  changedBy     String   @default("Super Admin")
+  changeSummary String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  @@index([templateKey, version])
+}
+
+model EmailAuditLog {
+  id          String   @id @default(uuid())
+  templateKey String
+  action      String
+  userEmail   String
+  details     String?  @db.Text
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+}
+
+model AdmissionLead {
+  id                  String   @id @default(uuid())
+  applicationId       String   @unique
+  studentId           String?
+  student             User?    @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  collegeId           String
+  college             CollegeProfile @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  courseId            String?
+  course              Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  programme           String   @default("UG") // UG | PG
+  status              String   @default("NEW") // NEW | UNDER_REVIEW | DOCUMENTS_PENDING | VERIFIED | APPROVED | REJECTED | ADMISSION_CONFIRMED
+
+  // Personal Details
+  firstName           String
+  lastName            String
+  gender              String
+  dob                 String
+  fatherName          String?
+  motherName          String?
+  mobileNumber        String
+  alternateNumber     String?
+  email               String
+  address             String?  @db.Text
+  city                String?
+  district            String?
+  state               String   @default("Tamil Nadu")
+  pincode             String?
+  nationality         String   @default("Indian")
+  community           String?  // OC, BC, MBC, SC, ST, etc.
+  religion            String?
+  bloodGroup          String?
+
+  // Academic Details - 10th
+  board10th           String?
+  school10th          String?
+  percentage10th      Float?
+  year10th            String?
+
+  // Academic Details - 12th
+  board12th           String?
+  school12th          String?
+  percentage12th      Float?
+  group12th           String?
+  year12th            String?
+
+  // Academic Details - UG (Only for PG)
+  ugCollege           String?
+  ugUniversity        String?
+  ugDegree            String?
+  ugSpecialization    String?
+  ugPercentage        Float?
+  ugYear              String?
+  currentArrears      Int?     @default(0)
+  historyArrears      Int?     @default(0)
+
+  // Uploaded Documents (File URLs or Base64 / metadata)
+  marksheet10thUrl    String?  @db.Text
+  marksheet12thUrl    String?  @db.Text
+  marksheetUgUrl      String?  @db.Text
+  tcUrl               String?  @db.Text
+  communityCertUrl    String?  @db.Text
+  photoUrl            String?  @db.Text
+  aadharUrl           String?  @db.Text
+  otherDocUrl         String?  @db.Text
+
+  // Additional Details
+  hostelRequired      Boolean  @default(false)
+  transportRequired   Boolean  @default(false)
+  scholarshipRequired Boolean  @default(false)
+  firstGraduate       Boolean  @default(false)
+  sportsQuota         Boolean  @default(false)
+  ncc                 Boolean  @default(false)
+  nss                 Boolean  @default(false)
+  achievements        String?  @db.Text
+  extraCurricular     String?  @db.Text
+  statementOfPurpose  String?  @db.Text
+
+  // Admin Management
+  assignedCounselor   String?
+  adminNotes          String?  @db.Text
+  rejectionReason     String?  @db.Text
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([collegeId])
+  @@index([courseId])
+  @@index([status])
+  @@index([mobileNumber])
+  @@index([email])
+}
+
 

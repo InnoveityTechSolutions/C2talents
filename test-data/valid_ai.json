@@ -1,0 +1,31 @@
+{
+  "name": { "value": "Test E2E University", "confidenceScore": 100, "verified": true },
+  "shortName": { "value": "TE2EU", "confidenceScore": 100, "verified": true },
+  "collegeAbout": { "value": "This is a great university for E2E tests.", "confidenceScore": 95, "verified": true },
+  "estYear": { "value": "2024", "confidenceScore": 90, "verified": true },
+  "type": { "value": "Private", "confidenceScore": 99, "verified": true },
+  "city": { "value": "Test City", "confidenceScore": 100, "verified": true },
+  "state": { "value": "Test State", "confidenceScore": 100, "verified": true },
+  "categories": { "value": ["Engineering", "Arts & Science"], "confidenceScore": 95, "verified": true },
+  "phone": { "value": "1234567890", "confidenceScore": 90, "verified": true },
+  "email": { "value": "test@e2eu.edu", "confidenceScore": 95, "verified": true },
+  "website": { "value": "https://e2eu.edu", "confidenceScore": 100, "verified": true },
+  "courses": {
+    "value": [
+      {
+        "title": "B.Tech Computer Science",
+        "duration": "4 Years",
+        "feesPerYear": "100000",
+        "eligibility": "10+2 with 60%",
+        "seats": 120,
+        "entranceExam": "JEE"
+      }
+    ],
+    "confidenceScore": 90,
+    "verified": true
+  },
+  "facilities": { "value": ["Hostel", "Library", "WiFi"], "confidenceScore": 95, "verified": true },
+  "highestPackage": { "value": "15 LPA", "confidenceScore": 80, "verified": false },
+  "hostelAvailable": { "value": true, "confidenceScore": 100, "verified": true },
+  "seoTitle": { "value": "Test E2E University - Admissions, Courses, Fees", "confidenceScore": 95, "verified": true }
+}

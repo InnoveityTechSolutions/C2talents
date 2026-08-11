@@ -11,62 +11,61 @@ export function AdmissionBanner() {
   return (
     <section
       ref={ref}
-      className={`py-16 px-6 bg-gradient-to-r from-indigo-950 via-indigo-900 to-indigo-950 text-white relative overflow-hidden scroll-reveal ${
+      className={`py-12 px-6 font-sans scroll-reveal ${
         hasRevealed ? "revealed" : ""
       }`}
     >
-      {/* Background Student Photo with Duotone Blend treatment */}
-      <div className="absolute inset-0 z-0 pointer-events-none hidden md:block select-none">
-        {/* Photo overlay layer positioned right */}
-        <img
-          src="/images/students.png"
-          alt=""
-          className="absolute right-0 top-0 h-full w-[55%] object-cover object-right mix-blend-multiply opacity-95 pointer-events-none"
-        />
-        {/* Fade gradient overlay to blend left side text nicely with right photo */}
-        <div className="absolute inset-0 bg-gradient-to-r from-indigo-950 via-indigo-950/80 to-transparent z-10" />
-      </div>
+      <div className="max-w-7xl mx-auto bg-[#130726] rounded-[32px] p-8 sm:p-12 lg:p-14 relative overflow-hidden shadow-2xl">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+          {/* Left Text & Action Buttons */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white/10 border border-white/20 rounded-full text-[11px] font-extrabold tracking-wider uppercase text-amber-300">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>AI ADMISSION MATCHER</span>
+            </div>
 
-      {/* Decorative fallback background patterns (reduced opacity to avoid interfering with image) */}
-      <div className="absolute inset-0 opacity-5 pointer-events-none z-0">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-amber-300 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-10 w-96 h-96 bg-indigo-400 rounded-full blur-3xl" />
-      </div>
+            <div className="space-y-4">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-[1.15] tracking-tight">
+                Know Your Admission Chances — Start Now
+              </h2>
+              <p className="text-xs sm:text-sm text-purple-200/80 leading-relaxed max-w-xl font-normal">
+                Stop guessing based on outdated cutoff tables. Our AI analyzer compiles hundreds of placement outcomes and historical cutoff curves to estimate your admission likelihood in under 2 minutes.
+              </p>
+            </div>
 
-      {/* Content wrapper with left-aligned elements stacked */}
-      <div className="relative z-20 max-w-5xl mx-auto flex flex-col justify-between gap-8 md:text-left text-center">
-        <div className="space-y-6 max-w-xl">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 border border-white/20 rounded-full text-[11px] font-bold tracking-wide uppercase text-amber-300">
-            <Sparkles className="w-3.5 h-3.5 fill-amber-350" />
-            <span>AI Admission Matcher</span>
+            {/* Action Buttons matching screenshot */}
+            <div className="flex flex-wrap items-center gap-4 pt-2">
+              <Link
+                href="/counselor"
+                className="px-7 py-3.5 rounded-full bg-[#ff6c0f] hover:bg-[#e05b05] text-white text-xs font-black shadow-lg hover:shadow-orange-500/20 transition-all inline-flex items-center gap-2.5 cursor-pointer"
+              >
+                <span>Predict My Colleges</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+
+              <Link
+                href="/counselor"
+                className="px-7 py-3.5 rounded-full border border-white/25 hover:bg-white/10 text-white text-xs font-extrabold transition-all cursor-pointer"
+              >
+                Track Applications
+              </Link>
+            </div>
           </div>
-          
-          <div className="space-y-3">
-            <h2 className="text-3xl md:text-4xl font-serif font-semibold leading-tight">
-              Know Your Admission Chances — Start Now
-            </h2>
-            <p className="text-xs md:text-sm text-indigo-200/90 leading-relaxed font-sans max-w-lg">
-              Stop guessing based on outdated cutoff tables. Our AI analyzer compiles hundreds of placement outcomes and historical cutoff curves to estimate your admission likelihood in under 2 minutes.
-            </p>
-          </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4 font-sans pt-2">
-            <Link
-              href="/counselor"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 transition-all group"
-            >
-              <span>Predict My Colleges</span>
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-            <Link
-              href="/tracker"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 border border-white/20 hover:bg-white/10 text-white text-xs font-bold rounded-xl transition-all"
-            >
-              Track Applications
-            </Link>
+          {/* Right Image Container Card matching screenshot */}
+          <div className="lg:col-span-5 relative hidden lg:block">
+            <div className="bg-white rounded-[24px] overflow-hidden p-0 shadow-2xl aspect-[4/3] flex items-center justify-center">
+              <img
+                src="/images/students.png"
+                alt="College Students"
+                className="w-full h-full object-cover object-center"
+              />
+            </div>
           </div>
         </div>
       </div>
     </section>
   );
 }
+
+

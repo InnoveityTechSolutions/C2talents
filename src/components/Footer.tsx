@@ -2,13 +2,17 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Phone, MapPin } from "lucide-react";
+import { Phone, MapPin, Sparkles } from "lucide-react";
+
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 export function Footer() {
+  const { ref, hasRevealed } = useScrollReveal<HTMLElement>();
+
   return (
-    <footer className="relative bg-indigo-950 text-stone-300 border-t border-indigo-900/30 font-sans overflow-hidden">
+    <footer ref={ref} className={`relative bg-indigo-950 text-stone-300 border-t border-indigo-900/30 font-sans overflow-hidden scroll-reveal ${hasRevealed ? "revealed" : ""}`}>
       {/* Subtle Dot Grid Background Texture */}
-      <div className="absolute inset-0 bg-[radial-gradient(rgba(124,58,237,0.05)_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(rgba(234,88,12,0.08)_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-16 md:py-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12">
@@ -33,12 +37,12 @@ export function Footer() {
             {/* Address & Phone */}
             <div className="space-y-3 text-xs text-stone-400 pt-4 border-t border-indigo-900/30">
               <div className="flex items-start gap-2.5">
-                <MapPin className="w-4 h-4 text-indigo-450 shrink-0 mt-0.5" />
+                <MapPin className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
                 <span>OMR IT Corridor, Chennai, TN - 600096</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <Phone className="w-4 h-4 text-indigo-450 shrink-0" />
-                <a href="tel:+914422357007" className="hover:text-white transition-colors">+91 44 2235 7007</a>
+                <Phone className="w-4 h-4 text-orange-500 shrink-0" />
+                <a href="tel:+914422357007" className="hover:text-orange-400 transition-colors">+91 44 2235 7007</a>
               </div>
             </div>
           </div>
@@ -46,30 +50,34 @@ export function Footer() {
           {/* Top Colleges */}
           <div className="space-y-4">
             <div>
-              <h4 className="text-xs font-bold text-white tracking-wider uppercase">
-                Top Colleges
+              <h4 className="text-xs font-bold text-white tracking-wider uppercase flex items-center gap-1.5">
+                <span>Top Colleges</span>
               </h4>
-              <div className="w-7 h-[2px] bg-indigo-500 mt-1.5" />
+              <div className="w-7 h-[2.5px] bg-orange-500 rounded-full mt-1.5" />
             </div>
             <ul className="flex flex-col text-xs">
               <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/colleges?stream=engineering" className="hover:text-white transition-colors block w-full">
-                  Engineering Colleges
+                <Link href="/colleges?stream=engineering" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>Engineering Colleges</span>
                 </Link>
               </li>
               <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/colleges?stream=management" className="hover:text-white transition-colors block w-full">
-                  MBA / Management
+                <Link href="/colleges?stream=management" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>MBA / Management</span>
                 </Link>
               </li>
               <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/colleges?stream=medical" className="hover:text-white transition-colors block w-full">
-                  Medical Institutions
+                <Link href="/colleges?stream=medical" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>Medical Institutions</span>
                 </Link>
               </li>
               <li className="py-2.5">
-                <Link href="/colleges?stream=law" className="hover:text-white transition-colors block w-full">
-                  Law Colleges
+                <Link href="/colleges?stream=law" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>Law Colleges</span>
                 </Link>
               </li>
             </ul>
@@ -81,27 +89,31 @@ export function Footer() {
               <h4 className="text-xs font-bold text-white tracking-wider uppercase">
                 Top Exams
               </h4>
-              <div className="w-7 h-[2px] bg-indigo-500 mt-1.5" />
+              <div className="w-7 h-[2.5px] bg-orange-500 rounded-full mt-1.5" />
             </div>
             <ul className="flex flex-col text-xs">
               <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/exams" className="hover:text-white transition-colors block w-full">
-                  JEE Mains 2026
+                <Link href="/exams" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>JEE Mains 2026</span>
                 </Link>
               </li>
               <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/exams" className="hover:text-white transition-colors block w-full">
-                  NEET UG Guide
+                <Link href="/exams" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>NEET UG Guide</span>
                 </Link>
               </li>
               <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/exams" className="hover:text-white transition-colors block w-full">
-                  CAT Predictor
+                <Link href="/exams" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>CAT Predictor</span>
                 </Link>
               </li>
               <li className="py-2.5">
-                <Link href="/exams" className="hover:text-white transition-colors block w-full">
-                  TNEA choice filling
+                <Link href="/exams" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>TNEA Choice Filling</span>
                 </Link>
               </li>
             </ul>
@@ -113,27 +125,31 @@ export function Footer() {
               <h4 className="text-xs font-bold text-white tracking-wider uppercase">
                 Study Abroad
               </h4>
-              <div className="w-7 h-[2px] bg-indigo-500 mt-1.5" />
+              <div className="w-7 h-[2.5px] bg-orange-500 rounded-full mt-1.5" />
             </div>
             <ul className="flex flex-col text-xs">
               <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/colleges?location=abroad" className="hover:text-white transition-colors block w-full">
-                  Study in USA
+                <Link href="/colleges?location=abroad" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>Study in USA</span>
                 </Link>
               </li>
               <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/colleges?location=abroad" className="hover:text-white transition-colors block w-full">
-                  Study in Canada
+                <Link href="/colleges?location=abroad" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>Study in Canada</span>
                 </Link>
               </li>
               <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/colleges?location=abroad" className="hover:text-white transition-colors block w-full">
-                  Study in United Kingdom
+                <Link href="/colleges?location=abroad" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>Study in United Kingdom</span>
                 </Link>
               </li>
               <li className="py-2.5">
-                <Link href="/colleges?location=abroad" className="hover:text-white transition-colors block w-full">
-                  Visa Guidance
+                <Link href="/colleges?location=abroad" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>Visa Guidance</span>
                 </Link>
               </li>
             </ul>
@@ -145,27 +161,36 @@ export function Footer() {
               <h4 className="text-xs font-bold text-white tracking-wider uppercase">
                 Platform
               </h4>
-              <div className="w-7 h-[2px] bg-indigo-500 mt-1.5" />
+              <div className="w-7 h-[2.5px] bg-orange-500 rounded-full mt-1.5" />
             </div>
             <ul className="flex flex-col text-xs">
               <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/counselor" className="hover:text-white transition-colors block w-full">
-                  AI Chat Counselor
+                <Link href="/counselor" className="hover:text-orange-400 transition-colors flex items-center justify-between group w-full">
+                  <div className="flex items-center gap-2">
+                    <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                    <span>AI Chat Counselor</span>
+                  </div>
+                  <span className="bg-orange-500 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-2xs group-hover:bg-orange-600 transition-colors">
+                    <Sparkles className="w-2.5 h-2.5" /> AI
+                  </span>
                 </Link>
               </li>
               <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/tracker" className="hover:text-white transition-colors block w-full">
-                  Application Tracker
+                <Link href="/tracker" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>Application Tracker</span>
                 </Link>
               </li>
               <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/scholarships" className="hover:text-white transition-colors block w-full">
-                  Scholarship Hub
+                <Link href="/scholarships" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>Scholarship Hub</span>
                 </Link>
               </li>
               <li className="py-2.5">
-                <Link href="/" className="hover:text-white transition-colors block w-full">
-                  Ranking Methodology
+                <Link href="/" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
+                  <span>Ranking Methodology</span>
                 </Link>
               </li>
             </ul>
@@ -180,9 +205,9 @@ export function Footer() {
             <span>© 2026 C2Talents. All rights reserved.</span>
           </div>
           <div className="flex space-x-6 text-[11px] font-semibold text-stone-400">
-            <Link href="/" className="hover:text-white transition-colors">Terms of Service</Link>
-            <Link href="/" className="hover:text-white transition-colors">Privacy Policy</Link>
-            <Link href="/" className="hover:text-white transition-colors">Disclaimer</Link>
+            <Link href="/" className="hover:text-orange-400 transition-colors">Terms of Service</Link>
+            <Link href="/" className="hover:text-orange-400 transition-colors">Privacy Policy</Link>
+            <Link href="/" className="hover:text-orange-400 transition-colors">Disclaimer</Link>
           </div>
         </div>
       </div>

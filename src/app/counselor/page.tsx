@@ -62,7 +62,7 @@ interface Recommendation {
 const STEPS = [
   {
     key: "stream",
-    question: "Hello 👋 I am your C2Talents AI Admission Counselor.\n\nI will help you find the best verified colleges based on your academic profile.\n\nStep 1: Which academic stream are you interested in?",
+    question: "Hello 👋 I am Leo Bot, your Admission Assistant.\n\nI will help you find the best verified colleges based on your academic profile.\n\nStep 1: Which academic stream are you interested in?",
     chips: ["Engineering", "Arts & Science", "Medical", "Law", "Management", "Commerce", "Agriculture", "Architecture"],
   },
   {
@@ -334,8 +334,157 @@ export default function CounselorPage() {
     });
   };
 
+  const validateUserInput = (stepKey: string, text: string): { isValid: boolean; errorMessage?: string } => {
+    const trimmed = text.trim();
+    const lower = trimmed.toLowerCase();
+
+    // 1. Check ultra short or single character gibberish
+    if (trimmed.length < 2) {
+      return {
+        isValid: false,
+        errorMessage: "⚠️ Please enter a correct sentence or selection so I can help you find the best colleges.",
+      };
+    }
+
+    // Common random key mashing or repeating pattern check (e.g. "kk", "asdf", "qwerty", "zzz", "123", "???")
+    const isRandomKeyMash = /^(?:[b-df-hj-np-tv-z]{2,}|(?:asdf|qwerty|zxcv|hjkl|kkk|kk|jjj|ggg|fff|ddd|sss|aaa|qqq|www|eee|rrr|ttt|yyy|uuu|iii|ooo|ppp|1234|000|xxx|yyy|zzz|\?+|\.+))+$/i.test(trimmed);
+    
+    if (isRandomKeyMash) {
+      return {
+        isValid: false,
+        errorMessage: "⚠️ Please enter a correct sentence or valid response (e.g. Engineering, Computer Science, 92%, or Cutoff 185) so I can assist you properly.",
+      };
+    }
+
+    // 2. Step-Specific Validation Rules
+    switch (stepKey) {
+      case "stream": {
+        const validStreams = /engineering|b\.?tech|arts|science|medical|neet|law|management|mba|commerce|agriculture|architecture|ca|cs|b\.?com|bba|bca|bsc|ba|mbbs|nursing|pharmacy|diploma|polytechnic|tnea|jee/i;
+        if (!validStreams.test(lower)) {
+          return {
+            isValid: false,
+            errorMessage: "⚠️ Please enter a valid academic stream (e.g., Engineering, Medical, Arts & Science, Management, Law, or Commerce).",
+          };
+        }
+        break;
+      }
+      case "score12th": {
+        const hasNumber = /\d+/.test(lower);
+        const scoreKeywords = /cutoff|percentage|hsc|12th|marks|grade|pass|above|below|95|90|85|80|75|70|60|50/i;
+        if (!hasNumber && !scoreKeywords.test(lower)) {
+          return {
+            isValid: false,
+            errorMessage: "⚠️ Please enter a valid Class 12th percentage or TNEA Cutoff score (e.g., 92%, Cutoff 185, or 85–90%).",
+          };
+        }
+        break;
+      }
+      case "entranceExam": {
+        const validExams = /tnea|jee|neet|cuet|cat|mat|tancet|gate|clat|cmat|merit|no entrance|direct|board marks|counseling|counselling|none/i;
+        if (!validExams.test(lower)) {
+          return {
+            isValid: false,
+            errorMessage: "⚠️ Please specify a valid entrance exam or admission process (e.g., TNEA Counselling, JEE Main, NEET UG, CUET, or Merit Based).",
+          };
+        }
+        break;
+      }
+      case "specialization": {
+        const validCourses = /computer|cse|ai|data|electronics|ece|biotech|mech|civil|bca|it|mba|finance|marketing|medical|law|nursing|pharmacy|b\.?com|b\.?sc|arts|any|all|degree/i;
+        if (!validCourses.test(lower) && trimmed.length < 3) {
+          return {
+            isValid: false,
+            errorMessage: "⚠️ Please enter a valid course or specialization (e.g., Computer Science & AI, Electronics, Mechanical, MBA, or BCA).",
+          };
+        }
+        break;
+      }
+      case "locationPreference": {
+        const validLocations = /chennai|coimbatore|madurai|trichy|salem|tirunelveli|vellore|erode|thanjavur|kanchipuram|tamil nadu|bangalore|karnataka|india|any|all|location|city|district|near/i;
+        if (!validLocations.test(lower) && trimmed.length < 3) {
+          return {
+            isValid: false,
+            errorMessage: "⚠️ Please enter a valid city or location preference (e.g., Chennai, Coimbatore, Trichy, or Any Location in Tamil Nadu).",
+          };
+        }
+        break;
+      }
+      case "budget": {
+        const hasNumber = /\d+/.test(lower);
+        const validBudget = /budget|lakh|lakhs|l|k|rupees|rs|under|above|open|scholarship|free|low|high|any|fee|tuition/i;
+        if (!hasNumber && !validBudget.test(lower)) {
+          return {
+            isValid: false,
+            errorMessage: "⚠️ Please enter a valid annual tuition fee budget (e.g., Under ₹1L, ₹2L – ₹4L, or Open to scholarships).",
+          };
+        }
+        break;
+      }
+      case "hostel": {
+        const validHostel = /yes|no|hostel|day scholar|commuting|stay|room|campus|required|not required|needed|dont need/i;
+        if (!validHostel.test(lower)) {
+          return {
+            isValid: false,
+            errorMessage: "⚠️ Please clarify if you require on-campus hostel facilities (e.g., Yes — On-campus hostel required or No — Day scholar).",
+          };
+        }
+        break;
+      }
+      case "ownershipPreference": {
+        const validOwnership = /government|govt|aided|autonomous|private|university|deemed|no preference|any|all/i;
+        if (!validOwnership.test(lower)) {
+          return {
+            isValid: false,
+            errorMessage: "⚠️ Please select your preferred college type (e.g., Government / Govt-Aided, Autonomous, Private Universities, or No Preference).",
+          };
+        }
+        break;
+      }
+      case "expectedPackage": {
+        const hasNumber = /\d+/.test(lower);
+        const validPackage = /lpa|lakh|lakhs|package|salary|placement|not focused|any|high|average/i;
+        if (!hasNumber && !validPackage.test(lower)) {
+          return {
+            isValid: false,
+            errorMessage: "⚠️ Please enter a valid target placement package expectation (e.g., ₹4–6 LPA, ₹6–10 LPA, or ₹10–15 LPA).",
+          };
+        }
+        break;
+      }
+      case "category": {
+        const validCategory = /oc|bc|bcm|mbc|dnc|sc|st|general|first graduate|sports|quota|reservation|open/i;
+        if (!validCategory.test(lower)) {
+          return {
+            isValid: false,
+            errorMessage: "⚠️ Please select a valid category or quota (e.g., OC / General, BC / BCM, MBC / DNC, SC / ST, or First Graduate Quota).",
+          };
+        }
+        break;
+      }
+    }
+
+    return { isValid: true };
+  };
+
   const handleSendMessage = async (userText: string) => {
     if (!userText.trim()) return;
+
+    // Validate input against current question step before advancing
+    const currentStep = STEPS[stepIdx];
+    if (currentStep && currentStep.key) {
+      const validation = validateUserInput(currentStep.key, userText);
+      if (!validation.isValid) {
+        const userMsg: Message = { role: "user", content: userText };
+        const botErrMsg: Message = {
+          role: "bot",
+          content: `${validation.errorMessage}\n\n${currentStep.question}`,
+          chips: currentStep.chips,
+        };
+        setMessages((prev) => [...prev.map((m) => ({ ...m, chips: undefined })), userMsg, botErrMsg]);
+        setInput("");
+        return;
+      }
+    }
 
     const userMsg: Message = { role: "user", content: userText };
     setMessages((prev) => [...prev.map((m) => ({ ...m, chips: undefined })), userMsg]);
@@ -360,11 +509,18 @@ export default function CounselorPage() {
 
       const data = await res.json();
 
+      const currentStep = STEPS[stepIdx];
       let updatedProfile = { ...profile };
-      if (data.extractedProfile) {
-        updatedProfile = { ...profile, ...data.extractedProfile };
-        setProfile(updatedProfile);
+
+      if (currentStep && currentStep.key) {
+        (updatedProfile as any)[currentStep.key] = userText;
       }
+
+      if (data.extractedProfile) {
+        updatedProfile = { ...updatedProfile, ...data.extractedProfile };
+      }
+
+      setProfile(updatedProfile);
 
       // Check if all steps completed
       const nextStepIdx = stepIdx + 1;
@@ -475,14 +631,14 @@ export default function CounselorPage() {
           <div className="bg-gradient-to-r from-[#1f0c3d] via-[#2d1659] to-[#3b2075] p-6 rounded-3xl border border-[#3b2075]/80 shadow-md text-white">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-amber-400 text-stone-950 flex items-center justify-center font-black text-xl shadow-lg shrink-0">
-                  <Sparkles className="w-6 h-6 text-stone-950" />
+                <div className="w-12 h-12 rounded-full bg-white p-0.5 shadow-lg border border-amber-300 shrink-0 overflow-hidden">
+                  <img src="/images/leo-mascot.png" alt="Leo Bot" className="w-full h-full object-contain" />
                 </div>
                 <div>
                   <h1 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
-                    <span>Enterprise AI Admissions Counselor</span>
-                    <span className="px-2.5 py-0.5 bg-amber-400 text-stone-950 font-extrabold text-[10px] rounded-full uppercase">
-                      ChatGPT Admissions Engine
+                    <span>Leo Bot — AI Admissions Counselor</span>
+                    <span className="px-2.5 py-0.5 bg-orange-500 text-white font-extrabold text-[10px] rounded-full uppercase shadow-xs">
+                      Admission Assistant
                     </span>
                   </h1>
                   <p className="text-xs text-purple-200 mt-1 font-medium">
@@ -534,8 +690,8 @@ export default function CounselorPage() {
                           className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                         >
                           {msg.role === "bot" && (
-                            <div className="w-9 h-9 rounded-2xl bg-[#3b2075] text-amber-300 flex items-center justify-center shrink-0 shadow-sm border border-purple-400/30 font-extrabold">
-                              <Bot className="w-5 h-5" />
+                            <div className="w-9 h-9 rounded-2xl bg-white border border-purple-200 p-0.5 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+                              <img src="/images/leo-mascot.png" alt="Leo Bot" className="w-full h-full object-contain" />
                             </div>
                           )}
 
@@ -661,9 +817,9 @@ export default function CounselorPage() {
                     <button
                       type="button"
                       onClick={handleStartPrediction}
-                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 text-sm font-black shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer animate-pulse"
+                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-orange-500 via-orange-600 to-amber-500 hover:from-orange-600 hover:to-orange-700 text-white text-sm font-black shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer animate-pulse"
                     >
-                      <Sparkles className="w-5 h-5 text-stone-950" />
+                      <Sparkles className="w-5 h-5 text-amber-200" />
                       <span>✨ Predict Colleges</span>
                     </button>
                   ) : (
