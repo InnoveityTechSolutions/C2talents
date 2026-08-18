@@ -11,9 +11,8 @@ export function CommunityBanner() {
   return (
     <section
       ref={ref}
-      className={`py-16 px-6 bg-gradient-to-r from-[#0e4eb5] via-[#125fdc] to-[#0a44a3] text-white relative overflow-hidden font-sans scroll-reveal ${
-        hasRevealed ? "revealed" : ""
-      }`}
+      className={`py-16 px-6 bg-gradient-to-r from-[#0e4eb5] via-[#125fdc] to-[#0a44a3] text-white relative overflow-hidden font-sans scroll-reveal ${hasRevealed ? "revealed" : ""
+        }`}
     >
       {/* Background Student Pattern Overlay */}
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />

@@ -883,7 +883,7 @@ export default function HeaderImagesManagementPage() {
                           onClick={() => setPreviewModal({ isOpen: true, item: img })}
                           className="w-20 h-12 rounded-xl bg-slate-900 overflow-hidden border border-stone-200 cursor-pointer relative group/img shrink-0"
                         >
-                          <img src={img.imageUrl} alt={img.title} className="w-full h-full object-cover" />
+                          <img src={img.imageUrl} alt={img.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
                             <Eye className="w-4 h-4" />
                           </div>
@@ -976,7 +976,7 @@ export default function HeaderImagesManagementPage() {
 
                 {uploadPreviewUrl ? (
                   <div className="relative rounded-xl overflow-hidden shadow-sm max-h-52 bg-slate-950 mx-auto flex items-center justify-center">
-                    <img src={uploadPreviewUrl} alt="Preview" className="w-full h-full max-h-52 object-contain" />
+                    <img src={uploadPreviewUrl} alt="Preview" loading="lazy" decoding="async" className="w-full h-full max-h-52 object-contain" />
                     <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
                       Click to Change Image
                     </div>
@@ -1100,7 +1100,7 @@ export default function HeaderImagesManagementPage() {
 
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div className="aspect-video rounded-2xl overflow-hidden bg-slate-900 border border-stone-200">
-                <img src={editModal.item.imageUrl} alt={editModal.item.title} className="w-full h-full object-cover" />
+                <img src={editModal.item.imageUrl} alt={editModal.item.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
               </div>
 
               <div>
@@ -1199,7 +1199,7 @@ export default function HeaderImagesManagementPage() {
             </div>
 
             <div className="aspect-video w-full rounded-2xl bg-black overflow-hidden border border-slate-800 flex items-center justify-center">
-              <img src={previewModal.item.imageUrl} alt={previewModal.item.title} className="w-full h-full object-contain" />
+              <img src={previewModal.item.imageUrl} alt={previewModal.item.title} loading="lazy" decoding="async" className="w-full h-full object-contain" />
             </div>
 
             {previewModal.item.description && (

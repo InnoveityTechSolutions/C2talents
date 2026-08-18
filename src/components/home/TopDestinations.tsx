@@ -62,6 +62,8 @@ export function TopDestinations() {
                     <img
                       src={city.image}
                       alt={city.name}
+                      loading="lazy"
+                      decoding="async"
                       className="absolute inset-0 w-full h-full object-cover object-center filter brightness-[1.02] contrast-[1.05]"
                     />
                   ) : (

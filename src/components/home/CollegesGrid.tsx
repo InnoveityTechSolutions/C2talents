@@ -68,15 +68,16 @@ export function CollegesGrid({ colleges }: Props) {
               <div
                 ref={ref}
                 key={college.id}
-                className={`group flex flex-col bg-white border ${checked ? "border-indigo-600 ring-2 ring-indigo-500/20" : "border-stone-200/60"} rounded-2xl overflow-hidden shadow-[0_4px_25px_-5px_rgba(0,0,0,0.02)] transition-all duration-300 hover:shadow-md hover:scale-[1.01] scroll-reveal ${
-                  hasRevealed ? "revealed" : ""
-                }`}
+                className={`group flex flex-col bg-white border ${checked ? "border-indigo-600 ring-2 ring-indigo-500/20" : "border-stone-200/60"} rounded-2xl overflow-hidden shadow-[0_4px_25px_-5px_rgba(0,0,0,0.02)] transition-all duration-300 hover:shadow-md hover:scale-[1.01] scroll-reveal ${hasRevealed ? "revealed" : ""
+                  }`}
               >
                 {/* College Image */}
                 <div className="relative h-48 overflow-hidden bg-stone-100 flex-shrink-0">
                   <img
                     src={college.image}
                     alt={college.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = "/images/campus-hero.jpg";

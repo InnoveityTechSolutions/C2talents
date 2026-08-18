@@ -58,6 +58,8 @@ export function AdmissionBanner() {
               <img
                 src="/images/students.png"
                 alt="College Students"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover object-center"
               />
             </div>

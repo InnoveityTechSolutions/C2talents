@@ -2999,7 +2999,7 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
                 className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 relative group overflow-hidden"
               >
                 <div className="h-32 rounded-xl overflow-hidden bg-slate-200 relative">
-                  <img src={img.url} alt={img.altText} className="w-full h-full object-cover" />
+                  <img src={img.url} alt={img.altText} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeGalleryImage(idx)}

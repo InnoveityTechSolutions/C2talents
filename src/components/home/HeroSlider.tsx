@@ -163,6 +163,9 @@ export function HeroSlider({ slides: initialSlides, children }: HeroSliderProps)
             <img
               src={currentSlide.image}
               alt={currentSlide.collegeName}
+              loading="eager"
+              // @ts-ignore
+              fetchPriority="high"
               className="w-full h-full object-cover object-center filter brightness-[1.05] contrast-[1.08] saturate-[1.20] transition-all duration-700"
             />
           </motion.div>

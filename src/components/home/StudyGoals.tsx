@@ -94,6 +94,8 @@ export function StudyGoals() {
                   <img
                     src={stream.image}
                     alt={stream.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover object-top grayscale contrast-[1.05] group-hover:grayscale-0 group-active:grayscale-0 group-focus:grayscale-0 transition-all duration-500 ease-out group-hover:scale-105"
                   />
                   <div className="absolute top-3.5 left-3.5 z-10">

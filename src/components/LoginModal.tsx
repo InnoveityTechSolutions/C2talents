@@ -136,7 +136,7 @@ export function LoginModal({
           <div>
             {/* Logo */}
             <div className="flex items-center gap-2 mb-3">
-              <img src="/logo.png" alt="C2Talents Logo" className="h-10 w-auto" />
+              <img src="/logo.png" alt="C2Talents Logo" loading="lazy" decoding="async" className="h-10 w-auto" />
             </div>
 
             {/* ERROR BANNER */}

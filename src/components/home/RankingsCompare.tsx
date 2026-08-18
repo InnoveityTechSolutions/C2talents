@@ -102,7 +102,7 @@ export function RankingsCompare() {
           </div>
 
           {/* Source Tabs */}
-          <div className="inline-flex max-w-full items-center gap-1 sm:gap-1.5 bg-white p-1.5 border border-stone-200/80 rounded-2xl shadow-xs font-sans overflow-x-auto no-scrollbar whitespace-nowrap">
+          <div className="inline-flex items-center gap-1 sm:gap-1.5 bg-white p-1 sm:p-1.5 border border-stone-200/80 rounded-2xl shadow-xs font-sans whitespace-nowrap">
             {rankingSources.map((source) => {
               const Icon = source.icon;
               const isActive = activeSource === source.id;
@@ -110,13 +110,13 @@ export function RankingsCompare() {
                 <button
                   key={source.id}
                   onClick={() => setActiveSource(source.id)}
-                  className={`shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                     isActive
                       ? "bg-[#1f0c3d] text-amber-300 shadow-md scale-[1.02]"
                       : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/80"
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? "text-amber-300" : "text-stone-400"}`} />
+                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-amber-300" : "text-stone-400"}`} />
                   <span>{source.name}</span>
                 </button>
               );

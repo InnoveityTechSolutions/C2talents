@@ -99,6 +99,8 @@ export function CareerExcellenceBanner() {
         <img
           src="/images/arts-science.jpg"
           alt="Students Learning"
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover object-[center_25%] brightness-[1.12] contrast-[1.08] saturate-[1.18] transition-all duration-700"
         />
         

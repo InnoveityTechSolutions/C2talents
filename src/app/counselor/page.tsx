@@ -632,7 +632,7 @@ export default function CounselorPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-white p-0.5 shadow-lg border border-amber-300 shrink-0 overflow-hidden">
-                  <img src="/images/leo-mascot.png" alt="Leo Bot" className="w-full h-full object-contain" />
+                  <img src="/images/leo-mascot.png" alt="Leo Bot" loading="lazy" decoding="async" className="w-full h-full object-contain" />
                 </div>
                 <div>
                   <h1 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
@@ -691,7 +691,7 @@ export default function CounselorPage() {
                         >
                           {msg.role === "bot" && (
                             <div className="w-9 h-9 rounded-2xl bg-white border border-purple-200 p-0.5 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
-                              <img src="/images/leo-mascot.png" alt="Leo Bot" className="w-full h-full object-contain" />
+                              <img src="/images/leo-mascot.png" alt="Leo Bot" loading="lazy" decoding="async" className="w-full h-full object-contain" />
                             </div>
                           )}
 

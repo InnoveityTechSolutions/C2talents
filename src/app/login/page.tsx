@@ -86,7 +86,7 @@ export default function StandaloneLoginPage() {
             {/* Logo */}
             <div className="flex items-center justify-between mb-4">
               <Link href="/">
-                <img src="/logo.png" alt="C2Talents Logo" className="h-11 w-auto" />
+                <img src="/logo.png" alt="C2Talents Logo" loading="lazy" decoding="async" className="h-11 w-auto" />
               </Link>
 
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#3b2075] bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
