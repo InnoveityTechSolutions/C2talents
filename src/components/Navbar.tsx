@@ -7,13 +7,15 @@ import {
   Sparkles, LogOut, User, ChevronDown, Search, GitCompare, Bookmark, 
   Menu, X, Landmark, Compass, CalendarDays, ClipboardList,
   Phone, Mail, Shield, Trophy, Building2,
-  Cpu, Palette, Briefcase, FlaskConical, Stethoscope, Scale, ChevronRight
+  Cpu, Palette, Briefcase, FlaskConical, Stethoscope, Scale, ChevronRight, Wand2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/providers/AuthProvider";
 import { LoginModal } from "./LoginModal";
 import { useRouter } from "next/navigation";
 import { RegisterCollegeButton } from "./RegisterCollegeButton";
+import { SearchOverlayModal } from "./SearchOverlayModal";
+import { WriteReviewModal } from "./WriteReviewModal";
 
 const megaMenuCategories = [
   {
@@ -84,6 +86,8 @@ export function Navbar() {
   const [streamDropdownOpen, setStreamDropdownOpen] = React.useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
+  const [overlayOpen, setOverlayOpen] = React.useState(false);
+  const [writeReviewOpen, setWriteReviewOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const [searchResults, setSearchResults] = React.useState<any[]>([]);
@@ -114,6 +118,18 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Global Ctrl+K / Cmd+K shortcut listener to open search overlay
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setOverlayOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   // Live Auto-complete Search Debounced Fetcher
   React.useEffect(() => {
     const q = searchQuery.trim();
@@ -129,8 +145,12 @@ export function Navbar() {
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/colleges?search=${encodeURIComponent(q)}`);
-        const data = await res.json();
-        setSearchResults(Array.isArray(data) ? data.slice(0, 7) : []);
+        if (res.ok && res.headers.get("content-type")?.includes("application/json")) {
+          const data = await res.json();
+          setSearchResults(Array.isArray(data) ? data.slice(0, 7) : []);
+        } else {
+          setSearchResults([]);
+        }
       } catch (err) {
         setSearchResults([]);
       } finally {
@@ -201,99 +221,26 @@ export function Navbar() {
           </Link>
 
           {/* Center: Live Auto-Complete Search Box */}
-          <div className="absolute left-1/2 -translate-x-1/2 w-96" ref={searchMenuRef}>
-            <form onSubmit={handleSearchSubmit} className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 z-10" />
-              <input
-                type="text"
-                placeholder="Search colleges, courses, locations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => {
-                  if (searchQuery.trim()) setSearchDropdownOpen(true);
-                }}
-                suppressHydrationWarning
-                className="w-full pl-10 pr-4 py-1.5 text-xs bg-stone-100 hover:bg-stone-150/90 border border-stone-200 rounded-xl focus:outline-none focus:border-indigo-900 focus:bg-white transition-all text-stone-800 placeholder-stone-400 font-medium h-9.5 shadow-2xs"
-              />
-            </form>
-
-            {/* Live Autocomplete Dropdown Menu */}
-            <AnimatePresence>
-              {searchDropdownOpen && searchQuery.trim() && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  className="absolute left-0 right-0 mt-2 bg-white border border-stone-200 rounded-2xl shadow-2xl overflow-hidden z-50 divide-y divide-stone-100 font-sans"
-                >
-                  <div className="max-h-80 overflow-y-auto p-1.5 no-scrollbar space-y-1">
-                    {searchLoading ? (
-                      <div className="p-4 text-center text-xs text-stone-400 font-medium flex items-center justify-center gap-2">
-                        <div className="w-3.5 h-3.5 border-2 border-indigo-900 border-t-transparent rounded-full animate-spin" />
-                        <span>Searching database...</span>
-                      </div>
-                    ) : searchResults.length === 0 ? (
-                      <div className="p-4 text-center text-xs text-stone-500 font-medium">
-                        No colleges found matching &quot;{searchQuery}&quot;
-                      </div>
-                    ) : (
-                      searchResults.map((c) => (
-                        <div
-                          key={c.id}
-                          onClick={() => {
-                            router.push(`/colleges/${c.id}`);
-                            setSearchDropdownOpen(false);
-                            setSearchQuery("");
-                          }}
-                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-orange-50 active:bg-orange-100 cursor-pointer transition-colors group"
-                        >
-                          <img
-                            src={c.image || "/images/campus-hero.jpg"}
-                            alt={c.name}
-                            className="w-10 h-10 rounded-lg object-cover border border-stone-200 shrink-0"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/images/campus-hero.jpg";
-                            }}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-bold text-stone-900 group-hover:text-orange-600 truncate">
-                              {c.name}
-                            </div>
-                            <div className="flex items-center gap-2 text-[10px] text-stone-500 mt-0.5">
-                              <span>{c.city || c.location}</span>
-                              <span>•</span>
-                              <span className="text-emerald-700 font-bold">{c.category || "College"}</span>
-                              {c.rating && (
-                                <>
-                                  <span>•</span>
-                                  <span className="text-amber-600 font-bold">{c.rating.toFixed(1)} ★</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      router.push(`/colleges?search=${encodeURIComponent(searchQuery.trim())}`);
-                      setSearchDropdownOpen(false);
-                    }}
-                    className="w-full p-2.5 bg-stone-50 hover:bg-indigo-900 hover:text-white text-stone-700 text-xs font-bold transition-colors flex items-center justify-between text-left"
-                  >
-                    <span>View all matching results for &quot;{searchQuery}&quot;</span>
-                    <span>→</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div className="absolute left-1/2 -translate-x-1/2 w-96 cursor-pointer" ref={searchMenuRef} onClick={() => setOverlayOpen(true)}>
+            <div className="relative flex items-center bg-stone-100 hover:bg-stone-150/90 border border-stone-200 rounded-xl px-3.5 py-2 text-xs text-stone-500 font-medium h-9.5 shadow-2xs transition-all">
+              <Search className="w-4 h-4 text-stone-400 mr-2.5 shrink-0" />
+              <span className="truncate">Search colleges, courses, locations...</span>
+              <span className="ml-auto text-[10px] bg-white border border-stone-200 px-1.5 py-0.5 rounded text-stone-400 font-mono">⌘K</span>
+            </div>
           </div>
 
-          {/* Right: Compare, Save, Account */}
-          <div className="flex items-center gap-4">
+          {/* Right: Write a Review, Compare, Save, Account */}
+          <div className="flex items-center gap-3 md:gap-4">
+            {/* Write a Review Button (Styled as dark pill button matching user design) */}
+            <Link
+              href="/write-review"
+              className="px-3.5 py-1.5 rounded-xl bg-[#111827] hover:bg-stone-800 text-white flex items-center gap-2 text-xs font-semibold cursor-pointer transition-all shadow-2xs hover:shadow-md border border-stone-800 shrink-0 group"
+              title="Write a Student Review"
+            >
+              <Wand2 className="w-4 h-4 text-white group-hover:rotate-12 transition-transform" />
+              <span className="font-semibold text-white tracking-tight">Write a Review</span>
+            </Link>
+
             {/* Compare Colleges */}
             <div className="relative group">
               <Link
@@ -395,7 +342,7 @@ export function Navbar() {
 
         {/* ROW 2: Horizontal Navigation Bar (Theme background: solid dark emerald green / bg-indigo-900) */}
         <div className="w-full bg-indigo-900 text-white shadow-inner relative z-30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-11 flex items-center justify-start lg:justify-between gap-3 md:gap-4 lg:gap-5 xl:gap-6 whitespace-nowrap overflow-visible">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-11 flex items-center justify-between gap-2 md:gap-3 lg:gap-4 xl:gap-5 whitespace-nowrap overflow-visible">
             {/* Home Link */}
             <Link
               href="/"
@@ -417,6 +364,7 @@ export function Navbar() {
             {/* Streams Vertical Dropdown Menu */}
             <div className="relative shrink-0" ref={streamMenuRef}>
               <button
+                suppressHydrationWarning
                 onClick={() => setStreamDropdownOpen(!streamDropdownOpen)}
                 onMouseEnter={() => setStreamDropdownOpen(true)}
                 className="group flex items-center gap-1 py-1 text-[11px] lg:text-xs font-extrabold text-white hover:text-orange-400 active:text-orange-400 transition-colors cursor-pointer uppercase tracking-wider whitespace-nowrap shrink-0"
@@ -517,7 +465,7 @@ export function Navbar() {
         {/* Right Actions */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setSearchOpen(!searchOpen)}
+            onClick={() => setOverlayOpen(true)}
             className="text-stone-700 hover:text-indigo-900 p-2"
           >
             <Search className="w-5 h-5" />
@@ -656,6 +604,14 @@ export function Navbar() {
 
               {/* Mobile auth & registration buttons */}
               <div className="pt-2 flex flex-col space-y-2">
+                <Link
+                  href="/write-review"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full text-center bg-[#111827] text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer hover:bg-stone-800 transition-colors"
+                >
+                  <Wand2 className="w-4 h-4 text-white" />
+                  <span>Write a Review</span>
+                </Link>
                 <RegisterCollegeButton onClick={() => setIsOpen(false)} className="w-full justify-center py-2.5" />
                 <Link
                   href="/counselor"
@@ -688,6 +644,18 @@ export function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Global Search Overlay Modal */}
+      <SearchOverlayModal
+        isOpen={overlayOpen}
+        onClose={() => setOverlayOpen(false)}
+      />
+
+      {/* Global Write a Review Modal */}
+      <WriteReviewModal
+        isOpen={writeReviewOpen}
+        onClose={() => setWriteReviewOpen(false)}
+      />
     </header>
   );
 }

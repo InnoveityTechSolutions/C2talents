@@ -99,6 +99,9 @@ export function HeroSlider({ slides: initialSlides, children }: HeroSliderProps)
     async function loadDynamicHeaderImages() {
       try {
         const res = await fetch("/api/header-images");
+        if (!res.ok) return;
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) return;
         const data = await res.json();
         if (data.success && Array.isArray(data.images) && data.images.length > 0) {
           const dbSlides: SlideData[] = data.images.map((img: any) => ({
@@ -147,9 +150,9 @@ export function HeroSlider({ slides: initialSlides, children }: HeroSliderProps)
   const currentSlide = activeSlides[currentIndex] || DEFAULT_SLIDES[0];
 
   return (
-    <div className="relative w-full h-[calc(100vh-140px)] md:h-[calc(100vh-160px)] min-h-[580px] max-h-[850px] overflow-hidden flex items-center bg-stone-950">
+    <div className="relative w-full h-[460px] sm:h-[480px] md:h-[470px] lg:h-[490px] min-h-[420px] max-h-[520px] overflow-visible flex items-center bg-stone-950">
       {/* Edge-to-Edge Full-Width Hero Background Image with Color & Vibrancy Enhancement */}
-      <div className="absolute inset-0 z-0 select-none overflow-hidden bg-stone-900">
+      <div className="absolute inset-0 z-0 select-none overflow-hidden bg-stone-900 rounded-b-3xl">
         <AnimatePresence mode="popLayout">
           <motion.div
             key={currentIndex}

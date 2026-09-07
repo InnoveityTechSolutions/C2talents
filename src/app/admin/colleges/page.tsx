@@ -52,7 +52,7 @@ export default function AdminAllCollegesPage() {
   async function fetchColleges() {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/colleges");
+      const res = await fetch("/api/admin/colleges", { cache: "no-store" });
       const data = await res.json();
       if (data.colleges) {
         setColleges(data.colleges);
@@ -100,6 +100,7 @@ export default function AdminAllCollegesPage() {
       (c.shortName && c.shortName.toLowerCase().includes(searchQuery.toLowerCase()));
 
     if (statusFilter === "PUBLISHED") return matchesSearch && c.status === "PUBLISHED";
+    if (statusFilter === "DATA SUBMITTED") return matchesSearch && (c.status === "DATA_SUBMITTED" || c.status === "SUBMITTED");
     if (statusFilter === "DRAFT") return matchesSearch && c.status === "DRAFT";
     if (statusFilter === "FEATURED") return matchesSearch && c.featured;
     return matchesSearch;
@@ -107,6 +108,7 @@ export default function AdminAllCollegesPage() {
 
   const totalCount = colleges.length;
   const publishedCount = colleges.filter((c) => c.status === "PUBLISHED").length;
+  const submittedCount = colleges.filter((c) => c.status === "DATA_SUBMITTED" || c.status === "SUBMITTED").length;
   const featuredCount = colleges.filter((c) => c.featured).length;
   const draftCount = colleges.filter((c) => c.status === "DRAFT").length;
 
@@ -126,11 +128,11 @@ export default function AdminAllCollegesPage() {
       gradient: "from-blue-600 to-indigo-700",
     },
     {
-      title: "Featured",
-      count: featuredCount,
-      sublabel: "Homepage Star",
-      icon: <Star className="w-7 h-7 text-white/90 shrink-0 fill-amber-300" />,
-      gradient: "from-amber-500 to-orange-600",
+      title: "Data Submitted",
+      count: submittedCount,
+      sublabel: "Updated by Team",
+      icon: <CheckCircle2 className="w-7 h-7 text-emerald-300 shrink-0" />,
+      gradient: "from-emerald-600 to-teal-700",
     },
     {
       title: "Pending Drafts",
@@ -212,12 +214,14 @@ export default function AdminAllCollegesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
         {/* Filter Tabs */}
         <div className="flex items-center space-x-1 border-b border-purple-100 pb-0.5">
-          {["ALL", "PUBLISHED", "DRAFT", "FEATURED"].map((status) => {
+          {["ALL", "PUBLISHED", "DATA SUBMITTED", "DRAFT", "FEATURED"].map((status) => {
             const count =
               status === "ALL"
                 ? totalCount
                 : status === "PUBLISHED"
                 ? publishedCount
+                : status === "DATA SUBMITTED"
+                ? submittedCount
                 : status === "FEATURED"
                 ? featuredCount
                 : draftCount;
@@ -388,15 +392,19 @@ export default function AdminAllCollegesPage() {
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
                             college.status === "PUBLISHED"
                               ? "bg-purple-50 text-[#3b2075] border border-purple-200"
+                              : college.status === "DATA_SUBMITTED" || college.status === "SUBMITTED"
+                              ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
                               : "bg-amber-50 text-amber-900 border border-amber-200"
                           }`}
                         >
                           {college.status === "PUBLISHED" ? (
                             <CheckCircle2 className="w-3.5 h-3.5 text-[#3b2075]" />
+                          ) : college.status === "DATA_SUBMITTED" || college.status === "SUBMITTED" ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           ) : (
                             <Clock className="w-3.5 h-3.5 text-amber-700" />
                           )}
-                          {college.status}
+                          {college.status === "DATA_SUBMITTED" ? "SUBMITTED" : college.status}
                         </span>
                       </td>
 

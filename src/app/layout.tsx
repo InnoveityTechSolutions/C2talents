@@ -41,8 +41,9 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${lora.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans">
+      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans" suppressHydrationWarning>
         <AccessibilityProvider>
           <AuthProvider>
             <CompareProvider>

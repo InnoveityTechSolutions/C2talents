@@ -1,12 +1,118 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   GraduationCap, Lock, Mail, ShieldCheck, ArrowRight,
   Loader2, AlertCircle, Sparkles, Zap, CheckCircle2, Eye, EyeOff
 } from "lucide-react";
+
+interface AnimatedPasswordInputProps {
+  value: string;
+  onChange: (val: string) => void;
+  showPassword: boolean;
+  onToggleShowPassword: () => void;
+  placeholder?: string;
+  id?: string;
+  required?: boolean;
+}
+
+function AnimatedPasswordInput({
+  value,
+  onChange,
+  showPassword,
+  onToggleShowPassword,
+  placeholder = "••••••••",
+  id = "admin-password",
+  required = true,
+}: AnimatedPasswordInputProps) {
+  return (
+    <div className="relative w-full">
+      <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-20" />
+
+      {/* Real Input Element for native typing, focus, copy-paste, accessibility */}
+      <input
+        id={id}
+        type={showPassword ? "text" : "password"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        autoComplete="current-password"
+        className={`w-full h-10.5 bg-slate-50/80 border border-slate-200 rounded-xl pl-10 pr-10 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-[#6D28D9] transition-all shadow-2xs ${
+          value ? "text-transparent caret-[#6D28D9]" : "text-slate-900 placeholder:text-slate-400"
+        }`}
+      />
+
+      {/* Animated TextRoll Character Overlay */}
+      {value.length > 0 && (
+        <div
+          className="absolute left-10 right-10 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center gap-[1px] overflow-hidden"
+          aria-hidden="true"
+        >
+          {value.split("").map((char, index) => (
+            <span
+              key={index}
+              className="relative inline-block overflow-hidden h-4 w-[0.65em] select-none text-center font-mono font-bold align-middle"
+            >
+              <motion.span
+                initial={false}
+                animate={{ y: showPassword ? "0%" : "-50%" }}
+                transition={{
+                  type: "spring",
+                  stiffness: 380,
+                  damping: 26,
+                  delay: index * 0.015,
+                }}
+                className="flex flex-col items-center justify-start absolute left-0 top-0 w-full"
+              >
+                {/* Unmasked character */}
+                <span className="h-4 flex items-center justify-center text-slate-900 leading-none">
+                  {char}
+                </span>
+                {/* Masked bullet */}
+                <span className="h-4 flex items-center justify-center text-[#6D28D9] text-[13px] leading-none">
+                  •
+                </span>
+              </motion.span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Motion Animated Eye Toggle Button */}
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        type="button"
+        onClick={onToggleShowPassword}
+        aria-label={showPassword ? "Hide password" : "Show password"}
+        aria-pressed={showPassword}
+        aria-controls={id}
+        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#6D28D9] transition-colors p-1 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40 cursor-pointer z-20"
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={showPassword ? "show" : "hide"}
+            initial={{ opacity: 0, rotate: -25, scale: 0.8 }}
+            animate={{ opacity: 1, rotate: 0, scale: 1 }}
+            exit={{ opacity: 0, rotate: 25, scale: 0.8 }}
+            transition={{ duration: 0.15 }}
+            className="block"
+          >
+            {showPassword ? (
+              <EyeOff className="w-4 h-4 text-[#6D28D9]" />
+            ) : (
+              <Eye className="w-4 h-4" />
+            )}
+          </motion.span>
+        </AnimatePresence>
+      </motion.button>
+    </div>
+  );
+}
 
 export default function StandaloneManagerLoginPage() {
   const router = useRouter();
@@ -164,30 +270,16 @@ export default function StandaloneManagerLoginPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Password</label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="w-full h-10.5 bg-slate-50/80 border border-slate-200 rounded-xl pl-10 pr-10 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-[#6D28D9] font-medium transition-all shadow-2xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-purple-700 transition-colors p-1 rounded-md focus:outline-none cursor-pointer"
-                    title={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4 text-purple-700" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
+                <label htmlFor="admin-password" className="text-xs font-semibold text-slate-700 block mb-1">
+                  Password
+                </label>
+                <AnimatedPasswordInput
+                  id="admin-password"
+                  value={password}
+                  onChange={setPassword}
+                  showPassword={showPassword}
+                  onToggleShowPassword={() => setShowPassword(!showPassword)}
+                />
               </div>
 
               <motion.button

@@ -8,7 +8,7 @@ import { collegesData, RankedCollege } from "@/data/colleges";
 import { useCompare } from "@/context/CompareContext";
 
 interface Props {
-  colleges?: RankedCollege[];
+  colleges?: any[];
 }
 
 const streamTabs = [
@@ -47,13 +47,39 @@ export function TopRankedTable({ colleges: propColleges }: Props) {
   };
 
   const currentColleges = React.useMemo(() => {
+    const streamCategoryMap: Record<string, string> = {
+      btech: "Engineering",
+      mba: "Management",
+      mbbs: "Medical",
+      arts: "Arts & Science",
+      commerce: "Commerce",
+      law: "Law",
+    };
+
+    if (Array.isArray(propColleges) && propColleges.length > 0) {
+      const targetCat = streamCategoryMap[activeTab] || "";
+      const filteredFromDb = propColleges.filter((c) => {
+        if (!targetCat) return true;
+        const cat = (c.category || c.type || "").toLowerCase();
+        return cat.includes(targetCat.toLowerCase());
+      });
+      if (filteredFromDb.length > 0) {
+        return filteredFromDb
+          .sort((a, b) => (a.nirfRank || 999) - (b.nirfRank || 999))
+          .slice(0, 10);
+      }
+    }
+
     const filtered = collegesData.filter((c) => c.stream === activeTab);
     if (filtered.length > 0) {
-      return filtered.sort((a, b) => (a.nirfRank || 99) - (b.nirfRank || 99));
+      return filtered
+        .sort((a, b) => (a.nirfRank || 999) - (b.nirfRank || 999))
+        .slice(0, 10);
     }
-    // Fallback if specific stream sub-filter has few items
-    return collegesData.slice(0, 6).sort((a, b) => (a.nirfRank || 99) - (b.nirfRank || 99));
-  }, [activeTab]);
+    return collegesData
+      .sort((a, b) => (a.nirfRank || 999) - (b.nirfRank || 999))
+      .slice(0, 10);
+  }, [activeTab, propColleges]);
 
   const { ref, hasRevealed } = useScrollReveal<HTMLDivElement>();
 

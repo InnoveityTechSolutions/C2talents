@@ -1,24 +1,31 @@
 "use client";
 
-import * as React from "react";
+import React from "react";
 import Link from "next/link";
-import { Star, MapPin, Award, CheckCircle, ChevronRight } from "lucide-react";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { Building2, MapPin, Award, CheckCircle2, ChevronRight, Scale, Check } from "lucide-react";
 import { useCompare } from "@/context/CompareContext";
+
+interface Course {
+  id?: string;
+  title: string;
+  feesPerYear?: number;
+  duration?: string;
+}
 
 interface College {
   id: string;
   name: string;
   location: string;
-  rating: number;
-  type: string;
-  naacGrade: string | null;
-  nirfRank: number | null;
-  feesPerYear: number;
-  avgPackage: number;
-  highestPackage: number;
-  image: string;
-  courses: any[];
+  rating?: number;
+  type?: string;
+  ownership?: string;
+  naacGrade?: string | null;
+  nirfRank?: number | null;
+  feesPerYear?: number;
+  avgPackage?: number;
+  highestPackage?: number;
+  image?: string;
+  courses?: Course[];
 }
 
 interface Props {
@@ -27,8 +34,9 @@ interface Props {
 
 export function CollegesGrid({ colleges }: Props) {
   const { toggleCollege, isSelected } = useCompare();
-  // Use first 6 colleges
-  const featured = colleges.slice(0, 6);
+
+  const displayColleges = Array.isArray(colleges) ? colleges : [];
+  const featured = displayColleges.slice(0, 6);
 
   return (
     <section className="py-20 px-6 bg-[#FAF9F5]/40 border-b border-stone-200/40">
@@ -48,147 +56,145 @@ export function CollegesGrid({ colleges }: Props) {
           <div className="pt-1">
             <Link
               href="/colleges"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-stone-100 hover:bg-orange-50 hover:text-orange-600 text-xs font-bold text-stone-700 transition-all border border-stone-200/80 hover:border-orange-200 font-sans group shadow-2xs cursor-pointer uppercase tracking-wider"
+              className="inline-flex items-center gap-2 text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline transition-all"
             >
-              <span>Browse All Colleges</span>
-              <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-orange-500 transition-transform group-hover:translate-x-0.5" />
+              <span>Explore all verified institutions</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
 
-        {/* Card Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {featured.map((college, idx) => {
-            const displayCourse = college.courses?.[0]?.title || "B.Tech Computer Science";
-            const displayCourseFee = college.courses?.[0]?.feesPerYear || college.feesPerYear;
-            const { ref, hasRevealed } = useScrollReveal<HTMLDivElement>({ delay: idx * 80 });
-            const checked = isSelected(college.id);
+        {/* Grid */}
+        {featured.length === 0 ? (
+          <div className="text-center py-16 px-6 bg-white border border-stone-200/80 rounded-3xl max-w-md mx-auto space-y-3">
+            <Building2 className="w-10 h-10 text-stone-400 mx-auto" />
+            <h3 className="text-base font-bold text-stone-800">No Colleges Available</h3>
+            <p className="text-xs text-stone-500">Check back soon or explore our complete college directory.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+            {featured.map((college) => {
+              const selected = isSelected(college.id);
 
-            return (
-              <div
-                ref={ref}
-                key={college.id}
-                className={`group flex flex-col bg-white border ${checked ? "border-indigo-600 ring-2 ring-indigo-500/20" : "border-stone-200/60"} rounded-2xl overflow-hidden shadow-[0_4px_25px_-5px_rgba(0,0,0,0.02)] transition-all duration-300 hover:shadow-md hover:scale-[1.01] scroll-reveal ${hasRevealed ? "revealed" : ""
-                  }`}
-              >
-                {/* College Image */}
-                <div className="relative h-48 overflow-hidden bg-stone-100 flex-shrink-0">
-                  <img
-                    src={college.image}
-                    alt={college.name}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/images/campus-hero.jpg";
-                    }}
-                  />
+              return (
+                <div
+                  key={college.id}
+                  className="group bg-white rounded-2xl border border-stone-200/80 overflow-hidden shadow-sm hover:shadow-xl hover:border-brand-navy/30 transition-all duration-300 flex flex-col justify-between"
+                >
+                  {/* Top Image Banner */}
+                  <div className="relative h-48 overflow-hidden bg-stone-100">
+                    <img
+                      src={college.image || "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&q=80&w=1000"}
+                      alt={college.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&q=80&w=1000";
+                      }}
+                    />
 
-                  {/* Premium Ribbon Style Badge */}
-                  <div className="absolute top-4 left-4 flex flex-col gap-1.5">
-                    {college.nirfRank && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-wide uppercase px-2.5 py-1 bg-indigo-900 text-white rounded-lg shadow-sm">
-                        <Award className="w-3.5 h-3.5 text-amber-300" />
-                        NIRF #{college.nirfRank}
-                      </span>
-                    )}
-                    {college.naacGrade && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-stone-900/90 text-stone-100 backdrop-blur-sm self-start">
-                        NAAC {college.naacGrade}
-                      </span>
-                    )}
-                  </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-900/60 via-transparent to-transparent opacity-80" />
 
-                  {/* Status Indicator */}
-                  <div className="absolute top-4 right-4">
-                    <span className="text-[9px] font-extrabold tracking-wider uppercase px-2 py-1 rounded-md bg-white text-stone-900 border border-stone-200/30 shadow-sm">
-                      {college.type}
-                    </span>
-                  </div>
-
-                  {/* Circular Rating Badge */}
-                  <div className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white flex items-center justify-center border border-stone-100 shadow-md">
-                    <div className="relative flex flex-col items-center justify-center leading-none">
-                      <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500 mb-0.5" />
-                      <span className="text-xs font-bold text-stone-800">{college.rating.toFixed(1)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1 text-stone-400 text-[11px] font-bold uppercase tracking-wider">
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>{college.location}</span>
-                    </div>
-                    <Link
-                      href={`/colleges/${college.id}`}
-                      className="block font-serif text-base font-semibold text-brand-navy hover:text-indigo-900 leading-snug group-hover:underline min-h-[44px] flex items-center line-clamp-2"
-                    >
-                      {college.name}
-                    </Link>
-                    <div className="bg-[#FAF9F5] rounded-xl p-3 border border-stone-100 mt-2">
-                      <div className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">
-                        Top Program
-                      </div>
-                      <div className="text-xs font-bold text-stone-800 mt-0.5 truncate">
-                        {displayCourse}
-                      </div>
-                      <div className="text-xs text-indigo-900 font-semibold mt-1">
-                        ₹{(displayCourseFee / 100000).toFixed(2)}L / Year
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions & Compare Checkbox */}
-                  <div className="pt-4 border-t border-stone-100 flex flex-col space-y-3">
-                    {/* Stats Strip */}
-                    <div className="grid grid-cols-2 gap-4 text-xs font-semibold text-stone-500 pb-1">
-                      <div>
-                        <div className="text-[9px] font-bold text-stone-400 uppercase">Avg CTC</div>
-                        <span className="text-stone-850 font-bold text-xs">{college.avgPackage} LPA</span>
-                      </div>
-                      <div>
-                        <div className="text-[9px] font-bold text-stone-400 uppercase">Highest CTC</div>
-                        <span className="text-stone-850 font-bold text-xs">{college.highestPackage} LPA</span>
-                      </div>
-                    </div>
-
-                    {/* Action Row */}
-                    <div className="flex items-center justify-between gap-3">
-                      <label className="flex items-center gap-2 cursor-pointer font-sans select-none shrink-0 group/cmp">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleCollege(college)}
-                          className="w-4.5 h-4.5 rounded border-stone-300 text-indigo-900 focus:ring-indigo-900/10 cursor-pointer accent-indigo-900"
-                        />
-                        <span className={`text-xs font-semibold ${checked ? "text-indigo-900 font-bold" : "text-stone-500 group-hover/cmp:text-stone-700"}`}>
-                          {checked ? "Comparing" : "Compare"}
+                    {/* Badges */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
+                      {college.naacGrade && college.naacGrade !== "Not Accredited" && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-500/90 backdrop-blur-md text-white text-[10px] font-bold shadow-xs">
+                          <Award className="w-3 h-3" /> NAAC {college.naacGrade}
                         </span>
-                      </label>
-                      <div className="flex gap-2 w-full justify-end">
-                        <Link
-                          href={`/colleges/${college.id}`}
-                          className="px-3.5 py-2 border border-stone-200 hover:border-stone-300 text-stone-650 hover:text-stone-800 text-[11px] font-bold rounded-xl transition-all"
-                        >
-                          View Courses
-                        </Link>
-                        <button
-                          onClick={() => alert("Brochure download details would be opened.")}
-                          className="px-3.5 py-2 bg-indigo-900 hover:bg-indigo-950 text-white text-[11px] font-bold rounded-xl transition-all cursor-pointer"
-                        >
-                          Brochure
-                        </button>
+                      )}
+                      {college.nirfRank && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-emerald-600/90 backdrop-blur-md text-white text-[10px] font-bold shadow-xs">
+                          NIRF #{college.nirfRank}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="absolute top-3 right-3">
+                      <span className="px-2.5 py-0.5 rounded-md bg-stone-900/70 backdrop-blur-md text-white text-[10px] font-medium border border-white/20">
+                        {college.ownership || college.type || "Institution"}
+                      </span>
+                    </div>
+
+                    {/* Rating at bottom left of image */}
+                    <div className="absolute bottom-3 left-3 text-white flex items-center gap-1.5">
+                      <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md px-2 py-0.5 rounded text-xs font-bold border border-white/30">
+                        <span className="text-amber-300">★</span>
+                        <span>{college.rating?.toFixed(1) || "4.5"}</span>
                       </div>
                     </div>
                   </div>
+
+                  {/* Body Content */}
+                  <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-bold text-stone-900 font-serif leading-snug group-hover:text-orange-600 transition-colors line-clamp-2">
+                        {college.name}
+                      </h3>
+
+                      <div className="flex items-center gap-1.5 text-xs text-stone-500 font-sans">
+                        <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                        <span className="truncate">{college.location}</span>
+                      </div>
+                    </div>
+
+                    {/* Key Stats Grid */}
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-stone-100 text-xs">
+                      <div className="bg-stone-50 p-2.5 rounded-xl border border-stone-100">
+                        <span className="text-[10px] text-stone-400 font-bold block uppercase tracking-wider">Avg Package</span>
+                        <span className="font-bold text-stone-900 text-sm">
+                          {college.avgPackage ? `₹${college.avgPackage} LPA` : "N/A"}
+                        </span>
+                      </div>
+
+                      <div className="bg-stone-50 p-2.5 rounded-xl border border-stone-100">
+                        <span className="text-[10px] text-stone-400 font-bold block uppercase tracking-wider">Annual Fees</span>
+                        <span className="font-bold text-stone-900 text-sm">
+                          {college.feesPerYear ? `₹${(college.feesPerYear / 1000).toFixed(0)}K` : "N/A"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="pt-2 flex items-center gap-2">
+                      <Link
+                        href={`/colleges/${college.id}`}
+                        className="flex-1 text-center py-2.5 px-4 rounded-xl bg-brand-navy hover:bg-[#3b2075] active:bg-[#3b2075] focus:bg-[#3b2075] text-white text-xs font-bold transition-all duration-200 shadow-2xs cursor-pointer active:scale-[0.98]"
+                      >
+                        View Details
+                      </Link>
+
+                      <button
+                        onClick={() =>
+                          toggleCollege({
+                            id: college.id,
+                            name: college.name,
+                            location: college.location,
+                            rating: college.rating || 4.5,
+                            type: college.type || "College",
+                            naacGrade: college.naacGrade || "A",
+                            nirfRank: college.nirfRank || null,
+                            feesPerYear: college.feesPerYear || 50000,
+                            avgPackage: college.avgPackage || 4.5,
+                            highestPackage: college.highestPackage || 12.0,
+                            image: college.image || "",
+                          })
+                        }
+                        className={`p-2.5 rounded-xl border transition-all ${
+                          selected
+                            ? "bg-amber-50 border-amber-300 text-amber-700"
+                            : "bg-white border-stone-200 text-stone-600 hover:border-stone-400"
+                        }`}
+                        title={selected ? "Remove from Compare" : "Add to Compare"}
+                      >
+                        {selected ? <Check className="w-4 h-4 text-amber-600" /> : <Scale className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );

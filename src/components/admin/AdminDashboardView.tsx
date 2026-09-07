@@ -57,6 +57,7 @@ export function AdminDashboardView() {
       title: "Total Colleges",
       count: metrics?.totalColleges ?? 0,
       sublabel: "Live Database Count",
+      href: "/manager/colleges",
       icon: <Building2 className="w-7 h-7 text-amber-300 shrink-0" />,
       gradient: "from-[#1f0c3d] via-[#2d1659] to-[#3b2075]",
     },
@@ -64,6 +65,7 @@ export function AdminDashboardView() {
       title: "Pending Colleges",
       count: metrics?.pendingColleges ?? 0,
       sublabel: "Awaiting Review",
+      href: "/manager/submitted-colleges",
       icon: <Clock className="w-7 h-7 text-white/90 shrink-0" />,
       gradient: "from-amber-500 to-orange-600",
     },
@@ -71,6 +73,7 @@ export function AdminDashboardView() {
       title: "Published Colleges",
       count: metrics?.publishedColleges ?? 0,
       sublabel: "Live on Web Portal",
+      href: "/manager/colleges",
       icon: <CheckCircle2 className="w-7 h-7 text-white/90 shrink-0" />,
       gradient: "from-blue-600 to-indigo-700",
     },
@@ -78,6 +81,7 @@ export function AdminDashboardView() {
       title: "Categories",
       count: metrics?.categories ?? 0,
       sublabel: "Active Streams & Branches",
+      href: "/manager/categories",
       icon: <FolderTree className="w-7 h-7 text-white/90 shrink-0" />,
       gradient: "from-purple-600 to-indigo-800",
     },
@@ -85,6 +89,7 @@ export function AdminDashboardView() {
       title: "Courses",
       count: metrics?.courses ?? 0,
       sublabel: "Degrees & Diplomas",
+      href: "/manager/courses",
       icon: <BookOpen className="w-7 h-7 text-white/90 shrink-0" />,
       gradient: "from-cyan-600 to-teal-700",
     },
@@ -92,6 +97,7 @@ export function AdminDashboardView() {
       title: "News & Articles",
       count: metrics?.news ?? 0,
       sublabel: "Exam & Alert News",
+      href: "/manager/news",
       icon: <Newspaper className="w-7 h-7 text-white/90 shrink-0" />,
       gradient: "from-rose-600 to-red-700",
     },
@@ -99,6 +105,7 @@ export function AdminDashboardView() {
       title: "Users & Leads",
       count: metrics?.usersAndLeads ?? 0,
       sublabel: "Registered Accounts & Inquiries",
+      href: "/manager/users",
       icon: <Users className="w-7 h-7 text-white/90 shrink-0" />,
       gradient: "from-emerald-600 to-green-700",
     },
@@ -106,13 +113,14 @@ export function AdminDashboardView() {
       title: "Analytics Reviews",
       count: metrics?.reviews ?? 0,
       sublabel: "Verified Feedback",
+      href: "/manager/analytics",
       icon: <Star className="w-7 h-7 text-white/90 shrink-0 fill-amber-300" />,
       gradient: "from-amber-600 to-yellow-600",
     },
   ];
 
   return (
-    <div className="space-y-8 pb-12 font-sans text-stone-900 p-6 bg-[#FAF9F5] min-h-screen w-full max-w-none">
+    <div className="space-y-8 pb-12 font-sans text-stone-900 w-full max-w-none">
       {/* 1. HEADER BANNER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#1f0c3d] via-[#2d1659] to-[#3b2075] text-white p-6 rounded-3xl shadow-lg border border-[#3b2075]/60">
         <div>
@@ -147,32 +155,38 @@ export function AdminDashboardView() {
         </div>
       </div>
 
-      {/* 2. 8 VIBRANT GRADIENT METRIC CARDS */}
+      {/* 2. 8 VIBRANT GRADIENT METRIC CARDS (INTERACTIVE & CLICKABLE) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
         {cardList.map((card, idx) => (
-          <div
+          <Link
             key={idx}
-            className={`bg-gradient-to-br ${card.gradient} rounded-2xl p-5 text-white shadow-md hover:shadow-lg transition-all duration-200 flex flex-col justify-between border border-white/10`}
+            href={card.href}
+            className={`bg-gradient-to-br ${card.gradient} rounded-2xl p-5 text-white shadow-md hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all duration-200 flex flex-col justify-between border border-white/10 cursor-pointer group`}
           >
             <div className="flex items-start justify-between gap-2">
               <div>
-                <div className="text-xs font-semibold text-white/90 tracking-tight">{card.title}</div>
+                <div className="text-xs font-semibold text-white/90 tracking-tight group-hover:text-amber-200 transition-colors">
+                  {card.title}
+                </div>
                 <div className="text-3xl font-extrabold text-white mt-1 tracking-tight">
                   {loading ? <span className="animate-pulse">...</span> : card.count}
                 </div>
               </div>
-              {card.icon}
+              <div className="group-hover:scale-110 transition-transform">
+                {card.icon}
+              </div>
             </div>
 
             <div className="border-t border-white/20 my-3"></div>
 
             <div className="flex items-center justify-between text-[11px] text-white/90 font-medium">
               <span>{card.sublabel}</span>
-              <span className="font-bold text-white bg-white/20 px-2 py-0.5 rounded-md">
+              <span className="font-bold text-white bg-white/20 group-hover:bg-white/30 px-2 py-0.5 rounded-md transition-colors flex items-center gap-1">
                 {loading ? "..." : card.count}
+                <span className="text-[10px] opacity-70 group-hover:translate-x-0.5 transition-transform">→</span>
               </span>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 

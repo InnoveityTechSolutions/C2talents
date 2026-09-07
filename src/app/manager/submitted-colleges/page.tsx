@@ -305,6 +305,18 @@ export default function AdminSubmittedCollegesPage() {
           {colleges.map((item) => {
             const data = item.submittedDataParsed || {};
             const collegeName = sanitizeCollegeName(data.name || item.collegeName);
+            const submittedDate = item.updatedAt || item.createdAt;
+            const formattedDateTime = submittedDate
+              ? new Date(submittedDate).toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })
+              : "N/A";
+
             return (
               <div
                 key={item.id}
@@ -320,6 +332,10 @@ export default function AdminSubmittedCollegesPage() {
                       <div className="text-xs text-stone-500 flex items-center gap-1.5 font-medium">
                         <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                         <span className="truncate">{data.location || item.location || "Location N/A"}</span>
+                      </div>
+                      <div className="text-[11px] text-[#3b2075] flex items-center gap-1.5 font-bold pt-0.5">
+                        <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>Submitted: {formattedDateTime}</span>
                       </div>
                     </div>
 
@@ -345,6 +361,13 @@ export default function AdminSubmittedCollegesPage() {
 
                   {/* DATA SUMMARY CONTAINER */}
                   <div className="p-4 rounded-2xl bg-stone-50/80 border border-stone-200/80 text-xs space-y-2.5 font-medium">
+                    <div className="flex justify-between items-center text-[11px] gap-2 border-b border-stone-200/60 pb-2">
+                      <span className="text-stone-500 shrink-0 font-semibold">Submitted Date & Time:</span>
+                      <span className="font-extrabold text-[#3b2075] flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                        {formattedDateTime}
+                      </span>
+                    </div>
                     <div className="flex justify-between items-center text-[11px] gap-2">
                       <span className="text-stone-500 shrink-0">Type & Category:</span>
                       <span className="font-bold text-stone-900 truncate text-right">
@@ -416,10 +439,10 @@ export default function AdminSubmittedCollegesPage() {
 
       {/* FULL EDIT MODAL */}
       {reviewModal.isOpen && reviewModal.item && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-          <div className="bg-[#120626] border border-purple-800/60 rounded-3xl w-full max-w-6xl max-h-[92vh] overflow-y-auto shadow-2xl space-y-4 text-white p-4 md:p-6 animate-in fade-in zoom-in-95 my-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-purple-800/50 pb-4 sticky top-0 bg-[#120626]/95 backdrop-blur-md z-30 pt-1">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-[#120626] border border-purple-800/60 rounded-3xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl text-white animate-in fade-in zoom-in-95 my-auto">
+            {/* Fixed Modal Header */}
+            <div className="flex items-center justify-between border-b border-purple-800/50 p-4 md:p-6 bg-[#120626] shrink-0 z-30">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
                   <Building2 className="w-5 h-5" />
@@ -457,77 +480,80 @@ export default function AdminSubmittedCollegesPage() {
               </div>
             </div>
 
-            {reviewModal.mode === "EDIT" && (
-              <div className="space-y-4">
-                <div className="p-3.5 rounded-2xl bg-purple-900/40 border border-purple-700/50 text-xs text-purple-200 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>
-                      Modifying form fields updates the profile submission data for <strong>{sanitizeCollegeName(reviewModal.item.collegeName)}</strong>. Click <strong>"Save Corrections & Update Data"</strong> below.
-                    </span>
+            {/* Scrollable Modal Body */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+              {reviewModal.mode === "EDIT" && (
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-2xl bg-purple-900/40 border border-purple-700/50 text-xs text-purple-200 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>
+                        Modifying form fields updates the profile submission data for <strong>{sanitizeCollegeName(reviewModal.item.collegeName)}</strong>. Click <strong>"Save Corrections & Update Data"</strong> below.
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => setReviewModal({ ...reviewModal, mode: "REQUEST_CHANGES" })}
+                      className="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 font-extrabold text-[11px] shrink-0 hover:bg-amber-500/30 cursor-pointer"
+                    >
+                      Request Revision from College
+                    </button>
                   </div>
 
-                  <button
-                    onClick={() => setReviewModal({ ...reviewModal, mode: "REQUEST_CHANGES" })}
-                    className="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 font-extrabold text-[11px] shrink-0 hover:bg-amber-500/30 cursor-pointer"
-                  >
-                    Request Revision from College
-                  </button>
+                  {/* Render the full 12-section CollegeForm */}
+                  <div className="bg-[#16082d] border border-purple-800/40 rounded-3xl p-4 md:p-6 shadow-xl">
+                    <CollegeForm
+                      initialData={reviewModal.item.submittedDataParsed || {
+                        name: sanitizeCollegeName(reviewModal.item.collegeName),
+                        location: reviewModal.item.location,
+                        email: reviewModal.item.email,
+                        mobile: reviewModal.item.mobile,
+                        website: reviewModal.item.website,
+                      }}
+                      isCollegePortal={true}
+                      onSubmitPortal={handleAdminSaveSubmittedData}
+                    />
+                  </div>
                 </div>
+              )}
 
-                {/* Render the full 12-section CollegeForm */}
-                <div className="bg-[#16082d] border border-purple-800/40 rounded-3xl p-4 md:p-6 shadow-xl">
-                  <CollegeForm
-                    initialData={reviewModal.item.submittedDataParsed || {
-                      name: sanitizeCollegeName(reviewModal.item.collegeName),
-                      location: reviewModal.item.location,
-                      email: reviewModal.item.email,
-                      mobile: reviewModal.item.mobile,
-                      website: reviewModal.item.website,
-                    }}
-                    isCollegePortal={true}
-                    onSubmitPortal={handleAdminSaveSubmittedData}
-                  />
+              {reviewModal.mode === "REQUEST_CHANGES" && (
+                <div className="space-y-4 p-4 bg-[#16082d] rounded-2xl border border-purple-800/40">
+                  <p className="text-xs text-purple-200 leading-relaxed font-medium">
+                    Provide specific comments or requested revisions for <strong>{sanitizeCollegeName(reviewModal.item.collegeName)}</strong>. The college status will be updated to <code>NEEDS_REVISION</code> allowing them to update their submission.
+                  </p>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-purple-300 mb-1">
+                      Requested Revisions / Revision Notes <span className="text-amber-400">*</span>
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={reviewModal.adminNotes}
+                      onChange={(e) => setReviewModal((prev) => ({ ...prev, adminNotes: e.target.value }))}
+                      placeholder="e.g. Please update hostel fee structure and upload high-resolution campus banner images."
+                      className="w-full p-3 rounded-xl bg-[#0d041a] border border-purple-800 text-xs text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={() => setReviewModal({ ...reviewModal, mode: "EDIT" })}
+                      className="py-3 px-5 rounded-xl bg-purple-900/60 hover:bg-purple-800 text-purple-200 font-bold text-xs cursor-pointer"
+                    >
+                      ← Back to Edit Form
+                    </button>
+                    <button
+                      onClick={executeRequestChanges}
+                      disabled={submitting}
+                      className="flex-1 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send Revision Request to College"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {reviewModal.mode === "REQUEST_CHANGES" && (
-              <div className="space-y-4 p-4 bg-[#16082d] rounded-2xl border border-purple-800/40">
-                <p className="text-xs text-purple-200 leading-relaxed font-medium">
-                  Provide specific comments or requested revisions for <strong>{sanitizeCollegeName(reviewModal.item.collegeName)}</strong>. The college status will be updated to <code>NEEDS_REVISION</code> allowing them to update their submission.
-                </p>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-purple-300 mb-1">
-                    Requested Revisions / Revision Notes <span className="text-amber-400">*</span>
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={reviewModal.adminNotes}
-                    onChange={(e) => setReviewModal((prev) => ({ ...prev, adminNotes: e.target.value }))}
-                    placeholder="e.g. Please update hostel fee structure and upload high-resolution campus banner images."
-                    className="w-full p-3 rounded-xl bg-[#0d041a] border border-purple-800 text-xs text-white focus:outline-none focus:border-amber-400"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={() => setReviewModal({ ...reviewModal, mode: "EDIT" })}
-                    className="py-3 px-5 rounded-xl bg-purple-900/60 hover:bg-purple-800 text-purple-200 font-bold text-xs cursor-pointer"
-                  >
-                    ← Back to Edit Form
-                  </button>
-                  <button
-                    onClick={executeRequestChanges}
-                    disabled={submitting}
-                    className="flex-1 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send Revision Request to College"}
-                  </button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}

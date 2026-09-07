@@ -42,6 +42,9 @@ model User {
   student      StudentProfile?
   college      CollegeProfile?
   admissionLeads AdmissionLead[]
+  studyAbroadLeads StudyAbroadLead[]
+
+  @@map("user")
 }
 
 model StudentProfile {
@@ -64,6 +67,8 @@ model StudentProfile {
   applications             Application[]
   leads                    Lead[]
   reviews                  Review[]
+
+  @@map("studentprofile")
 }
 
 model CollegeProfile {
@@ -154,6 +159,8 @@ model CollegeProfile {
   enquiryLeads            EnquiryLead[]
   content                 CollegeContent?
   admissionLeads          AdmissionLead[]
+
+  @@map("collegeprofile")
 }
 
 model Category {
@@ -164,6 +171,8 @@ model Category {
   icon        String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@map("category")
 }
 
 model NewsArticle {
@@ -177,6 +186,8 @@ model NewsArticle {
   status    String   @default("PUBLISHED") // DRAFT, PUBLISHED
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("newsarticle")
 }
 
 model EnquiryLead {
@@ -190,6 +201,8 @@ model EnquiryLead {
   status    String          @default("NEW")
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
+
+  @@map("enquirylead")
 }
 
 model GalleryImage {
@@ -201,6 +214,8 @@ model GalleryImage {
   caption   String?
   tags      String?
   createdAt DateTime       @default(now())
+
+  @@map("galleryimage")
 }
 
 model Course {
@@ -222,6 +237,8 @@ model Course {
   updatedAt    DateTime       @updatedAt
   applications Application[]
   admissionLeads AdmissionLead[]
+
+  @@map("course")
 }
 
 model Scholarship {
@@ -263,6 +280,8 @@ model Scholarship {
   @@index([scholarshipType])
   @@index([status])
   @@index([isPublished])
+
+  @@map("scholarship")
 }
 
 model Application {
@@ -276,6 +295,8 @@ model Application {
   status     ApplicationStatus @default(SUBMITTED)
   appliedAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
+
+  @@map("application")
 }
 
 model Lead {
@@ -287,6 +308,8 @@ model Lead {
   status    LeadStatus     @default(NEW)
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
+
+  @@map("lead")
 }
 
 model PlacementOutcome {
@@ -300,6 +323,8 @@ model PlacementOutcome {
   averageCtc       Float          // in LPA
   topRecruiters    String         // comma-separated or text
   createdAt        DateTime       @default(now())
+
+  @@map("placementoutcome")
 }
 
 model Review {
@@ -324,6 +349,8 @@ model Review {
   helpfulCount         Int             @default(12)
   isVerified           Boolean         @default(true)
   createdAt            DateTime        @default(now())
+
+  @@map("review")
 }
 
 model DuplicateAttempt {
@@ -338,6 +365,8 @@ model DuplicateAttempt {
   similarityScore    Float
   attemptedBy        String   @default("Admin")
   createdAt          DateTime @default(now())
+
+  @@map("duplicateattempt")
 }
 
 model AuditLog {
@@ -351,6 +380,8 @@ model AuditLog {
   scriptName   String?
   rowsAffected Int      @default(0)
   createdAt    DateTime @default(now())
+
+  @@map("auditlog")
 }
 
 model CollegeContent {
@@ -377,6 +408,8 @@ model CollegeContent {
   contentStatus         String         @default("DRAFT") // DRAFT, AI_GENERATED, VERIFIED, PUBLISHED
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
+
+  @@map("collegecontent")
 }
 
 enum CollegeRegistrationStatus {
@@ -405,6 +438,8 @@ model CollegeRegistrationRequest {
   publishedCollegeId String?
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
+
+  @@map("collegeregistrationrequest")
 }
 
 model SmtpConfig {
@@ -419,6 +454,8 @@ model SmtpConfig {
   isEncrypted    Boolean  @default(true)
   updatedAt      DateTime @updatedAt
   createdAt      DateTime @default(now())
+
+  @@map("smtpconfig")
 }
 
 model HeaderImage {
@@ -431,6 +468,8 @@ model HeaderImage {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@map("headerimage")
 }
 
 model EmailTemplate {
@@ -459,6 +498,8 @@ model EmailTemplate {
   bodyParagraphs String?  @db.Text
   ctaText        String?
   noticeText     String?  @db.Text
+
+  @@map("emailtemplate")
 }
 
 model EmailTemplateVersion {
@@ -478,6 +519,8 @@ model EmailTemplateVersion {
   createdAt     DateTime @default(now())
 
   @@index([templateKey, version])
+
+  @@map("emailtemplateversion")
 }
 
 model EmailAuditLog {
@@ -488,6 +531,8 @@ model EmailAuditLog {
   details     String?  @db.Text
   ipAddress   String?
   createdAt   DateTime @default(now())
+
+  @@map("emailauditlog")
 }
 
 model AdmissionLead {
@@ -580,6 +625,63 @@ model AdmissionLead {
   @@index([status])
   @@index([mobileNumber])
   @@index([email])
+
+  @@map("admissionlead")
 }
+
+model StudyAbroadCountry {
+  id               String   @id @default(uuid())
+  name             String
+  code             String
+  slug             String   @unique
+  flag             String
+  description      String   @db.Text
+  heroImage        String   @db.Text
+  universityCount  String   @default("100+ Universities")
+  averageTuition   String   @default("₹15L - ₹35L / yr")
+  popularIntakes   String   @default("Fall, Spring")
+  popularDegrees   String   @default("MS / MBA / BS")
+  whyStudy         String   @db.Text // JSON string: academicReputation, popularDestinations, careerOpportunities, etc.
+  popularCourses   String   @db.Text // JSON string array of courses
+  costBreakdown    String   @db.Text // JSON string: tuition, living, accommodation, insurance, etc.
+  admissionRequirements String @db.Text // JSON string: academic, englishTest, documents, intakes
+  intakes          String   @db.Text // JSON string array: [{ name, month, description }]
+  visaGuide        String   @db.Text // JSON string: visaType, process, documents, officialUrl
+  scholarships     String   @db.Text // JSON string array of scholarships
+  status           String   @default("PUBLISHED")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("studyabroadcountry")
+}
+
+model StudyAbroadLead {
+  id                String   @id @default(uuid())
+  studentId         String?
+  student           User?    @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  studentName       String
+  email             String
+  phone             String
+  selectedCountry   String
+  preferredCourse   String
+  qualification     String
+  academicScore     String
+  englishTest       String
+  englishScore      String?
+  budget            String
+  preferredIntake   String
+  status            String   @default("NEW") // NEW | CONTACTED | QUALIFIED | FOLLOW-UP | CONVERTED | CLOSED
+  adminNotes        String?  @db.Text
+  assignedCounselor String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([selectedCountry])
+
+  @@map("studyabroadlead")
+}
+
 
 

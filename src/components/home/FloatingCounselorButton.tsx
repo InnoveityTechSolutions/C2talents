@@ -25,6 +25,7 @@ export function FloatingCounselorButton() {
           {/* Red Circular Close Badge */}
           <button
             type="button"
+            suppressHydrationWarning
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();

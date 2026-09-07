@@ -30,12 +30,57 @@ function safeUrl(rawUrl: any, defaultFallback: string | null = null, maxLen = 19
   return trimmed;
 }
 
+async function findTargetCollege(idOrSlug: string) {
+  if (!idOrSlug) return null;
+  let college = await db.collegeProfile.findUnique({
+    where: { id: idOrSlug },
+  }).catch(() => null);
+
+  if (!college) {
+    college = await db.collegeProfile.findFirst({
+      where: {
+        OR: [
+          { slug: idOrSlug },
+          { slug: idOrSlug.toLowerCase() },
+          { name: idOrSlug },
+        ],
+      },
+    }).catch(() => null);
+  }
+
+  if (!college) {
+    const cleanTarget = idOrSlug.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (cleanTarget.length >= 3) {
+      const all = await db.collegeProfile.findMany({ select: { id: true, name: true, slug: true } });
+      const matched = all.find((c) => {
+        const normName = c.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const normSlug = (c.slug || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        return (
+          normName === cleanTarget ||
+          normSlug === cleanTarget ||
+          (cleanTarget.length > 5 && normName.includes(cleanTarget))
+        );
+      });
+      if (matched) {
+        college = await db.collegeProfile.findUnique({ where: { id: matched.id } });
+      }
+    }
+  }
+
+  return college;
+}
+
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
+    const target = await findTargetCollege(id);
+    if (!target) {
+      return NextResponse.json({ error: "College not found" }, { status: 404 });
+    }
+
     const college = await db.collegeProfile.findUnique({
-      where: { id },
+      where: { id: target.id },
       include: {
         courses: true,
         placements: true,
@@ -44,10 +89,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         content: true,
       },
     });
-
-    if (!college) {
-      return NextResponse.json({ error: "College not found" }, { status: 404 });
-    }
 
     return NextResponse.json({ success: true, college });
   } catch (err: any) {
@@ -59,6 +100,36 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id } = await params;
     const body = await req.json();
+
+    let targetCollege = await findTargetCollege(id);
+    if (!targetCollege) {
+      const collegeName = body.name || id;
+      const collegeSlug = body.slug || id.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const newUser = await db.user.create({
+        data: {
+          email: `college_${Date.now()}_${Math.floor(Math.random() * 10000)}@c2talents.com`,
+          passwordHash: "hashed_pass_placeholder",
+          role: "COLLEGE",
+        },
+      });
+      targetCollege = await db.collegeProfile.create({
+        data: {
+          userId: newUser.id,
+          name: collegeName,
+          slug: collegeSlug,
+          description: body.description || "",
+          location: body.location || "Tamil Nadu",
+          type: body.type || "Private",
+          status: "PUBLISHED",
+          feesPerYear: body.feesPerYear ?? 60000,
+          avgPackage: body.avgPackage ?? 5.0,
+          highestPackage: body.highestPackage ?? 12.0,
+          image: body.image || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80",
+        },
+      });
+    }
+
+    const targetId = targetCollege.id;
 
     const {
       name,
@@ -142,14 +213,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     // Delete existing courses, gallery, placements, and reviews to re-create clean state
     await db.$transaction([
-      db.course.deleteMany({ where: { collegeId: id } }),
-      db.galleryImage.deleteMany({ where: { collegeId: id } }),
-      db.placementOutcome.deleteMany({ where: { collegeId: id } }),
-      db.review.deleteMany({ where: { collegeId: id } }),
+      db.course.deleteMany({ where: { collegeId: targetId } }),
+      db.galleryImage.deleteMany({ where: { collegeId: targetId } }),
+      db.placementOutcome.deleteMany({ where: { collegeId: targetId } }),
+      db.review.deleteMany({ where: { collegeId: targetId } }),
     ]);
 
     const updatedCollege = await db.collegeProfile.update({
-      where: { id },
+      where: { id: targetId },
       data: {
         name,
         shortName,
@@ -309,50 +380,50 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
               }))
             : [],
         },
-        content: body.collegeContent ? {
+        content: {
           upsert: {
             create: {
-              overview: body.collegeContent.overview || null,
-              about: body.collegeContent.about || null,
-              history: body.collegeContent.history || null,
-              highlights: body.collegeContent.highlights || null,
-              whyChoose: body.collegeContent.whyChoose || null,
-              campusLife: body.collegeContent.campusLife || null,
-              facilitiesDescription: body.collegeContent.facilitiesDescription || null,
-              placementOverview: body.collegeContent.placementOverview || null,
-              topRecruiters: body.collegeContent.topRecruiters || null,
-              admissionGuide: body.collegeContent.admissionGuide || null,
-              eligibility: body.collegeContent.eligibility || null,
-              hostelLife: body.collegeContent.hostelLife || null,
-              scholarships: body.collegeContent.scholarships || null,
-              research: body.collegeContent.research || null,
-              studentActivities: body.collegeContent.studentActivities || null,
-              faq: body.collegeContent.faq || null,
-              seoArticle: body.collegeContent.seoArticle || null,
+              overview: body.collegeContent?.overview || body.overview || null,
+              about: body.collegeContent?.about || body.about || body.collegeAbout || null,
+              history: body.collegeContent?.history || body.history || null,
+              highlights: body.collegeContent?.highlights || body.highlights || body.whyChoose || null,
+              whyChoose: body.collegeContent?.whyChoose || body.whyChoose || null,
+              campusLife: body.collegeContent?.campusLife || body.campusLife || null,
+              facilitiesDescription: body.collegeContent?.facilitiesDescription || body.facilitiesDescription || null,
+              placementOverview: body.collegeContent?.placementOverview || body.placementOverview || null,
+              topRecruiters: body.collegeContent?.topRecruiters || body.topRecruiters || null,
+              admissionGuide: body.collegeContent?.admissionGuide || body.admissionGuide || body.admissionProcess || null,
+              eligibility: body.collegeContent?.eligibility || body.eligibility || body.admissionEligibility || null,
+              hostelLife: body.collegeContent?.hostelLife || body.hostelLife || null,
+              scholarships: body.collegeContent?.scholarships || body.scholarships || body.scholarshipDetails || null,
+              research: body.collegeContent?.research || body.research || null,
+              studentActivities: body.collegeContent?.studentActivities || body.studentActivities || null,
+              faq: body.collegeContent?.faq || body.faq || null,
+              seoArticle: body.collegeContent?.seoArticle || body.seoArticle || null,
               contentStatus: "PUBLISHED",
             },
             update: {
-              overview: body.collegeContent.overview || null,
-              about: body.collegeContent.about || null,
-              history: body.collegeContent.history || null,
-              highlights: body.collegeContent.highlights || null,
-              whyChoose: body.collegeContent.whyChoose || null,
-              campusLife: body.collegeContent.campusLife || null,
-              facilitiesDescription: body.collegeContent.facilitiesDescription || null,
-              placementOverview: body.collegeContent.placementOverview || null,
-              topRecruiters: body.collegeContent.topRecruiters || null,
-              admissionGuide: body.collegeContent.admissionGuide || null,
-              eligibility: body.collegeContent.eligibility || null,
-              hostelLife: body.collegeContent.hostelLife || null,
-              scholarships: body.collegeContent.scholarships || null,
-              research: body.collegeContent.research || null,
-              studentActivities: body.collegeContent.studentActivities || null,
-              faq: body.collegeContent.faq || null,
-              seoArticle: body.collegeContent.seoArticle || null,
+              overview: body.collegeContent?.overview || body.overview || null,
+              about: body.collegeContent?.about || body.about || body.collegeAbout || null,
+              history: body.collegeContent?.history || body.history || null,
+              highlights: body.collegeContent?.highlights || body.highlights || body.whyChoose || null,
+              whyChoose: body.collegeContent?.whyChoose || body.whyChoose || null,
+              campusLife: body.collegeContent?.campusLife || body.campusLife || null,
+              facilitiesDescription: body.collegeContent?.facilitiesDescription || body.facilitiesDescription || null,
+              placementOverview: body.collegeContent?.placementOverview || body.placementOverview || null,
+              topRecruiters: body.collegeContent?.topRecruiters || body.topRecruiters || null,
+              admissionGuide: body.collegeContent?.admissionGuide || body.admissionGuide || body.admissionProcess || null,
+              eligibility: body.collegeContent?.eligibility || body.eligibility || body.admissionEligibility || null,
+              hostelLife: body.collegeContent?.hostelLife || body.hostelLife || null,
+              scholarships: body.collegeContent?.scholarships || body.scholarships || body.scholarshipDetails || null,
+              research: body.collegeContent?.research || body.research || null,
+              studentActivities: body.collegeContent?.studentActivities || body.studentActivities || null,
+              faq: body.collegeContent?.faq || body.faq || null,
+              seoArticle: body.collegeContent?.seoArticle || body.seoArticle || null,
               contentStatus: "PUBLISHED",
             }
           }
-        } : undefined,
+        },
       },
       include: {
         courses: true,
@@ -372,7 +443,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       revalidatePath(`/manager/colleges/${id}/edit`);
     } catch (cacheErr) {}
 
-    return NextResponse.json({ success: true, college: updatedCollege });
+    return NextResponse.json(
+      { success: true, college: updatedCollege },
+      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" } }
+    );
   } catch (err: any) {
     console.error("PUT admin college error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -385,25 +459,26 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   try {
     const { id } = await params;
 
-    const college = await db.collegeProfile.findUnique({ where: { id } });
+    const college = await findTargetCollege(id);
     if (!college) {
       return NextResponse.json({ error: "College not found" }, { status: 404 });
     }
+    const targetId = college.id;
 
     // Clean up related sub-records and soft-delete profile with status DELETED and released website/email
     await db.$transaction([
-      db.course.deleteMany({ where: { collegeId: id } }),
-      db.galleryImage.deleteMany({ where: { collegeId: id } }),
-      db.placementOutcome.deleteMany({ where: { collegeId: id } }),
-      db.collegeContent.deleteMany({ where: { collegeId: id } }),
+      db.course.deleteMany({ where: { collegeId: targetId } }),
+      db.galleryImage.deleteMany({ where: { collegeId: targetId } }),
+      db.placementOutcome.deleteMany({ where: { collegeId: targetId } }),
+      db.collegeContent.deleteMany({ where: { collegeId: targetId } }),
       db.collegeProfile.update({
-        where: { id },
+        where: { id: targetId },
         data: {
           isDeleted: true,
           status: "DELETED",
           deletedAt: new Date(),
-          website: college.website ? `${college.website}#deleted-${id.slice(0, 6)}` : null,
-          email: college.email ? `deleted_${id.slice(0, 6)}_${college.email}` : null,
+          website: college.website ? `${college.website}#deleted-${targetId.slice(0, 6)}` : null,
+          email: college.email ? `deleted_${targetId.slice(0, 6)}_${college.email}` : null,
         },
       }),
     ]);

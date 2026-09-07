@@ -69,48 +69,48 @@ export function ExploreTools() {
         {/* 3x2 Grid of Large Rich Educational Illustration Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
           {tools.map((tool, idx) => {
-            const { ref, hasRevealed } = useScrollReveal<HTMLAnchorElement>({ delay: idx * 50 });
+            const { ref, hasRevealed } = useScrollReveal<HTMLDivElement>({ delay: idx * 50 });
 
             return (
-              <Link
-                ref={ref}
-                key={tool.title}
-                href={tool.href}
-                className={`group flex flex-col bg-white border border-stone-200/80 rounded-[20px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_14px_35px_-8px_rgba(36,16,79,0.14)] hover:border-[#24104F]/30 scroll-reveal ${
-                  hasRevealed ? "revealed" : ""
-                }`}
-              >
-                {/* Large Rich Illustration Container (Fills ~85-90%+ frame) */}
-                <div className="relative h-48 sm:h-52 md:h-56 w-full overflow-hidden bg-stone-100/60 border-b border-stone-100 shrink-0">
-                  <img
-                    src={tool.image}
-                    alt={tool.title}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
-                  />
-                </div>
-
-                {/* Card Content Area - strictly Title + Circular Arrow, then Short Description */}
-                <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-2">
-                  {/* Title + Circular Arrow Button */}
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="font-serif text-base sm:text-lg font-bold text-[#24104F] group-hover:text-[#ea580c] transition-colors leading-snug">
-                      {tool.title}
-                    </h3>
-
-                    {/* Circular Arrow Button */}
-                    <div className="w-9 h-9 rounded-full bg-[#f5f3ff] border border-[#ede9fe] shadow-2xs flex items-center justify-center text-[#24104F] group-hover:bg-[#fff7ed] group-hover:border-[#ea580c]/50 group-hover:text-[#ea580c] group-hover:scale-105 transition-all duration-300 shrink-0">
-                      <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-                    </div>
+              <div ref={ref} key={tool.title} className="group relative flex flex-col">
+                <Link
+                  href={tool.href}
+                  className={`flex flex-col bg-white border border-stone-200/80 rounded-[20px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-300 transform-gpu ease-out group-hover:-translate-y-1.5 group-hover:shadow-[0_14px_35px_-8px_rgba(36,16,79,0.14)] group-hover:border-[#24104F]/30 h-full scroll-reveal ${
+                    hasRevealed ? "revealed" : ""
+                  }`}
+                >
+                  {/* Large Rich Illustration Container (Fills ~85-90%+ frame) */}
+                  <div className="relative h-48 sm:h-52 md:h-56 w-full overflow-hidden bg-stone-100/60 border-b border-stone-100 shrink-0">
+                    <img
+                      src={tool.image}
+                      alt={tool.title}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+                    />
                   </div>
 
-                  {/* Short 1-2 Line Description */}
-                  <p className="text-xs sm:text-sm text-stone-500 leading-relaxed line-clamp-2">
-                    {tool.description}
-                  </p>
-                </div>
-              </Link>
+                  {/* Card Content Area - strictly Title + Circular Arrow, then Short Description */}
+                  <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-2">
+                    {/* Title + Circular Arrow Button */}
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="font-serif text-base sm:text-lg font-bold text-[#24104F] group-hover:text-[#ea580c] transition-colors leading-snug">
+                        {tool.title}
+                      </h3>
+
+                      {/* Circular Arrow Button */}
+                      <div className="w-9 h-9 rounded-full bg-[#f5f3ff] border border-[#ede9fe] shadow-2xs flex items-center justify-center text-[#24104F] group-hover:bg-[#fff7ed] group-hover:border-[#ea580c]/50 group-hover:text-[#ea580c] group-hover:scale-105 transition-all duration-300 shrink-0">
+                        <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                      </div>
+                    </div>
+
+                    {/* Short 1-2 Line Description */}
+                    <p className="text-xs sm:text-sm text-stone-500 leading-relaxed line-clamp-2">
+                      {tool.description}
+                    </p>
+                  </div>
+                </Link>
+              </div>
             );
           })}
         </div>

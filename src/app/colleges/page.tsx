@@ -1,108 +1,172 @@
 "use client";
 
-import * as React from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Search, MapPin, Star, Award, SlidersHorizontal, X, ArrowRight, Shield, TrendingUp, Building2, PlusCircle, Sparkles } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
-import { useCompare } from "@/context/CompareContext";
+import { HighlightText } from "@/components/common/HighlightText";
+import {
+  Search,
+  Filter,
+  SlidersHorizontal,
+  MapPin,
+  Award,
+  BookOpen,
+  ArrowUpDown,
+  Building2,
+  Navigation,
+  Sparkles,
+  ChevronRight,
+  X,
+  CheckCircle2,
+} from "lucide-react";
+import { motion } from "framer-motion";
 
 interface College {
   id: string;
   name: string;
+  shortName?: string;
   location: string;
-  rating: number;
-  type: string;
-  naacGrade: string | null;
-  nirfRank: number | null;
-  feesPerYear: number;
-  avgPackage: number;
-  highestPackage: number;
-  image: string;
-  featured: boolean;
+  city?: string;
+  type?: string;
+  ownership?: string;
+  category?: string;
+  accreditation?: string;
+  naacGrade?: string;
+  nirfRank?: number;
+  rating?: number;
+  feesPerYear?: number;
+  avgPackage?: number;
+  highestPackage?: number;
+  image?: string;
+  isAutonomous?: boolean;
+  distance?: number | null;
+  distanceText?: string | null;
+  matchReasons?: string[];
 }
 
-function formatINR(amount: number) {
-  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-  if (amount >= 1000) return `₹${Math.round(amount / 1000)}K`;
-  return `₹${amount}`;
-}
-
-export default function CollegesPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#FAF9F5] flex items-center justify-center font-sans">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-[#2e266f] border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-stone-500 font-medium">Loading colleges database...</p>
-        </div>
-      </div>
-    }>
-      <CollegesPageContent />
-    </Suspense>
-  );
-}
-
-function CollegesPageContent() {
-  const { toggleCollege, isSelected } = useCompare();
-  const [colleges, setColleges] = React.useState<College[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [search, setSearch] = React.useState("");
-  const [categoryFilter, setCategoryFilter] = React.useState("");
-  const [ownershipFilter, setOwnershipFilter] = React.useState("");
-  const [feesFilter, setFeesFilter] = React.useState("");
-  const [showFilters, setShowFilters] = React.useState(false);
-
+function CollegesContent() {
   const searchParams = useSearchParams();
+  const initialCategory = searchParams.get("category") || searchParams.get("stream") || "";
+  const initialLocation = searchParams.get("location") || "";
+  const initialSearch = searchParams.get("search") || searchParams.get("q") || "";
 
-  React.useEffect(() => {
-    const s = searchParams.get("search") || "";
-    setSearch(s);
-    const cat = searchParams.get("category") || searchParams.get("stream") || "";
-    setCategoryFilter(cat);
-    const own = searchParams.get("ownership") || searchParams.get("type") || "";
-    setOwnershipFilter(own);
+  const [search, setSearch] = useState(initialSearch);
+  const [categoryFilter, setCategoryFilter] = useState(initialCategory);
+  const [locationFilter, setLocationFilter] = useState(initialLocation);
+  const [ownershipFilter, setOwnershipFilter] = useState("");
+  const [feesFilter, setFeesFilter] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+
+  const [colleges, setColleges] = useState<College[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const requestLocation = (setSearchQuery = false) => {
+    if (typeof window !== "undefined" && "geolocation" in navigator) {
+      setGpsLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          if (setSearchQuery) {
+            setSearch("colleges near me");
+          }
+          setGpsLoading(false);
+        },
+        (err) => {
+          console.warn("Geolocation access denied or unavailable:", err.message);
+          if (setSearchQuery) {
+            alert("Please enable location permissions in your browser so we can calculate the distance to colleges.");
+          }
+          setGpsLoading(false);
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+      );
+    }
+  };
+
+  // Auto-request location on mount for distance calculations
+  useEffect(() => {
+    requestLocation(false);
+  }, []);
+
+  // Sync state with URL Search Params
+  useEffect(() => {
+    const qParam = searchParams.get("search") || searchParams.get("q");
+    if (qParam !== null) setSearch(qParam);
+    const catParam = searchParams.get("category") || searchParams.get("stream");
+    if (catParam !== null) setCategoryFilter(catParam);
+    const locParam = searchParams.get("location");
+    if (locParam !== null) setLocationFilter(locParam);
   }, [searchParams]);
 
-  const fetchColleges = React.useCallback(async () => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (search) params.set("search", search);
-    if (categoryFilter) params.set("category", categoryFilter);
-    if (ownershipFilter) params.set("ownership", ownershipFilter);
-    if (feesFilter) params.set("maxFees", feesFilter);
-    try {
-      const res = await fetch(`/api/colleges?${params.toString()}`);
-      const data = await res.json();
-      setColleges(Array.isArray(data) ? data : []);
-    } catch {
-      setColleges([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [search, categoryFilter, ownershipFilter, feesFilter]);
+  // Fetch real colleges from Database API route
+  useEffect(() => {
+    let isCancelled = false;
+    async function fetchColleges() {
+      setLoading(true);
+      setErrorMessage("");
 
-  React.useEffect(() => {
-    const timer = setTimeout(fetchColleges, 300);
-    return () => clearTimeout(timer);
-  }, [fetchColleges]);
+      try {
+        const params = new URLSearchParams();
+        if (search) params.set("search", search);
+        if (categoryFilter) params.set("category", categoryFilter);
+        if (locationFilter) params.set("location", locationFilter);
+        if (ownershipFilter) params.set("ownership", ownershipFilter);
+        if (feesFilter) params.set("maxFees", feesFilter);
+        if (userCoords) {
+          params.set("lat", userCoords.lat.toString());
+          params.set("lng", userCoords.lng.toString());
+        }
+
+        const res = await fetch(`/api/colleges?${params.toString()}`, {
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to load colleges: ${res.statusText}`);
+        }
+
+        const data = await res.json();
+        if (!isCancelled) {
+          if (Array.isArray(data)) {
+            setColleges(data);
+          } else if (data.results && Array.isArray(data.results)) {
+            setColleges(data.results);
+          } else {
+            setColleges([]);
+          }
+        }
+      } catch (err: any) {
+        if (!isCancelled) {
+          console.error("Colleges page fetch error:", err);
+          setErrorMessage("Search service is temporarily unavailable. Please try again.");
+          setColleges([]);
+        }
+      } finally {
+        if (!isCancelled) setLoading(false);
+      }
+    }
+
+    const timer = setTimeout(fetchColleges, 250);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [search, categoryFilter, locationFilter, ownershipFilter, feesFilter, userCoords]);
 
   const categoryOptions = [
     { value: "", label: "All Streams" },
-    { value: "Engineering", label: "Engineering" },
+    { value: "Engineering", label: "Engineering & Tech" },
     { value: "Arts & Science", label: "Arts & Science" },
-    { value: "Medical", label: "Medical" },
-    { value: "Management", label: "Management" },
-    { value: "Commerce", label: "Commerce" },
-    { value: "Law", label: "Law" },
-    { value: "Polytechnic", label: "Polytechnic" },
+    { value: "Management", label: "Management (MBA/BBA)" },
+    { value: "Medical", label: "Medical & Healthcare" },
     { value: "Dental", label: "Dental" },
-    { value: "Pharmacy", label: "Pharmacy" },
-    { value: "Nursing", label: "Nursing" },
-    { value: "Education", label: "Education" },
+    { value: "Physiotherapy", label: "Physiotherapy" },
+    { value: "Law", label: "Law" },
   ];
 
   const ownershipOptions = [
@@ -132,13 +196,29 @@ function CollegesPageContent() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100/70 border border-purple-200 text-[#2e266f] text-xs font-black uppercase tracking-wider mb-2">
-                  <Building2 className="w-3.5 h-3.5 text-amber-500" /> College Directory
+                  <Building2 className="w-3.5 h-3.5 text-amber-500" /> Global Smart Search Directory
                 </div>
                 <h1 className="text-3xl md:text-4xl font-black text-[#2e266f] tracking-tight">Find Your Ideal Institution</h1>
-                <p className="text-stone-600 text-xs md:text-sm mt-1 font-medium">Browse verified colleges by academic stream, fees, and ownership across Tamil Nadu and India</p>
+                <p className="text-stone-600 text-xs md:text-sm mt-1 font-medium">
+                  Search across verified colleges, locations, NAAC accreditation, government/private status, rankings, and distance radius.
+                </p>
               </div>
 
               <div className="flex items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => requestLocation(true)}
+                  disabled={gpsLoading}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-xs font-extrabold rounded-xl transition-all shadow-md cursor-pointer ${
+                    userCoords
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      : "bg-orange-500 hover:bg-orange-600 text-white"
+                  }`}
+                >
+                  <Navigation className={`w-4 h-4 fill-white ${gpsLoading ? "animate-spin" : ""}`} />
+                  <span>{gpsLoading ? "Locating..." : userCoords ? "GPS Active (Near Me)" : "Near Me Search"}</span>
+                </button>
+
                 <Link
                   href="/register-college"
                   id="register-college-header"
@@ -147,30 +227,29 @@ function CollegesPageContent() {
                   <Building2 className="w-4 h-4 text-amber-400" />
                   <span>Register College</span>
                 </Link>
-
-                <Link
-                  href="/counselor"
-                  id="counselor-from-listing"
-                  className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-brand-green text-white text-xs font-extrabold rounded-xl hover:bg-emerald-800 transition-all shadow-md"
-                >
-                  <TrendingUp className="w-4 h-4 text-emerald-300" />
-                  <span>AI Match</span>
-                </Link>
               </div>
             </div>
 
             {/* Search + Filter Action Bar */}
             <div className="mt-6 flex gap-3 flex-wrap items-center">
-              <div className="relative flex-1 min-w-[260px]">
+              <div className="relative flex-1 min-w-[280px]">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
                 <input
                   type="text"
                   id="college-search"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by college name, location, courses..."
-                  className="w-full pl-10 pr-4 py-2.5 border border-stone-200 rounded-xl text-xs font-medium text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#2e266f] bg-stone-50 focus:bg-white transition-all shadow-2xs"
+                  placeholder="Natural search e.g. best government colleges in Chennai, NAAC A++, 150 km near me..."
+                  className="w-full pl-10 pr-10 py-2.5 border border-stone-200 rounded-xl text-xs font-bold text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#2e266f] bg-stone-50 focus:bg-white transition-all shadow-2xs"
                 />
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-700"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
 
               <button
@@ -179,15 +258,15 @@ function CollegesPageContent() {
                 className={`flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold transition-all cursor-pointer ${showFilters ? "border-[#2e266f] text-[#2e266f] bg-purple-50" : "border-stone-200 text-stone-700 bg-white hover:border-[#2e266f]"}`}
               >
                 <SlidersHorizontal className="w-4 h-4" />
-                Advanced Filters
+                Filters
                 {(ownershipFilter || feesFilter) && (
                   <span className="w-2 h-2 rounded-full bg-amber-500" />
                 )}
               </button>
 
-              {(ownershipFilter || feesFilter || categoryFilter || search) && (
+              {(ownershipFilter || feesFilter || categoryFilter || locationFilter || search) && (
                 <button
-                  onClick={() => { setOwnershipFilter(""); setFeesFilter(""); setCategoryFilter(""); setSearch(""); }}
+                  onClick={() => { setOwnershipFilter(""); setFeesFilter(""); setCategoryFilter(""); setLocationFilter(""); setSearch(""); }}
                   className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-bold text-rose-600 border border-rose-200 rounded-xl bg-rose-50/50 hover:bg-rose-100 transition-all cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" /> Clear All
@@ -195,7 +274,7 @@ function CollegesPageContent() {
               )}
             </div>
 
-            {/* PROMINENT ALWAYS-VISIBLE STREAM/CATEGORY FILTER PILLS */}
+            {/* Academic Stream Filter Pills */}
             <div className="mt-5 space-y-2">
               <div className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-stone-500">
                 <span>Filter by Academic Stream:</span>
@@ -226,7 +305,7 @@ function CollegesPageContent() {
               </div>
             </div>
 
-            {/* Expanded Advanced Filters */}
+            {/* Advanced Filters */}
             {showFilters && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
@@ -271,8 +350,53 @@ function CollegesPageContent() {
           </div>
         </div>
 
+        {/* Results Banner */}
+        <div className="max-w-7xl mx-auto px-6 pt-6 pb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200/80 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <span className={`w-2.5 h-2.5 rounded-full ${colleges.length > 0 ? "bg-emerald-500 animate-pulse" : "bg-amber-500"} shrink-0`} />
+              <div className="flex items-center gap-2 flex-wrap text-sm sm:text-base font-extrabold text-[#2e266f] tracking-tight">
+                {search ? (
+                  <>
+                    <span>SEARCH RESULTS</span>
+                    <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-orange-50 text-orange-600 border border-orange-200/80 font-black text-xs sm:text-sm shadow-2xs">
+                      {colleges.length} {colleges.length === 1 ? "COLLEGE FOUND" : "COLLEGES FOUND"}
+                    </span>
+                    <span className="text-stone-600 font-medium text-xs sm:text-sm">
+                      FOR &quot;<span className="text-stone-900 font-extrabold">{search}</span>&quot;
+                    </span>
+                  </>
+                ) : categoryFilter ? (
+                  <>
+                    <span>SHOWING</span>
+                    <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-orange-50 text-orange-600 border border-orange-200/80 font-black text-xs sm:text-sm shadow-2xs">
+                      {colleges.length} {categoryFilter.toUpperCase()} COLLEGES
+                    </span>
+                    <span className="text-stone-600 font-medium text-xs sm:text-sm">IN DATABASE</span>
+                  </>
+                ) : (
+                  <>
+                    <span>SHOWING</span>
+                    <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-orange-50 text-orange-600 border border-orange-200/80 font-black text-xs sm:text-sm shadow-2xs">
+                      {colleges.length} TOTAL VERIFIED COLLEGES
+                    </span>
+                    <span className="text-stone-600 font-medium text-xs sm:text-sm">IN DATABASE</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {userCoords && (
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200 shrink-0 flex items-center gap-1.5">
+                <Navigation className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
+                Sorted by Distance (User Location Active)
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* College Grid */}
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto px-6 py-6">
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {[...Array(6)].map((_, i) => (
@@ -286,16 +410,34 @@ function CollegesPageContent() {
                 </div>
               ))}
             </div>
+          ) : errorMessage ? (
+            <div className="text-center py-20 bg-rose-50 border border-rose-200 rounded-3xl p-8 max-w-xl mx-auto space-y-3">
+              <h3 className="text-lg font-bold text-rose-700">{errorMessage}</h3>
+              <p className="text-xs text-rose-600">The server or database is temporarily unreachable. Please check connection.</p>
+            </div>
           ) : colleges.length === 0 ? (
-            <div className="text-center py-24 space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-stone-100 flex items-center justify-center mx-auto">
-                <Search className="w-7 h-7 text-stone-400" />
+            <div className="text-center py-20 px-6 bg-white border border-stone-200/80 rounded-3xl max-w-lg mx-auto space-y-4 shadow-sm my-4">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-amber-600">
+                <Building2 className="w-8 h-8" />
               </div>
-              <h3 className="text-lg font-bold text-stone-700">No colleges found</h3>
-              <p className="text-sm text-stone-500">Try adjusting your filters or search terms</p>
-              <button onClick={() => { setCategoryFilter(""); setOwnershipFilter(""); setFeesFilter(""); setSearch(""); }} className="text-brand-green text-sm font-bold hover:underline">
-                Clear all filters
-              </button>
+              <h3 className="text-xl font-black text-[#2e266f] tracking-tight uppercase">NO COLLEGES FOUND</h3>
+              <p className="text-sm text-stone-600 font-medium leading-relaxed">
+                No colleges matching &quot;<strong>{search || categoryFilter || locationFilter}</strong>&quot; were found{locationFilter ? ` in ${locationFilter}` : ""}.
+              </p>
+              <div className="pt-2 flex flex-col gap-1.5 text-xs font-semibold text-stone-500 bg-stone-50 p-4 rounded-xl border border-stone-100 text-left">
+                <span className="font-bold text-stone-700">Suggestions:</span>
+                <span>• Search for another city or broader region</span>
+                <span>• Check spelling or try a different academic stream</span>
+                <span>• Clear specific ownership or budget filters</span>
+              </div>
+              <div className="pt-2">
+                <button
+                  onClick={() => { setCategoryFilter(""); setOwnershipFilter(""); setFeesFilter(""); setSearch(""); setLocationFilter(""); }}
+                  className="px-5 py-2.5 bg-[#2e266f] text-white text-xs font-extrabold rounded-xl hover:bg-[#3d338f] transition-all shadow-md cursor-pointer"
+                >
+                  Clear Search & Filters
+                </button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -309,7 +451,7 @@ function CollegesPageContent() {
                   <Link
                     href={`/colleges/${college.id}`}
                     id={`college-listing-${college.id}`}
-                    className="flex flex-col h-full bg-white border border-stone-200 rounded-2xl overflow-hidden hover-card-trigger group"
+                    className="flex flex-col h-full bg-white border border-stone-200 rounded-2xl overflow-hidden hover-card-trigger group shadow-2xs hover:shadow-lg transition-all"
                   >
                     <div className="relative h-44 overflow-hidden bg-stone-100">
                       <img
@@ -318,80 +460,83 @@ function CollegesPageContent() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/images/campus-hero.jpg";
+                          (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&q=80&w=1000";
                         }}
                       />
-                      <div className="absolute top-3 left-3 flex gap-1.5">
-                        {college.naacGrade && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white">
+                      <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap">
+                        {college.naacGrade && college.naacGrade !== "Not Accredited" && (
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs">
                             NAAC {college.naacGrade}
                           </span>
                         )}
                         {college.nirfRank && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-green text-white">
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-brand-green text-white shadow-xs">
                             NIRF #{college.nirfRank}
                           </span>
                         )}
                       </div>
                       <div className="absolute top-3 right-3">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${college.type === "Government" ? "bg-blue-600 text-white" : college.type === "Govt-Aided" ? "bg-purple-600 text-white" : "bg-stone-800 text-white"}`}>
-                          {college.type}
+                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-xs ${college.type === "Government" ? "bg-blue-600 text-white" : college.type === "Govt-Aided" ? "bg-purple-600 text-white" : "bg-stone-800 text-white"}`}>
+                          {college.ownership || college.type}
                         </span>
                       </div>
                     </div>
 
                     <div className="p-5 flex-1 flex flex-col justify-between gap-3">
                       <div>
-                        <div className="font-semibold text-stone-900 text-[16px] leading-snug group-hover:text-brand-green transition-colors min-h-[44px] flex items-center line-clamp-2">
-                          {college.name}
+                        <div className="font-bold text-stone-900 text-[16px] leading-snug group-hover:text-indigo-900 transition-colors min-h-[44px] flex items-center line-clamp-2">
+                          <HighlightText text={college.name} query={search} />
                         </div>
                         <div className="flex items-center justify-between gap-2 mt-2">
                           <div className="flex items-center gap-1 min-w-0">
                             <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                            <span className="text-xs text-stone-500 truncate">{college.location}</span>
+                            <span className="text-xs text-stone-500 truncate">{college.city || college.location}</span>
                           </div>
-                          
-                          <div className="flex items-center gap-0.5 shrink-0">
-                            {[1, 2, 3, 4, 5].map((s) => (
-                              <Star key={s} className={`w-3 h-3 ${s <= Math.round(college.rating) ? "fill-amber-500 text-amber-500" : "text-stone-200 fill-stone-200"}`} />
+                          {college.distanceText ? (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-orange-100 text-orange-800 border border-orange-200 shrink-0 flex items-center gap-1">
+                              <Navigation className="w-2.5 h-2.5 fill-orange-600 text-orange-600" />
+                              {college.distanceText}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                requestLocation(false);
+                              }}
+                              className="text-[10px] text-orange-600 hover:text-orange-800 font-extrabold flex items-center gap-0.5 cursor-pointer bg-orange-50 hover:bg-orange-100 px-2 py-0.5 rounded border border-orange-200/60 transition-colors shrink-0"
+                              title="Click to calculate distance using your browser GPS location"
+                            >
+                              <Navigation className="w-2.5 h-2.5 text-orange-500 fill-orange-500" />
+                              <span>Distance</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Why This Matches Badges (Requirement 19) */}
+                        {college.matchReasons && college.matchReasons.length > 0 && (
+                          <div className="mt-3 pt-2.5 border-t border-stone-100 flex flex-wrap gap-1">
+                            {college.matchReasons.map((reason, idx) => (
+                              <span
+                                key={idx}
+                                className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/80"
+                              >
+                                {reason}
+                              </span>
                             ))}
-                            <span className="text-[11px] font-bold text-stone-700 ml-1">{college.rating.toFixed(1)}</span>
                           </div>
-                        </div>
+                        )}
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-stone-100">
+                      <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-600">
                         <div>
-                          <div className="text-[9px] text-stone-400 font-bold uppercase">Fee/yr</div>
-                          <div className="text-xs font-bold text-stone-900 mt-0.5">{formatINR(college.feesPerYear)}</div>
+                          <span className="text-[10px] font-bold text-stone-400 block uppercase">Fees / Yr</span>
+                          <span className="font-bold text-stone-900">{college.feesPerYear ? `₹${(college.feesPerYear / 1000).toFixed(0)}K` : "N/A"}</span>
                         </div>
-                        <div>
-                          <div className="text-[9px] text-stone-400 font-bold uppercase">Avg Pkg</div>
-                          <div className="text-xs font-bold text-brand-green mt-0.5">{college.avgPackage} LPA</div>
-                        </div>
-                        <div>
-                          <div className="text-[9px] text-stone-400 font-bold uppercase">Highest</div>
-                          <div className="text-xs font-bold text-stone-900 mt-0.5">{college.highestPackage} LPA</div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-1">
-                        <label
-                          onClick={(e) => e.stopPropagation()}
-                          className="flex items-center gap-1.5 cursor-pointer font-sans select-none shrink-0 group/cmp"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected(college.id)}
-                            onChange={() => toggleCollege(college)}
-                            className="w-4 h-4 rounded border-stone-300 text-[#2e266f] focus:ring-[#2e266f]/10 cursor-pointer accent-[#2e266f]"
-                          />
-                          <span className={`text-[11px] font-semibold ${isSelected(college.id) ? "text-[#2e266f] font-bold" : "text-stone-500 group-hover/cmp:text-stone-700"}`}>
-                            {isSelected(college.id) ? "Comparing" : "Compare"}
-                          </span>
-                        </label>
-                        <div className="flex items-center gap-1 text-[11px] font-bold text-brand-green group-hover:translate-x-1 transition-transform">
-                          View <ArrowRight className="w-3.5 h-3.5" />
+                        <div className="text-right">
+                          <span className="text-[10px] font-bold text-stone-400 block uppercase">Avg Package</span>
+                          <span className="font-bold text-stone-900">{college.avgPackage ? `₹${college.avgPackage} LPA` : "N/A"}</span>
                         </div>
                       </div>
                     </div>
@@ -404,5 +549,13 @@ function CollegesPageContent() {
       </main>
       <Footer />
     </>
+  );
+}
+
+export default function CollegesPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center font-bold text-stone-500">Loading Global Search...</div>}>
+      <CollegesContent />
+    </Suspense>
   );
 }

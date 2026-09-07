@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   ExternalLink,
   Check,
+  CheckSquare,
 } from "lucide-react";
 
 export default function CollegeRegistrationPage() {
@@ -32,11 +33,47 @@ export default function CollegeRegistrationPage() {
     mobile: "",
     website: "",
     location: "",
-    category: "Engineering",
     type: "Private",
-    feesPerYear: "75000",
+    feesPerYear: "Flexible / Varies by Course",
     additionalNotes: "",
   });
+
+  const [selectedStreams, setSelectedStreams] = useState<string[]>(["Engineering"]);
+
+  const availableStreamsList = [
+    { id: "Engineering", label: "Engineering (B.E / B.Tech)" },
+    { id: "Arts & Science", label: "Arts & Science (B.A, B.Sc, BCA)" },
+    { id: "Medical", label: "Medical & Healthcare (MBBS, BDS)" },
+    { id: "Management", label: "Management (MBA, BBA)" },
+    { id: "Commerce", label: "Commerce (B.Com, M.Com)" },
+    { id: "Law", label: "Law (LL.B, BA LL.B)" },
+    { id: "Polytechnic", label: "Polytechnic & Diploma" },
+    { id: "Pharmacy", label: "Pharmacy (B.Pharm, D.Pharm)" },
+    { id: "Nursing", label: "Nursing & Paramedical" },
+    { id: "Dental", label: "Dental Sciences" },
+    { id: "Education", label: "Education & B.Ed" },
+  ];
+
+  const isAllSelected = selectedStreams.length === availableStreamsList.length;
+
+  function handleSelectAllStreams() {
+    if (isAllSelected) {
+      setSelectedStreams(["Engineering"]);
+    } else {
+      setSelectedStreams(availableStreamsList.map((s) => s.id));
+    }
+  }
+
+  function toggleStream(streamId: string) {
+    setSelectedStreams((prev) => {
+      if (prev.includes(streamId)) {
+        if (prev.length === 1) return prev; // Keep at least one selected
+        return prev.filter((s) => s !== streamId);
+      } else {
+        return [...prev, streamId];
+      }
+    });
+  }
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +125,6 @@ export default function CollegeRegistrationPage() {
         if (data.previewImage) {
           setCollegeImage(data.previewImage);
         }
-        // Auto fill college name if blank and suggested name available
         if (!formData.collegeName && data.suggestedName) {
           setFormData((prev) => ({ ...prev, collegeName: data.suggestedName }));
         }
@@ -110,10 +146,15 @@ export default function CollegeRegistrationPage() {
     setError(null);
 
     try {
+      const payload = {
+        ...formData,
+        category: selectedStreams.join(", "),
+      };
+
       const res = await fetch("/api/college-registration/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -273,15 +314,15 @@ export default function CollegeRegistrationPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-500 font-semibold">Status:</span>
-                  <span className="font-extrabold text-emerald-800 uppercase tracking-wider bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-300">
-                    PUBLISHED & STORED IN DIRECTORY
+                  <span className="font-extrabold text-amber-800 uppercase tracking-wider bg-amber-100 px-2.5 py-0.5 rounded-md border border-amber-300">
+                    PENDING ADMIN APPROVAL
                   </span>
                 </div>
               </div>
 
               <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 text-xs text-stone-700 leading-relaxed font-medium">
-                <span className="font-extrabold text-[#2e266f] block mb-1">🎉 College Stored Successfully!</span>
-                <strong>{submittedRequest.collegeName}</strong> has been added to our active database. Students browsing by category can now discover your institution!
+                <span className="font-extrabold text-[#2e266f] block mb-1">📋 Request Received & Under Admin Review</span>
+                Your registration request for <strong>{submittedRequest.collegeName}</strong> has been submitted. Our admin verification panel will review your institution credentials and issue your official portal access link upon approval.
               </div>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -302,11 +343,11 @@ export default function CollegeRegistrationPage() {
                       mobile: "",
                       website: "",
                       location: "",
-                      category: "Engineering",
                       type: "Private",
-                      feesPerYear: "75000",
+                      feesPerYear: "Flexible / Varies by Course",
                       additionalNotes: "",
                     });
+                    setSelectedStreams(["Engineering"]);
                     setWebsiteVerified(false);
                     setCollegeImage("https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80");
                   }}
@@ -463,45 +504,98 @@ export default function CollegeRegistrationPage() {
                   </div>
                 </div>
 
-                {/* Academic Stream Category & Ownership Type */}
+                {/* Academic Streams Offered (Interactive Checklist Format) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-stone-700">
+                      Academic Streams Offered <span className="text-amber-600">*</span>
+                    </label>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSelectAllStreams}
+                        className={`text-[10.5px] font-extrabold px-3 py-1 rounded-full transition-all cursor-pointer border flex items-center gap-1.5 shadow-2xs ${
+                          isAllSelected
+                            ? "bg-amber-400 text-stone-950 border-amber-500 hover:bg-amber-300"
+                            : "bg-purple-50 hover:bg-purple-100 text-[#2e266f] border-purple-200"
+                        }`}
+                      >
+                        <CheckSquare className="w-3.5 h-3.5" />
+                        <span>{isAllSelected ? "Deselect All" : "Select All Streams"}</span>
+                      </button>
+
+                      <span className="text-[10px] text-[#2e266f] font-extrabold normal-case bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200 hidden sm:inline-block">
+                        Checklist
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-stone-50/80 p-3.5 rounded-2xl border border-stone-200">
+                    {availableStreamsList.map((stream) => {
+                      const isChecked = selectedStreams.includes(stream.id);
+                      return (
+                        <label
+                          key={stream.id}
+                          onClick={() => toggleStream(stream.id)}
+                          className={`flex items-center gap-2.5 p-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer select-none border ${
+                            isChecked
+                              ? "bg-[#2e266f] text-white border-[#2e266f] shadow-xs"
+                              : "bg-white text-stone-700 border-stone-200/90 hover:border-[#2e266f] hover:bg-purple-50/40"
+                          }`}
+                        >
+                          <div
+                            className={`w-4 h-4 rounded flex items-center justify-center border shrink-0 transition-colors ${
+                              isChecked
+                                ? "bg-amber-400 border-amber-400 text-stone-950"
+                                : "bg-stone-100 border-stone-300"
+                            }`}
+                          >
+                            {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                          </div>
+                          <span className="truncate">{stream.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Institution Type & Fee Structure */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-2">
-                      Academic Stream / Category <span className="text-amber-600">*</span>
+                      Institution Type
                     </label>
                     <select
-                      name="category"
-                      value={formData.category}
+                      name="type"
+                      value={formData.type}
                       onChange={handleChange}
                       className="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 focus:border-[#2e266f] focus:bg-white focus:outline-none text-xs text-stone-900 font-medium transition-all"
                     >
-                      <option value="Engineering">Engineering (B.E / B.Tech)</option>
-                      <option value="Arts & Science">Arts & Science (B.A, B.Sc, BCA)</option>
-                      <option value="Medical">Medical & Healthcare (MBBS, BDS)</option>
-                      <option value="Management">Management (MBA, BBA)</option>
-                      <option value="Commerce">Commerce & Accounting (B.Com)</option>
-                      <option value="Law">Law (LL.B, BA LL.B)</option>
-                      <option value="Polytechnic">Polytechnic & Diploma</option>
-                      <option value="Pharmacy">Pharmacy (B.Pharm)</option>
-                      <option value="Nursing">Nursing & Paramedical</option>
-                      <option value="Dental">Dental Sciences</option>
-                      <option value="Education">Education & B.Ed</option>
+                      <option value="Private">Private Institution</option>
+                      <option value="Government">Government Institution</option>
+                      <option value="Govt-Aided">Government Aided</option>
+                      <option value="Autonomous">Autonomous College</option>
+                      <option value="Deemed">Deemed University</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-2">
-                      Approx. Annual Fees (₹) <span className="text-amber-600">*</span>
+                      Annual Fee Structure Range
                     </label>
-                    <input
-                      type="number"
+                    <select
                       name="feesPerYear"
-                      required
                       value={formData.feesPerYear}
                       onChange={handleChange}
-                      placeholder="e.g. 75000"
-                      className="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 focus:border-[#2e266f] focus:bg-white focus:outline-none text-xs text-stone-900 placeholder-stone-400 font-medium transition-all"
-                    />
+                      className="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 focus:border-[#2e266f] focus:bg-white focus:outline-none text-xs text-stone-900 font-medium transition-all"
+                    >
+                      <option value="Flexible / Varies by Course">Flexible / Varies by Course</option>
+                      <option value="50000">Under ₹50,000 / year</option>
+                      <option value="100000">₹50,000 - ₹1,00,000 / year</option>
+                      <option value="200000">₹1,00,000 - ₹2,00,000 / year</option>
+                      <option value="400000">Above ₹2,00,000 / year</option>
+                    </select>
                   </div>
                 </div>
 

@@ -42,6 +42,39 @@ export default async function CollegeDetailPage({ params }: Props) {
         content: true,
       },
     });
+
+    // Fallback fuzzy match in DB by normalized name or slug before resorting to static file
+    if (!dbCollege) {
+      const cleanTarget = decodedId.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const allDbColleges = await db.collegeProfile.findMany({
+        select: { id: true, name: true, slug: true },
+      });
+
+      const matched = allDbColleges.find((c) => {
+        const normName = c.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const normSlug = (c.slug || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        return (
+          normName === cleanTarget ||
+          normSlug === cleanTarget ||
+          (cleanTarget.length > 5 && (normName.includes(cleanTarget) || cleanTarget.includes(normName)))
+        );
+      });
+
+      if (matched) {
+        dbCollege = await db.collegeProfile.findUnique({
+          where: { id: matched.id },
+          include: {
+            courses: true,
+            placements: { orderBy: { year: "desc" } },
+            reviews: {
+              include: { student: true },
+              orderBy: { createdAt: "desc" },
+            },
+            content: true,
+          },
+        });
+      }
+    }
   } catch (err: any) {
     console.warn(
       `[COLLEGE PAGE DB FETCH WARNING]: Could not fetch database college profile for '${decodedId}'. Falling back to static data.`,

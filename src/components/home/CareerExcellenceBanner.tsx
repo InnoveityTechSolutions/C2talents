@@ -3,7 +3,6 @@
 import * as React from "react";
 import { Landmark, Network, BookOpen, Users } from "lucide-react";
 import { motion } from "framer-motion";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 interface AnimatedCounterProps {
   target: number;
@@ -84,15 +83,33 @@ const stats = [
 ];
 
 export function CareerExcellenceBanner() {
-  // Trigger when 25% of the section enters the viewport, disconnect observer on reveal (runs ONCE per session)
-  const { ref, hasRevealed } = useScrollReveal<HTMLDivElement>({ threshold: 0.25 });
+  const sectionRef = React.useRef<HTMLDivElement>(null);
+  const [isInView, setIsInView] = React.useState(false);
+
+  React.useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(el);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   return (
     <section
-      ref={ref}
-      className={`relative py-16 px-6 font-sans text-white overflow-hidden ${
-        hasRevealed ? "revealed" : ""
-      }`}
+      ref={sectionRef}
+      className="relative py-16 px-6 font-sans text-white overflow-hidden"
     >
       {/* Background Image with Intelligent Selective Lighting & Radial Gradient Overlay */}
       <div className="absolute inset-0 z-0 overflow-hidden">
@@ -107,18 +124,18 @@ export function CareerExcellenceBanner() {
         {/* Soft Blue Base Tone (Preserves natural skin tones & face clarity) */}
         <div className="absolute inset-0 bg-[#0a2754]/30" />
 
-        {/* Radial Spotlight Overlay: Leaves person's face (top right) crystal clear & illuminated */}
+        {/* Radial Spotlight Overlay */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_70%_at_62%_28%,_transparent_10%,_rgba(10,39,84,0.55)_65%,_rgba(6,29,66,0.85)_100%)]" />
 
-        {/* Vertical Gradient Overlay: Strong contrast at bottom for stats, clear around face, subtle at top for text */}
+        {/* Vertical Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#061c40]/95 via-[#092857]/45 via-60% to-[#09244d]/50" />
       </div>
 
       <div className="max-w-6xl mx-auto space-y-10 relative z-10 text-center">
-        {/* Main Title matching Image 1 */}
+        {/* Main Title */}
         <motion.h2
           initial={{ opacity: 0, y: -16 }}
-          animate={hasRevealed ? { opacity: 1, y: 0 } : { opacity: 0, y: -16 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: -16 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1.0] }}
           className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-white tracking-tight drop-shadow-md"
         >
@@ -133,7 +150,7 @@ export function CareerExcellenceBanner() {
               <motion.div
                 key={stat.label}
                 initial={{ opacity: 0, y: 24 }}
-                animate={hasRevealed ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
                 transition={{
                   duration: 0.6,
                   delay: 0.15 * index,
@@ -146,12 +163,12 @@ export function CareerExcellenceBanner() {
                   <Icon className="w-10 h-10 text-amber-400 drop-shadow" />
                 </div>
                 {/* Large White Number with Count-Up Animation */}
-                <div className="text-4xl sm:text-5xl font-black text-white tracking-tight drop-shadow-md min-h-[3.5rem] flex items-center justify-center">
+                <div className="text-4xl sm:text-5xl font-black text-white tracking-tight drop-shadow-md min-h-[3.5rem] flex items-center justify-center font-mono">
                   <AnimatedCounter
                     target={stat.target}
                     suffix={stat.suffix}
-                    isTriggered={hasRevealed}
-                    duration={1800}
+                    isTriggered={isInView}
+                    duration={2000}
                   />
                 </div>
                 {/* Label below */}
@@ -164,9 +181,8 @@ export function CareerExcellenceBanner() {
         </div>
       </div>
 
-      {/* Bottom Center White Notch Indicator matching Image 1 */}
+      {/* Bottom Center White Notch Indicator */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[14px] border-t-white z-20" />
     </section>
   );
 }
-

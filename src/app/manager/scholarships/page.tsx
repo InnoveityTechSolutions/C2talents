@@ -214,7 +214,7 @@ export default function AdminScholarshipsPage() {
   });
 
   return (
-    <div className="p-6 space-y-6 font-sans min-h-screen bg-[#0f172a] text-slate-100">
+    <div className="space-y-6 font-sans min-h-screen bg-[#0f172a] text-slate-100 -m-6 p-6 sm:-m-8 sm:p-8 rounded-2xl">
           {/* Notification Toast */}
           {notification && (
             <div

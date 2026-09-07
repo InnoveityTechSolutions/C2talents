@@ -31,6 +31,7 @@ const navItems = [
   { name: "Registration Requests", href: "/manager/registration-requests", icon: MailPlus },
   { name: "Submitted Colleges", href: "/manager/submitted-colleges", icon: CheckSquare },
   { name: "Admission Leads", href: "/manager/admission-leads", icon: UserCheck },
+  { name: "Study Abroad Leads", href: "/manager/study-abroad-leads", icon: Globe },
   { name: "All Colleges", href: "/manager/colleges", icon: Building2 },
   { name: "Header Images", href: "/manager/header-images", icon: ImageIcon },
   { name: "Add College (AI)", href: "/manager/colleges/new", icon: PlusCircle, highlight: true },

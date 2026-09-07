@@ -59,7 +59,7 @@ export function AdminHeader({ title }: { title?: string }) {
   const adminEmail = user?.email || "admin@c2talents.com";
 
   return (
-    <header className="h-16 bg-white/95 backdrop-blur-md border-b border-purple-100 px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs font-sans">
+    <header className="h-16 bg-white/95 backdrop-blur-md border-b border-purple-100 px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs font-sans shrink-0">
       {/* Title / Breadcrumb */}
       <div className="flex items-center gap-3">
         <div className="w-8.5 h-8.5 rounded-xl bg-[#1c0b36] text-amber-400 flex items-center justify-center font-extrabold text-xs shadow-xs border border-purple-900/30">

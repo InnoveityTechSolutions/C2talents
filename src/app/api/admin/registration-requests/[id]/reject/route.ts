@@ -25,23 +25,25 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
       },
     });
 
-    // Safely send rejection notification email
-    try {
-      const { sendEmail, generateCollegeRejectionEmailDetails } = await import("@/lib/email");
-      const { subject: dynamicSubject, html: emailHtml } = await generateCollegeRejectionEmailDetails({
-        collegeName: updatedRequest.collegeName,
-        contactPerson: updatedRequest.contactPerson,
-        reason: updatedRequest.adminNotes || undefined,
-      });
+    // Safely send rejection notification email in the background without blocking response
+    (async () => {
+      try {
+        const { sendEmail, generateCollegeRejectionEmailDetails } = await import("@/lib/email");
+        const { subject: dynamicSubject, html: emailHtml } = await generateCollegeRejectionEmailDetails({
+          collegeName: updatedRequest.collegeName,
+          contactPerson: updatedRequest.contactPerson,
+          reason: updatedRequest.adminNotes || undefined,
+        });
 
-      await sendEmail({
-        to: updatedRequest.email,
-        subject: dynamicSubject,
-        html: emailHtml,
-      });
-    } catch (emailErr: any) {
-      console.warn(`[REJECT EMAIL NOTICE]: Email dispatch skipped for ${updatedRequest.collegeName}:`, emailErr.message);
-    }
+        await sendEmail({
+          to: updatedRequest.email,
+          subject: dynamicSubject,
+          html: emailHtml,
+        });
+      } catch (emailErr: any) {
+        console.warn(`[REJECT EMAIL NOTICE]: Email dispatch skipped for ${updatedRequest.collegeName}:`, emailErr.message);
+      }
+    })();
 
     return NextResponse.json({
       success: true,

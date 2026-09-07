@@ -109,6 +109,7 @@ export async function sendEmail({
                 filename: "logo.png",
                 path: logoPath,
                 cid: "c2talentslogo",
+                contentDisposition: "inline" as const,
               },
             ]
           : [];

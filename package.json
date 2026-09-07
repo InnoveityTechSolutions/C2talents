@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "sync:college-images": "npx tsx scripts/sync-college-images.ts"
+    "sync:college-images": "npx tsx scripts/sync-college-images.ts",
+    "sync:db": "npx tsx scripts/sync-cloud-to-local.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

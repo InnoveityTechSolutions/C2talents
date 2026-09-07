@@ -74,7 +74,12 @@ export function ScholarshipsClient({ initialScholarships }: Props) {
     } else {
       setLoading(true);
       fetch("/api/scholarships")
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to load scholarships");
+          const contentType = res.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) throw new Error("Invalid response format");
+          return res.json();
+        })
         .then((data) => {
           if (Array.isArray(data) && data.length > 0) {
             setScholarships(data);
@@ -772,9 +777,9 @@ function ScholarshipCard({
           <button
             onClick={() => onSelect(s)}
             suppressHydrationWarning
-            className="w-full py-2 px-3 bg-white hover:bg-stone-100 text-stone-800 font-extrabold text-xs rounded-xl border border-stone-200/90 transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+            className="w-full py-2 px-3 bg-white hover:bg-[#3b2075] hover:border-[#3b2075] hover:text-white active:bg-[#3b2075] active:border-[#3b2075] active:text-white focus:bg-[#3b2075] focus:text-white text-stone-800 font-extrabold text-xs rounded-xl border border-stone-200/90 transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs group active:scale-[0.98]"
           >
-            <FileText className="w-3.5 h-3.5 text-indigo-900" />
+            <FileText className="w-3.5 h-3.5 text-indigo-900 group-hover:text-white group-active:text-white transition-colors" />
             <span>View Details</span>
           </button>
 

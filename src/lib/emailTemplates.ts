@@ -484,6 +484,9 @@ export async function compileEmailTemplate(
   </div>
   <div class="email-container">
     <div class="email-header">
+      <div style="margin-bottom: 12px; text-align: center;">
+        <img src="cid:c2talentslogo" alt="C2Talents Logo" height="38" style="height: 38px; width: auto; max-height: 38px; display: inline-block; border: 0; outline: none; margin: 0 auto;" />
+      </div>
       <div style="margin-bottom: 8px;">
         <span style="background: rgba(245,158,11,0.2); color: #f59e0b; border: 1px solid rgba(245,158,11,0.4); padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">C2Talents Platform</span>
       </div>

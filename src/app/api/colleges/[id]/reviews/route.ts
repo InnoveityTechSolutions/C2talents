@@ -16,30 +16,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     const params = await props.params;
     const { id: collegeId } = params;
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { message: "Authentication required to submit reviews" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.split(" ")[1];
-    let decoded: JwtPayload;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
-    } catch {
-      return NextResponse.json({ message: "Invalid or expired session" }, { status: 401 });
-    }
-
-    if (decoded.role !== "STUDENT" || !decoded.profileId) {
-      return NextResponse.json(
-        { message: "Only registered students can submit college reviews" },
-        { status: 403 }
-      );
-    }
-
-    const { rating, content } = await req.json();
+    const { rating, content, studentName, course } = await req.json();
 
     if (!rating || !content) {
       return NextResponse.json(
@@ -56,26 +33,38 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       );
     }
 
-    // Check if the student exists
-    const student = await db.studentProfile.findUnique({
-      where: { id: decoded.profileId },
-    });
+    let studentId: string | null = null;
+    let reviewerName = studentName?.trim() || "Verified Student";
 
-    if (!student) {
-      return NextResponse.json(
-        { message: "Student profile not found" },
-        { status: 404 }
-      );
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+        if (decoded && decoded.profileId) {
+          const student = await db.studentProfile.findUnique({
+            where: { id: decoded.profileId },
+          });
+          if (student) {
+            studentId = student.id;
+            reviewerName = student.name || reviewerName;
+          }
+        }
+      } catch {
+        // Continue as guest review if token is invalid
+      }
     }
 
     // Create the review
     const review = await db.review.create({
       data: {
         collegeId,
-        studentId: student.id,
+        studentId,
+        studentName: reviewerName,
+        course: course || "Student Review",
         rating: ratingVal,
         content,
-        isVerified: true, // Auto-verify student reviews since they are logged in
+        isVerified: true,
       },
     });
 

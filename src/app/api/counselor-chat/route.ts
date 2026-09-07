@@ -73,14 +73,104 @@ function parsePackageTarget(pkgText?: string | null): number {
 
 // Convert user 12th score string into percentage float
 function parseScoreValue(scoreText?: string | null): number {
-  if (!scoreText) return 80;
-  const match = scoreText.match(/(\d+(?:\.\d+)?)/);
-  if (match) return parseFloat(match[1]);
-  if (scoreText.includes("95")) return 95;
-  if (scoreText.includes("90")) return 92;
-  if (scoreText.includes("85")) return 87;
-  if (scoreText.includes("75")) return 80;
+  if (!scoreText) return 75;
+  const lower = scoreText.toLowerCase();
+
+  const match = lower.match(/(?:below|above|<|>)?\s*(\d{2}(?:\.\d+)?)\s*%/i) || lower.match(/(\d{2}(?:\.\d+)?)/);
+  if (match) {
+    let num = parseFloat(match[1]);
+    if (lower.includes("below") || lower.includes("<")) {
+      num = Math.max(35, num - 5);
+    }
+    return num;
+  }
+  if (lower.includes("95")) return 95;
+  if (lower.includes("90")) return 92;
+  if (lower.includes("85")) return 87;
+  if (lower.includes("75")) return 80;
+  if (lower.includes("below")) return 50;
   return 70;
+}
+
+// Strict Stream & Specialization Compatibility Checker
+function isCollegeStreamCompatible(
+  col: any,
+  stream?: string | null,
+  specialization?: string | null
+): boolean {
+  if (!stream && !specialization) return true;
+
+  const colCat = (col.category || "").toLowerCase();
+  const colCatsStr = (col.categories || "").toLowerCase();
+  const colName = (col.name || "").toLowerCase();
+  const courseTitles = (col.courses || []).map((c: any) => c.title.toLowerCase());
+
+  const s = (stream || "").toLowerCase();
+  const spec = (specialization || "").toLowerCase();
+
+  const isEngReq = s.includes("engineering") || s.includes("b.tech") || spec.includes("computer science") || spec.includes("electronics") || spec.includes("mechanical");
+  const isMedReq = s.includes("medical") || s.includes("mbbs") || s.includes("nursing") || s.includes("bds") || s.includes("pharmacy");
+  const isMgmtReq = s.includes("management") || s.includes("mba") || s.includes("bba") || spec.includes("mba");
+  const isArtsSciReq = s.includes("arts") || s.includes("science") || spec.includes("bca");
+  const isLawReq = s.includes("law") || s.includes("llb");
+  const isAgriReq = s.includes("agriculture");
+  const isArchReq = s.includes("architecture");
+
+  if (isEngReq) {
+    const hasEngCourse = courseTitles.some((t: string) =>
+      /\b(b\.tech|b\.e\.|m\.tech|m\.e\.|engineering|computer|cse|ece|eee|mech|civil|information technology|ai|data science|robotics|biotech)\b/i.test(t)
+    );
+    const hasEngCat = colCat.includes("engineering") || colCatsStr.includes("engineering") || /\b(engineering|technology|tech|polytechnic)\b/i.test(colName);
+    const isPureMedical = /\b(medical college|hospital|nursing|dental|homoeopathy|siddha|ayurveda)\b/i.test(colName) && !hasEngCourse;
+
+    if (isPureMedical || (!hasEngCourse && !hasEngCat)) {
+      return false;
+    }
+    return true;
+  }
+
+  if (isMedReq) {
+    const hasMedCourse = courseTitles.some((t: string) =>
+      /\b(mbbs|md|ms|bds|nursing|pharmacy|b\.pharm|pharm\.d|physiotherapy|allied health|paramedical|clinical|medical)\b/i.test(t)
+    );
+    const hasMedCat = colCat.includes("medical") || colCatsStr.includes("medical") || /\b(medical|dental|nursing|pharmacy)\b/i.test(colName);
+    const isPureEng = /\b(engineering|technology|polytechnic)\b/i.test(colName) && !hasMedCourse;
+
+    if (isPureEng || (!hasMedCourse && !hasMedCat)) {
+      return false;
+    }
+    return true;
+  }
+
+  if (isMgmtReq) {
+    const hasMgmtCourse = courseTitles.some((t: string) => /\b(mba|bba|management|pgdm|business)\b/i.test(t));
+    const hasMgmtCat = colCat.includes("management") || colCatsStr.includes("management") || /\b(management|business|b-school)\b/i.test(colName);
+    if (!hasMgmtCourse && !hasMgmtCat) return false;
+    return true;
+  }
+
+  if (isLawReq) {
+    const hasLawCourse = courseTitles.some((t: string) => /\b(llb|ll\.b|law|clat)\b/i.test(t));
+    const hasLawCat = colCat.includes("law") || colCatsStr.includes("law") || /\b(law|legal)\b/i.test(colName);
+    if (!hasLawCourse && !hasLawCat) return false;
+    return true;
+  }
+
+  if (isAgriReq) {
+    const hasAgriCourse = courseTitles.some((t: string) => /\b(agriculture|agri|b\.sc\. agri)\b/i.test(t));
+    const hasAgriCat = colCat.includes("agriculture") || colCatsStr.includes("agriculture") || /\b(agriculture|agri)\b/i.test(colName);
+    if (!hasAgriCourse && !hasAgriCat) return false;
+    return true;
+  }
+
+  if (isArchReq) {
+    const hasArchCourse = courseTitles.some((t: string) => /\b(b\.arch|m\.arch|architecture|nata)\b/i.test(t));
+    const hasArchCat = colCat.includes("architecture") || colCatsStr.includes("architecture") || /\b(architecture)\b/i.test(colName);
+    if (!hasArchCourse && !hasArchCat) return false;
+    return true;
+  }
+
+  return true;
 }
 
 export async function POST(req: Request) {
@@ -193,6 +283,11 @@ export async function POST(req: Request) {
     const scoredColleges: RecommendationResult[] = [];
 
     for (const col of dbColleges) {
+      // 0. Stream Compatibility Filter (Strict Root Area Check)
+      if (!isCollegeStreamCompatible(col, profile.stream, profile.specialization)) {
+        continue;
+      }
+
       let score = 0;
       const reasons: string[] = [];
 
@@ -213,14 +308,53 @@ export async function POST(req: Request) {
           courseMatchFee = matchedCourse.feesPerYear;
           reasons.push(`✔ ${matchedCourse.title} Course Available`);
         } else if (col.categories && col.categories.toLowerCase().includes((profile.stream || "").toLowerCase())) {
-          score += 20;
+          score += 25;
           reasons.push(`✔ Offers ${profile.stream} Programs`);
+        } else {
+          score += 20;
         }
       } else {
         score += 20; // Default base course points if student hasn't selected stream yet
       }
 
-      // 2. Budget & Fee Fit (25 pts)
+      // 2. Academic Eligibility & Cutoff Fit (30 pts max / penalty for score gap)
+      let requiredMinGpa = 50.0;
+      const matchingCourseWithMinGpa = col.courses.find((c) => c.minGpa && c.minGpa > 0);
+      if (matchingCourseWithMinGpa && matchingCourseWithMinGpa.minGpa) {
+        requiredMinGpa = matchingCourseWithMinGpa.minGpa;
+      } else {
+        if (col.nirfRank && col.nirfRank <= 30) {
+          requiredMinGpa = 85.0;
+        } else if (col.nirfRank && col.nirfRank <= 75) {
+          requiredMinGpa = 75.0;
+        } else if (col.ownership === "Government" || col.type === "Government") {
+          requiredMinGpa = 70.0;
+        } else {
+          requiredMinGpa = 50.0;
+        }
+      }
+
+      if (scoreVal >= requiredMinGpa) {
+        score += 25;
+        reasons.push(`✔ Academic Eligibility Met: Your score (${scoreVal}%) meets required cutoff (~${requiredMinGpa}%)`);
+      } else {
+        const gap = requiredMinGpa - scoreVal;
+        if (gap > 30) {
+          score -= 40;
+          reasons.push(`⚠️ High Cutoff Alert: Required cutoff (~${requiredMinGpa}%) is significantly higher than your ${scoreVal}% score`);
+        } else if (gap > 15) {
+          score -= 25;
+          reasons.push(`⚠️ Merit Gap: Requires ~${requiredMinGpa}% cutoff (Your score: ${scoreVal}%)`);
+        } else if (gap > 5) {
+          score -= 10;
+          reasons.push(`⚠️ Slightly below typical cutoff (~${requiredMinGpa}%)`);
+        } else {
+          score += 15;
+          reasons.push(`✔ Within Cutoff Range (~${requiredMinGpa}%)`);
+        }
+      }
+
+      // 3. Budget & Fee Fit (25 pts)
       const annualFee = courseMatchFee || col.feesPerYear;
       if (annualFee > 0) {
         if (annualFee <= budgetLimit) {
@@ -234,7 +368,7 @@ export async function POST(req: Request) {
         reasons.push(`✔ Fee Details Available on Official Request`);
       }
 
-      // 3. Placement Fit (20 pts)
+      // 4. Placement Fit (20 pts)
       const avgPkg = col.avgPackage || 0;
       const highestPkg = col.highestPackage || 0;
 
@@ -248,7 +382,7 @@ export async function POST(req: Request) {
         reasons.push(`⚠ Placement Data: Direct Campus Verification Recommended`);
       }
 
-      // 4. Hostel & Facilities (15 pts)
+      // 5. Hostel & Facilities (15 pts)
       const needsHostel = (profile.hostel || "").toLowerCase().includes("yes");
       if (needsHostel) {
         if (col.hostelAvailable) {
@@ -261,7 +395,7 @@ export async function POST(req: Request) {
         score += 15;
       }
 
-      // 5. NAAC & NIRF Rankings (10 pts)
+      // 6. NAAC & NIRF Rankings (10 pts)
       if (col.naacGrade) {
         score += 6;
         reasons.push(`✔ NAAC Accredited Grade ${col.naacGrade}`);
@@ -271,13 +405,13 @@ export async function POST(req: Request) {
         reasons.push(`✔ NIRF Rank #${col.nirfRank} among Top Colleges in India`);
       }
 
-      // 6. Location Preference Match
+      // 7. Location Preference Match
       if (profile.locationPreference && col.city && col.city.toUpperCase().includes(profile.locationPreference)) {
         score += 10;
         reasons.push(`✔ Located in preferred location (${col.city})`);
       }
 
-      const matchScore = Math.min(98, Math.max(65, Math.round(score)));
+      const matchScore = Math.min(98, Math.max(35, Math.round(score)));
 
       // Real Data Rationale Generation
       const rationaleText =
@@ -364,9 +498,9 @@ Instructions:
       replyMessage = generateFallbackCounselorText(message, profile, topRecommendations);
     }
 
-    const dreamColleges = scoredColleges.filter((c) => (c.nirfRank && c.nirfRank <= 40) || c.highestPackage >= 12 || c.naacGrade === "A++").slice(0, 3);
-    const bestMatches = scoredColleges.filter((c) => c.matchScore >= 85).slice(0, 4);
-    const safeColleges = scoredColleges.filter((c) => c.matchScore >= 70 && c.fees <= budgetLimit).slice(0, 3);
+    const dreamColleges = scoredColleges.filter((c) => (c.nirfRank && c.nirfRank <= 50) || c.highestPackage >= 12 || c.naacGrade === "A++").slice(0, 3);
+    const bestMatches = scoredColleges.filter((c) => c.matchScore >= 75).slice(0, 4);
+    const safeColleges = scoredColleges.filter((c) => c.matchScore >= 55 && c.fees <= budgetLimit).slice(0, 3);
 
     return NextResponse.json({
       reply: replyMessage,

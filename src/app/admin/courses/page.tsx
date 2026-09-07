@@ -30,7 +30,7 @@ export default function AdminCoursesPage() {
   async function fetchColleges() {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/colleges");
+      const res = await fetch("/api/admin/colleges", { cache: "no-store" });
       const data = await res.json();
       if (data.colleges) {
         setColleges(data.colleges);

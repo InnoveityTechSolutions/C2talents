@@ -455,7 +455,7 @@ export default function EnterpriseEmailTemplateCMS() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf8ff] flex flex-col font-sans text-slate-900">
+    <div className="-m-6 md:-m-8 h-[calc(100vh-4rem)] bg-[#faf8ff] flex flex-col font-sans text-slate-900 overflow-hidden">
       {/* Toast Alert Banner */}
       {toastMessage && (
         <div
@@ -470,8 +470,8 @@ export default function EnterpriseEmailTemplateCMS() {
         </div>
       )}
 
-      {/* TOP HEADER BAR — Matching C2Talents Website Theme */}
-      <header className="bg-[#1c0b36] text-white border-b border-purple-900/60 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 shadow-md">
+      {/* TOP SUB-HEADER BAR */}
+      <div className="bg-[#1c0b36] text-white border-b border-purple-900/60 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 shrink-0 shadow-md">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#3b2075] to-[#7c3aed] text-amber-300 flex items-center justify-center font-black shadow-md border border-amber-400/30">
             <GraduationCap className="w-5.5 h-5.5 text-amber-300" />
@@ -552,7 +552,7 @@ export default function EnterpriseEmailTemplateCMS() {
             <span>Save Changes</span>
           </button>
         </div>
-      </header>
+      </div>
 
       {/* MAIN 2-COLUMN PAGE WORKSPACE */}
       <div className="flex-1 flex overflow-hidden">

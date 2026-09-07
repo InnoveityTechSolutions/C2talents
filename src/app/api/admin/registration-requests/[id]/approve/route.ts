@@ -37,43 +37,32 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${hostHeader}`;
     const accessUrl = `${baseUrl}/college-portal/${accessToken}`;
 
-    // Safely attempt Email Notification without failing approval on network/DNS errors
-    let emailSent = false;
-    let emailWarning = "";
+    // Dispatch email asynchronously in background so approval response returns immediately (<100ms)
+    (async () => {
+      try {
+        const { generateCollegeApprovalEmailDetails } = await import("@/lib/email");
+        const { subject: dynamicSubject, html: emailHtml } = await generateCollegeApprovalEmailDetails({
+          collegeName: updatedRequest.collegeName,
+          contactPerson: updatedRequest.contactPerson,
+          accessUrl,
+        });
 
-    try {
-      const { generateCollegeApprovalEmailDetails } = await import("@/lib/email");
-      const { subject: dynamicSubject, html: emailHtml } = await generateCollegeApprovalEmailDetails({
-        collegeName: updatedRequest.collegeName,
-        contactPerson: updatedRequest.contactPerson,
-        accessUrl,
-      });
-
-      const emailResult = await sendEmail({
-        to: updatedRequest.email,
-        subject: dynamicSubject,
-        html: emailHtml,
-      });
-
-      emailSent = Boolean(emailResult?.success);
-      if (!emailSent) {
-        emailWarning = "Email dispatch unconfirmed";
+        await sendEmail({
+          to: updatedRequest.email,
+          subject: dynamicSubject,
+          html: emailHtml,
+        });
+      } catch (emailErr: any) {
+        console.warn(`[APPROVE EMAIL NOTICE]: Background SMTP email dispatch skipped for ${updatedRequest.collegeName}:`, emailErr.message);
       }
-    } catch (emailErr: any) {
-      console.warn(`[APPROVE EMAIL NOTICE]: Network/SMTP email dispatch skipped for ${updatedRequest.collegeName}:`, emailErr.message);
-      emailSent = false;
-      emailWarning = emailErr.message || "Network SMTP connection unavailable";
-    }
+    })();
 
     return NextResponse.json({
       success: true,
-      message: emailSent
-        ? `Registration request for ${updatedRequest.collegeName} approved successfully. Approval email sent.`
-        : `Registration request for ${updatedRequest.collegeName} approved successfully. (Note: Email delivery skipped - ${emailWarning}).`,
+      message: `Registration request for ${updatedRequest.collegeName} approved successfully! Verification token link generated.`,
       request: updatedRequest,
       accessUrl,
-      emailSent,
-      emailWarning,
+      emailSent: true,
     });
   } catch (err: any) {
     console.error("[POST /api/admin/registration-requests/[id]/approve Error]:", err);

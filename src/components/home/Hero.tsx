@@ -16,17 +16,15 @@ const TYPING_WORDS = [
 
 function TypewriterHeading() {
   const [wordIndex, setWordIndex] = React.useState(0);
-  const [currentText, setCurrentText] = React.useState("");
+  const [currentText, setCurrentText] = React.useState("College");
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   React.useEffect(() => {
     const targetWord = TYPING_WORDS[wordIndex];
-    // Gentle human-like typing speed (150ms per character) and smooth deleting speed (75ms per character)
-    const speed = isDeleting ? 75 : 150;
+    const speed = isDeleting ? 60 : 120;
 
     if (!isDeleting && currentText === targetWord) {
-      // Hold full word clearly for 3.2 seconds before deleting
-      const pauseTimeout = setTimeout(() => setIsDeleting(true), 3200);
+      const pauseTimeout = setTimeout(() => setIsDeleting(true), 3000);
       return () => clearTimeout(pauseTimeout);
     } else if (isDeleting && currentText === "") {
       setIsDeleting(false);
@@ -37,25 +35,28 @@ function TypewriterHeading() {
     const timer = setTimeout(() => {
       setCurrentText(
         isDeleting
-          ? targetWord.substring(0, currentText.length - 1)
-          : targetWord.substring(0, currentText.length + 1)
+          ? targetWord.substring(0, Math.max(0, currentText.length - 1))
+          : targetWord.substring(0, Math.min(targetWord.length, currentText.length + 1))
       );
     }, speed);
 
     return () => clearTimeout(timer);
   }, [currentText, isDeleting, wordIndex]);
 
+  // Ensure heading is always readable and never shows just "C"
+  const displayText = currentText || "College";
+
   return (
     <motion.h1
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
-      className="text-4xl sm:text-5xl md:text-6xl font-serif text-white font-bold leading-[1.2] tracking-tight drop-shadow-md min-h-[2.4em] sm:min-h-[2em] flex flex-wrap items-center justify-center gap-x-3"
+      className="text-3xl sm:text-4xl md:text-5xl font-serif text-white font-bold leading-[1.25] tracking-tight drop-shadow-md min-h-[1.6em] sm:min-h-[1.5em] flex flex-wrap items-center justify-center gap-x-2.5 text-center"
     >
       <span>Find the Right</span>
       <span className="text-[#C9A227] font-sans font-extrabold border-b-2 border-[#C9A227]/40 pb-0.5 inline-flex items-center">
-        {currentText}
-        <span className="text-[#C9A227] animate-pulse font-light ml-1 text-4xl sm:text-5xl">|</span>
+        {displayText}
+        <span className="text-[#C9A227] animate-pulse font-light ml-1 text-3xl sm:text-4xl">|</span>
       </span>
       <span>for Your Future</span>
     </motion.h1>
@@ -64,11 +65,11 @@ function TypewriterHeading() {
 
 export function Hero() {
   return (
-    <div className="relative w-full bg-white pb-0">
+    <div className="relative w-full bg-white pb-0 overflow-visible z-20">
       {/* 1. Main Background Slider */}
       <HeroSlider>
         {/* Centered Overlay Content inside the Slider container */}
-        <div className="text-center space-y-6 max-w-4xl mx-auto w-full">
+        <div className="text-center space-y-3.5 md:space-y-4 max-w-4xl mx-auto w-full px-2">
           {/* Typing Animated Heading */}
           <div className="animate-load-hero">
             <TypewriterHeading />
@@ -76,7 +77,7 @@ export function Hero() {
 
           {/* Subtitle */}
           <div className="animate-load-left">
-            <p className="text-stone-200 font-sans text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed drop-shadow-sm font-normal">
+            <p className="text-stone-200 font-sans text-xs sm:text-sm md:text-base max-w-2xl mx-auto leading-relaxed drop-shadow-sm font-normal">
               Search, compare and discover the best colleges, courses, scholarships and placements across India with AI-powered guidance. Join over{" "}
               <span className="text-[#C9A227] font-bold border-b border-[#C9A227]/30 pb-0.5">
                 25,000+
@@ -86,12 +87,12 @@ export function Hero() {
           </div>
 
           {/* Search Box Component */}
-          <div className="animate-load-search pt-2">
+          <div className="animate-load-search pt-1 relative z-50">
             <SearchBar />
           </div>
 
           {/* Quick Categories pills */}
-          <div className="animate-load-badge pt-2">
+          <div className="animate-load-badge pt-1 relative z-10">
             <QuickCategories />
           </div>
         </div>

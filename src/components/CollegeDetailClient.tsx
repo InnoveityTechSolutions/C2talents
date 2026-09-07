@@ -13,6 +13,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useAuth } from "@/providers/AuthProvider";
 import { LoginModal } from "./LoginModal";
+import { NearbyCollegesWidget } from "./NearbyCollegesWidget";
 
 interface Props {
   college: any;
@@ -1082,6 +1083,9 @@ export function CollegeDetailClient({ college }: Props) {
               {/* Quick On-Page Table of Contents */}
               <QuickTableOfContents content={college.content} collegeName={college.name} />
 
+              {/* Real Geolocation-Based Nearby Colleges Widget */}
+              <NearbyCollegesWidget collegeId={college.id} currentCollegeName={college.name} />
+
               {/* Direct Admission Helpline Callback Widget */}
               <AdmissionCallbackWidget collegeName={college.name} />
 
@@ -1539,10 +1543,21 @@ function AdmissionCallbackWidget({ collegeName }: { collegeName: string }) {
 }
 
 // ─── CAMPUS FACILITIES WIDGET ────────────────────────────────────────────────
-function CampusFacilitiesWidget({ facilities }: { facilities: any[] }) {
-  const facList = Array.isArray(facilities) && facilities.length > 0
-    ? facilities
-    : ["Library", "Hostel", "Sports Complex", "WiFi", "Laboratories", "Auditorium", "Cafeteria", "Transport"];
+function CampusFacilitiesWidget({ facilities }: { facilities: any }) {
+  let facList: string[] = [];
+
+  if (Array.isArray(facilities)) {
+    facList = facilities.map((f: any) => (typeof f === "string" ? f : f?.name || "Amenity")).filter(Boolean);
+  } else if (typeof facilities === "string" && facilities.trim()) {
+    facList = facilities
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  if (facList.length === 0) {
+    facList = ["Library", "Hostel", "Sports Complex", "WiFi", "Laboratories", "Auditorium", "Cafeteria", "Transport"];
+  }
 
   return (
     <div className="bg-white border border-stone-200 rounded-2xl p-4 space-y-3 shadow-xs">

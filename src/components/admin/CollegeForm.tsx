@@ -3474,15 +3474,31 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
         <button
           type="button"
           onClick={() => router.push("/manager/colleges")}
-          className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition-colors"
+          className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
         >
           Cancel
         </button>
 
         <button
+          type="button"
+          disabled={loading}
+          onClick={(e) => {
+            setStatus("DATA_SUBMITTED");
+            setTimeout(() => {
+              const form = (e.target as HTMLElement).closest("form");
+              if (form) form.requestSubmit();
+            }, 50);
+          }}
+          className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-md transition-all disabled:opacity-50 cursor-pointer"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 text-emerald-200" />}
+          <span>Save as Data Submitted</span>
+        </button>
+
+        <button
           type="submit"
           disabled={loading}
-          className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-md transition-all disabled:opacity-50"
+          className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-md transition-all disabled:opacity-50 cursor-pointer"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-amber-300" />}
           <span>{collegeId ? "Update College" : "Save College"}</span>

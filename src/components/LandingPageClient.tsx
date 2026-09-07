@@ -15,7 +15,6 @@ import { TopDestinations } from "./home/TopDestinations";
 import { WhyChooseUs } from "./home/WhyChooseUs";
 import { ExploreCourses } from "./home/ExploreCourses";
 import { TopExams } from "./home/TopExams";
-import { NewsStories } from "./home/NewsStories";
 import { StudyAbroad } from "./home/StudyAbroad";
 import { TrendingTags } from "./home/TrendingTags";
 import { FloatingCounselorButton } from "./home/FloatingCounselorButton";
@@ -106,8 +105,7 @@ export function LandingPageClient({ initialColleges }: Props) {
       {/* Section 13 ── Top Exams Corner */}
       <TopExams />
 
-      {/* Section 15 ── Latest News & Stories */}
-      <NewsStories />
+
 
       {/* Section 16 ── Study Abroad Countries */}
       <StudyAbroad />

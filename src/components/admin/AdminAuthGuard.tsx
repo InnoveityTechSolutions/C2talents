@@ -83,7 +83,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
       <AdminSidebar />
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <AdminHeader />
-        <main className="flex-1 overflow-y-auto w-full">
+        <main className="flex-1 overflow-y-auto w-full p-6 md:p-8">
           {children}
         </main>
       </div>

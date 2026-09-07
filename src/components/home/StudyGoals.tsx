@@ -85,58 +85,60 @@ export function StudyGoals() {
               <div
                 ref={ref}
                 key={stream.title}
-                className={`group relative flex flex-col bg-white border border-stone-200/80 rounded-[22px] overflow-hidden shadow-[0_4px_22px_-4px_rgba(0,0,0,0.06)] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 scroll-reveal ${
+                className={`group relative flex flex-col scroll-reveal ${
                   hasRevealed ? "revealed" : ""
                 }`}
               >
-                {/* Photo Header */}
-                <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-stone-100 shrink-0">
-                  <img
-                    src={stream.image}
-                    alt={stream.title}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover object-top grayscale contrast-[1.05] group-hover:grayscale-0 group-active:grayscale-0 group-focus:grayscale-0 transition-all duration-500 ease-out group-hover:scale-105"
-                  />
-                  <div className="absolute top-3.5 left-3.5 z-10">
-                    <span className="text-[11px] font-black tracking-wider uppercase px-3 py-1 rounded-lg bg-white/95 text-stone-900 border border-stone-200/50 shadow-sm backdrop-blur-sm font-sans">
-                      {stream.count}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Info Container */}
-                <div className="p-5 flex-1 flex flex-col justify-between space-y-3 relative z-10">
-                  <div>
-                    <h3 className="font-sans text-xl font-extrabold text-[#1c0b36] group-hover:text-indigo-900 transition-colors tracking-tight">
-                      {stream.title}
-                    </h3>
-                  </div>
-
-                  <div className="flex flex-col gap-1 font-sans">
-                    <span className="text-[10px] text-stone-400 font-extrabold uppercase tracking-widest">
-                      Popular Degrees
-                    </span>
-                    <div className="flex flex-wrap gap-x-3.5 gap-y-1 pt-1">
-                      {stream.degrees.map((deg) => (
-                        <Link
-                          key={deg}
-                          href={`${stream.href}&degree=${deg.toLowerCase()}`}
-                          className="text-xs font-bold text-stone-700 hover:text-indigo-900 transition-colors relative z-20"
-                        >
-                          {deg}
-                        </Link>
-                      ))}
+                <div className="relative flex flex-col bg-white border border-stone-200/80 rounded-[22px] overflow-hidden shadow-[0_4px_22px_-4px_rgba(0,0,0,0.06)] transition-all duration-300 transform-gpu group-hover:shadow-xl group-hover:-translate-y-1.5 h-full">
+                  {/* Photo Header */}
+                  <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-stone-100 shrink-0">
+                    <img
+                      src={stream.image}
+                      alt={stream.title}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover object-top grayscale contrast-[1.05] group-hover:grayscale-0 transition-all duration-500 ease-out group-hover:scale-105"
+                    />
+                    <div className="absolute top-3.5 left-3.5 z-10">
+                      <span className="text-[11px] font-black tracking-wider uppercase px-3 py-1 rounded-lg bg-white/95 text-stone-900 border border-stone-200/50 shadow-sm backdrop-blur-sm font-sans">
+                        {stream.count}
+                      </span>
                     </div>
                   </div>
-                </div>
 
-                {/* Card Link Overlay */}
-                <Link
-                  href={stream.href}
-                  className="absolute inset-0 z-0"
-                  aria-label={`Explore ${stream.title} Colleges`}
-                />
+                  {/* Info Container */}
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-3 relative z-10">
+                    <div>
+                      <h3 className="font-sans text-xl font-extrabold text-[#1c0b36] group-hover:text-indigo-900 transition-colors tracking-tight">
+                        {stream.title}
+                      </h3>
+                    </div>
+
+                    <div className="flex flex-col gap-1 font-sans">
+                      <span className="text-[10px] text-stone-400 font-extrabold uppercase tracking-widest">
+                        Popular Degrees
+                      </span>
+                      <div className="flex flex-wrap gap-x-3.5 gap-y-1 pt-1">
+                        {stream.degrees.map((deg) => (
+                          <Link
+                            key={deg}
+                            href={`${stream.href}&degree=${deg.toLowerCase()}`}
+                            className="text-xs font-bold text-stone-700 hover:text-indigo-900 transition-colors relative z-20"
+                          >
+                            {deg}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Link Overlay */}
+                  <Link
+                    href={stream.href}
+                    className="absolute inset-0 z-0"
+                    aria-label={`Explore ${stream.title} Colleges`}
+                  />
+                </div>
               </div>
             );
           })}

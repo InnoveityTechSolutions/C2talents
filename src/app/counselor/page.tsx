@@ -68,7 +68,7 @@ const STEPS = [
   {
     key: "score12th",
     question: "What is your Class 12th / HSC percentage or Cutoff score (PCM/PCB)?",
-    chips: ["95%+ (Cutoff 190+)", "90–95% (Cutoff 180+)", "85–90% (Cutoff 170+)", "75–85% (Cutoff 150+)", "Below 75%"],
+    chips: ["95%+ (Cutoff 190+)", "85–95% (Cutoff 170+)", "70–85% (Cutoff 140+)", "50–70% (Cutoff 110+)", "Below 50% / Direct Admission"],
   },
   {
     key: "entranceExam",

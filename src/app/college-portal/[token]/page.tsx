@@ -203,36 +203,36 @@ export default function CollegePortalTokenPage({ params }: { params: Promise<{ t
       {/* Submission Success Center Popup Modal */}
       {submitSuccess && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-stone-200 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl space-y-6 text-stone-900 animate-in fade-in zoom-in-95 duration-200 relative">
+          <div className="bg-white border-2 border-emerald-500/80 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl shadow-emerald-500/20 space-y-6 text-stone-900 animate-in fade-in zoom-in-95 duration-200 relative">
             <button
               onClick={() => setSubmitSuccess(false)}
-              className="absolute right-5 top-5 text-stone-400 hover:text-stone-700 transition-colors p-1"
+              className="absolute right-5 top-5 text-stone-400 hover:text-stone-700 transition-colors p-1 cursor-pointer"
               title="Close"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-300 flex items-center justify-center mx-auto shadow-md">
-              <CheckCircle2 className="w-9 h-9" />
+            <div className="w-16 h-16 rounded-full bg-emerald-500 text-white border-4 border-emerald-100 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/30">
+              <CheckCircle2 className="w-9 h-9 text-white" />
             </div>
 
             <div className="text-center space-y-2">
               <h3 className="text-xl font-black text-stone-900">Profile Details Saved & Submitted!</h3>
               <p className="text-xs text-stone-600 leading-relaxed font-medium">
-                Your college profile details for <strong className="text-[#2e266f]">{requestInfo?.collegeName}</strong> have been saved successfully and submitted for Admin Verification.
+                Your college profile details for <strong className="text-emerald-700 font-black">{requestInfo?.collegeName}</strong> have been saved successfully and submitted for Admin Verification.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 text-xs space-y-2 font-medium">
-              <div className="flex justify-between border-b border-stone-200 pb-2">
-                <span className="text-stone-500">Submission Status:</span>
-                <span className="font-extrabold text-emerald-700 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                  Under Admin Review
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs space-y-2.5 font-medium shadow-2xs">
+              <div className="flex justify-between items-center border-b border-emerald-200/80 pb-2">
+                <span className="text-stone-600 font-semibold">Submission Status:</span>
+                <span className="font-black text-white uppercase tracking-wider bg-emerald-600 px-3 py-1 rounded-lg border border-emerald-700 shadow-2xs text-[11px]">
+                  UNDER ADMIN REVIEW
                 </span>
               </div>
-              <div className="flex justify-between pt-1">
-                <span className="text-stone-500">Next Action:</span>
-                <span className="font-bold text-stone-800">Admin Review & Live Publication</span>
+              <div className="flex justify-between items-center pt-1">
+                <span className="text-stone-600 font-semibold">Next Action:</span>
+                <span className="font-extrabold text-stone-900">Admin Review & Live Publication</span>
               </div>
             </div>
 
@@ -240,17 +240,17 @@ export default function CollegePortalTokenPage({ params }: { params: Promise<{ t
               <button
                 type="button"
                 onClick={() => setSubmitSuccess(false)}
-                className="flex-1 py-3 px-4 rounded-xl bg-purple-50 hover:bg-purple-100 text-[#2e266f] font-extrabold text-xs transition-all border border-purple-200 cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 py-3 px-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-extrabold text-xs transition-all border border-emerald-300 cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
               >
-                <Edit className="w-4 h-4" /> Continue Editing
+                <Edit className="w-4 h-4 text-emerald-700" /> Continue Editing
               </button>
 
               <button
                 type="button"
                 onClick={() => setSubmitSuccess(false)}
-                className="flex-1 py-3 px-4 rounded-xl bg-[#2e266f] hover:bg-[#3d338f] text-white font-black text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer text-center"
+                className="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider transition-all shadow-md hover:shadow-emerald-600/40 cursor-pointer text-center"
               >
-                Close & Done
+                CLOSE & DONE
               </button>
             </div>
           </div>

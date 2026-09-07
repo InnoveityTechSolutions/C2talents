@@ -44,7 +44,7 @@ export function RegisterCollegeButton({ className = "", onClick }: RegisterColle
           shadow-[0_4px_14px_rgba(28,11,54,0.5)] hover:shadow-[0_6px_22px_rgba(251,191,36,0.22)]
           transform hover:-translate-y-[2px] active:scale-[0.98] active:translate-y-0
           transition-all duration-150 ease-out
-          overflow-hidden select-none cursor-pointer
+          overflow-hidden select-none cursor-pointer whitespace-nowrap shrink-0
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d041a]
           ${className}`}
         aria-label="Register College - SaaS Onboarding"

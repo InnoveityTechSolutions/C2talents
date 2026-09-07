@@ -51,6 +51,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       const me = await res.json();
       if (me.token && typeof window !== "undefined") {
         localStorage.setItem("token", me.token);
@@ -87,8 +94,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Invalid credentials");
+        let errorMessage = "Invalid credentials";
+        try {
+          if (response.headers.get("content-type")?.includes("application/json")) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          }
+        } catch (_) {}
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -120,8 +133,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Google authentication failed");
+        let errorMessage = "Google authentication failed";
+        try {
+          if (response.headers.get("content-type")?.includes("application/json")) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          }
+        } catch (_) {}
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -153,8 +172,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Registration failed");
+        let errorMessage = "Registration failed";
+        try {
+          if (response.headers.get("content-type")?.includes("application/json")) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          }
+        } catch (_) {}
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
