@@ -999,13 +999,6 @@ export function CollegeDetailClient({ college }: Props) {
                             <span>Start Official Application</span>
                             <ArrowRight className="w-4 h-4 text-amber-300" />
                           </Link>
-
-                          <Link
-                            href={`/dashboard/applications`}
-                            className="w-full sm:w-auto px-5 py-3.5 bg-white hover:bg-slate-50 text-slate-700 font-extrabold text-xs sm:text-sm rounded-xl border border-slate-200 shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                          >
-                            <span>Track Applications</span>
-                          </Link>
                         </>
                       )}
                     </div>
@@ -1059,25 +1052,86 @@ export function CollegeDetailClient({ college }: Props) {
           {/* Sidebar (Sticky Layout with Table of Contents & Interactive Widgets) — Hidden on Apply tab */}
           {activeTab !== "Apply" && (
             <div className="space-y-4 md:sticky md:top-[225px] self-start">
-              {/* Quick Stats Card */}
-              <div className="bg-white border border-stone-200 rounded-2xl p-5 space-y-4 shadow-xs">
-                <div className="flex items-center gap-2 text-xs font-bold text-stone-500 uppercase tracking-wider">
-                  <Building2 className="w-4 h-4 text-emerald-600" /> Key Facts
-                </div>
-                {[
-                  { label: "Ownership", value: college.type },
-                  { label: "NIRF Rank", value: college.nirfRank ? `#${college.nirfRank}` : "N/A" },
-                  { label: "NAAC Grade", value: college.naacGrade || "N/A" },
-                  { label: "Annual Fee", value: formatINR(college.feesPerYear) },
-                  { label: "Avg Package", value: `${displayAvgPackage} LPA` },
-                  { label: "Highest CTC", value: `${displayHighestPackage} LPA` },
-                  { label: "Total Courses", value: college.courses.length },
-                ].map((fact) => (
-                  <div key={fact.label} className="flex items-center justify-between text-sm">
-                    <span className="text-stone-500 font-medium">{fact.label}</span>
-                    <span className="font-bold text-stone-900">{fact.value}</span>
+              {/* Highlighted Key Facts Card */}
+              <div className="bg-white border-2 border-orange-500/20 rounded-2xl p-5 space-y-3.5 shadow-md shadow-orange-950/5 relative overflow-hidden">
+                {/* Top Accent Gradient Bar */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-amber-400 to-[#3b2075]" />
+
+                {/* Card Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-[#3b2075] flex items-center justify-center text-white shadow-xs">
+                      <Building2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-extrabold text-[#1f0c3d] tracking-wider uppercase block font-sans">
+                        Key Facts
+                      </span>
+                      <span className="text-[10px] text-stone-400 font-medium block">
+                        Verified Metrics
+                      </span>
+                    </div>
                   </div>
-                ))}
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-extrabold border border-emerald-200">
+                    Verified
+                  </span>
+                </div>
+
+                {/* Facts List */}
+                <div className="space-y-2">
+                  {[
+                    {
+                      label: "Ownership",
+                      value: college.type || college.ownership || "Private",
+                      badgeClass: "bg-indigo-50 text-indigo-700 font-bold border border-indigo-100",
+                    },
+                    {
+                      label: "NIRF Rank",
+                      value: college.nirfRank ? `#${college.nirfRank}` : "N/A",
+                      badgeClass: college.nirfRank
+                        ? "bg-emerald-600 text-white font-extrabold shadow-2xs"
+                        : "bg-stone-100 text-stone-500 font-semibold",
+                    },
+                    {
+                      label: "NAAC Grade",
+                      value: college.naacGrade || "N/A",
+                      badgeClass:
+                        college.naacGrade && college.naacGrade !== "N/A"
+                          ? "bg-amber-500 text-white font-extrabold shadow-2xs"
+                          : "bg-stone-100 text-stone-500 font-semibold",
+                    },
+                    {
+                      label: "Annual Fee",
+                      value: formatINR(college.feesPerYear),
+                      badgeClass: "text-[#1f0c3d] font-extrabold text-sm",
+                    },
+                    {
+                      label: "Avg Package",
+                      value: `${displayAvgPackage} LPA`,
+                      badgeClass: "bg-purple-50 text-[#3b2075] font-extrabold border border-purple-200/60",
+                    },
+                    {
+                      label: "Highest CTC",
+                      value: `${displayHighestPackage} LPA`,
+                      badgeClass: "bg-orange-50 text-[#ea580c] font-black border border-orange-200",
+                    },
+                    {
+                      label: "Total Courses",
+                      value: college.courses.length,
+                      badgeClass: "bg-stone-100 text-stone-800 font-bold border border-stone-200/60",
+                    },
+                  ].map((fact) => (
+                    <div
+                      key={fact.label}
+                      className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl hover:bg-stone-50/80 transition-colors"
+                    >
+                      <span className="text-stone-500 font-semibold">{fact.label}</span>
+                      <span className={`px-2.5 py-1 rounded-lg text-xs leading-none ${fact.badgeClass}`}>
+                        {fact.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Quick On-Page Table of Contents */}
@@ -1155,10 +1209,10 @@ function ApplySection({ college }: { college: any }) {
     return (
       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-8 text-center space-y-4">
         <CheckCircle className="w-12 h-12 text-brand-green mx-auto" />
-        <h3 className="font-bold text-stone-800 text-lg">Application Submitted!</h3>
-        <p className="text-sm text-stone-500">Track your application status in the Application Tracker.</p>
-        <Link href="/tracker" className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-green text-white text-sm font-bold rounded-xl hover:bg-emerald-800 transition-all">
-          View Tracker <ArrowRight className="w-4 h-4" />
+        <h3 className="font-bold text-stone-800 text-lg">Application Submitted Successfully!</h3>
+        <p className="text-sm text-stone-500">The college admissions team has received your application and will contact you shortly.</p>
+        <Link href="/colleges" className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-green text-white text-sm font-bold rounded-xl hover:bg-emerald-800 transition-all">
+          Explore More Colleges <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
     );

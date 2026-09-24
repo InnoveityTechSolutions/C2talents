@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { seedScholarships } from "../../../../../prisma/seed-scholarships";
+import { revalidatePath } from "next/cache";
 
 export async function GET(request: Request) {
   try {
@@ -61,6 +62,26 @@ export async function POST(request: Request) {
       );
     }
 
+    const minPercentage =
+      body.minPercentage !== undefined && body.minPercentage !== null && body.minPercentage !== "" && !isNaN(Number(body.minPercentage))
+        ? parseFloat(body.minPercentage)
+        : null;
+
+    const familyIncomeLimit =
+      body.familyIncomeLimit !== undefined && body.familyIncomeLimit !== null && body.familyIncomeLimit !== "" && !isNaN(Number(body.familyIncomeLimit))
+        ? parseFloat(body.familyIncomeLimit)
+        : null;
+
+    const amountValue =
+      body.amountValue !== undefined && body.amountValue !== null && body.amountValue !== "" && !isNaN(Number(body.amountValue))
+        ? parseFloat(body.amountValue)
+        : null;
+
+    const deadlineDate =
+      body.deadlineDate && !isNaN(new Date(body.deadlineDate).getTime())
+        ? new Date(body.deadlineDate)
+        : new Date("2026-12-31T23:59:59Z");
+
     const scholarship = await db.scholarship.create({
       data: {
         name: body.name,
@@ -69,15 +90,15 @@ export async function POST(request: Request) {
         scholarshipType: body.scholarshipType || "Merit-Based",
         description: body.description || "",
         eligibilityCriteria: body.eligibilityCriteria || "",
-        minPercentage: body.minPercentage ? parseFloat(body.minPercentage) : null,
+        minPercentage,
         eligibleCourses: body.eligibleCourses || "All Courses",
         eligibleStates: body.eligibleStates || "All India",
-        familyIncomeLimit: body.familyIncomeLimit ? parseFloat(body.familyIncomeLimit) : null,
+        familyIncomeLimit,
         familyIncomeLimitText: body.familyIncomeLimitText || null,
         amount: body.amount,
-        amountValue: body.amountValue ? parseFloat(body.amountValue) : null,
+        amountValue,
         deadline: body.deadline || "December 31, 2026",
-        deadlineDate: body.deadlineDate ? new Date(body.deadlineDate) : new Date("2026-12-31T23:59:59Z"),
+        deadlineDate,
         officialWebsite: body.officialWebsite || body.applyLink,
         applyLink: body.applyLink,
         requiredDocuments: body.requiredDocuments || "Aadhar Card, Marksheets, Income Proof, Bank Passbook",
@@ -91,6 +112,12 @@ export async function POST(request: Request) {
       },
     });
 
+    try {
+      revalidatePath("/scholarships");
+      revalidatePath("/api/scholarships");
+      revalidatePath("/manager/scholarships");
+    } catch (e) {}
+
     return NextResponse.json(scholarship, { status: 201 });
   } catch (error) {
     console.error("Admin API create scholarship failed:", error);
@@ -100,3 +127,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

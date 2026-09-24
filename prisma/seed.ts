@@ -1,6 +1,7 @@
 import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { collegesData } from '../src/data/colleges';
+import { defaultCountriesData } from '../src/data/study-abroad-data';
 import { assertSafeDatabaseOperation } from '../src/lib/env-guard';
 import { createDatabaseBackup } from '../src/lib/backup';
 
@@ -213,6 +214,16 @@ async function main() {
       status: "NEW",
     },
   });
+
+  // 8. Seed Study Abroad Countries
+  for (const c of defaultCountriesData) {
+    await prisma.studyAbroadCountry.upsert({
+      where: { slug: c.slug },
+      update: c,
+      create: c,
+    });
+  }
+  console.log('Study abroad countries seeded successfully!');
 
   console.log('Seeding completed successfully!');
 }

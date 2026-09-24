@@ -13,7 +13,6 @@ export const siteConfig = {
     { title: "Colleges", href: "/colleges" },
     { title: "Scholarships", href: "/scholarships" },
     { title: "Exam Corner", href: "/exams" },
-    { title: "Application Tracker", href: "/tracker" },
   ],
   stats: [
     { value: "98.2%", label: "Placement Success" },

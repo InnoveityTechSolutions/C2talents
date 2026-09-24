@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Globe, DollarSign, Landmark, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { DollarSign, Landmark, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 
@@ -129,11 +129,6 @@ export function StudyAbroad() {
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col items-center text-center space-y-3 max-w-2xl mx-auto"
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#3b2075]/5 text-[#3b2075] border border-[#3b2075]/15 text-[11px] font-extrabold uppercase tracking-wider">
-            <Globe className="w-3.5 h-3.5 text-[#ea580c]" />
-            <span>Global Admission Desk</span>
-          </div>
-
           <h2 className="text-3xl md:text-4xl font-serif text-[#1f0c3d] font-bold tracking-tight">
             Study Abroad <span className="bg-gradient-to-r from-[#ea580c] to-[#3b2075] bg-clip-text text-transparent">Opportunities</span>
           </h2>

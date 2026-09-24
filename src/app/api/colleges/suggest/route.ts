@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { parseSearchIntentAI } from "@/lib/search/aiSearchParser";
 import { calculateHaversineDistance, formatDistance, getCollegeCoordinates } from "@/lib/search/haversine";
+import { detectCourseFromQuery, getPrismaCourseRelationalFilter, isCollegeOfferingCourse } from "@/lib/courses/courseNormalizer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -27,6 +28,7 @@ export async function GET(req: Request) {
     const parsed = await parseSearchIntentAI(q);
     const location = parsed.location;
     const isNearMeQuery = /\b(near\s+by|nearby|near\s+me|near|closest|nearest)\b/i.test(q);
+    const targetCourse = detectCourseFromQuery(q);
 
     const where: any = {
       status: { not: "DRAFT" },
@@ -35,20 +37,10 @@ export async function GET(req: Request) {
 
     const andConditions: any[] = [];
 
-    // HARD LOCATION FILTER
-    if (location) {
-      const locTrim = location.trim();
-      andConditions.push({
-        OR: [
-          { city: { contains: locTrim } },
-          { location: { contains: locTrim } },
-          { district: { contains: locTrim } },
-          { address: { contains: locTrim } },
-        ],
-      });
-    }
-
-    if (parsed.domains && parsed.domains.length > 0) {
+    // STRICT COURSE FILTERING
+    if (targetCourse) {
+      andConditions.push(getPrismaCourseRelationalFilter(targetCourse));
+    } else if (parsed.domains && parsed.domains.length > 0) {
       const domainOrFilters: any[] = [];
       parsed.domains.forEach((dom) => {
         if (dom === "ARTS" || dom === "SCIENCE") {
@@ -79,8 +71,21 @@ export async function GET(req: Request) {
       if (domainOrFilters.length > 0) andConditions.push({ OR: domainOrFilters });
     }
 
-    // Keyword matching ONLY if not a generic "near me" phrase query
-    if (q && !isNearMeQuery && !location && parsed.domains.length === 0) {
+    // HARD LOCATION FILTER
+    if (location) {
+      const locTrim = location.trim();
+      andConditions.push({
+        OR: [
+          { city: { contains: locTrim } },
+          { location: { contains: locTrim } },
+          { district: { contains: locTrim } },
+          { address: { contains: locTrim } },
+        ],
+      });
+    }
+
+    // Keyword matching ONLY if not a generic "near me" phrase query and no targetCourse
+    if (q && !isNearMeQuery && !location && parsed.domains.length === 0 && !targetCourse) {
       andConditions.push({
         OR: [
           { name: { contains: q } },
@@ -113,12 +118,18 @@ export async function GET(req: Request) {
         latitude: true,
         longitude: true,
         isAutonomous: true,
+        courses: { where: { isDeleted: false }, select: { title: true } },
       },
       take: 20,
     });
 
     // Apply strict exclusion & location validation
     const filtered = rawColleges.filter((c) => {
+      // STRICT ZERO-TOLERANCE COURSE VALIDATION
+      if (targetCourse && !isCollegeOfferingCourse(c as any, targetCourse)) {
+        return false;
+      }
+
       const nameL = c.name.toLowerCase();
       const cityL = (c.city || "").toLowerCase();
       const locL = (c.location || "").toLowerCase();

@@ -436,6 +436,9 @@ model CollegeRegistrationRequest {
   tokenExpiresAt     DateTime?
   submittedData      String?                   @db.LongText
   publishedCollegeId String?
+  approvedAt         DateTime?
+  emailSent          Boolean                   @default(false)
+  emailSentAt        DateTime?
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
 

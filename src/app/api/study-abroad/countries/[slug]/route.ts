@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { db } from "@/lib/db";
+import { defaultCountriesData } from "@/data/study-abroad-data";
 
 export async function GET(
   req: NextRequest,
@@ -9,12 +8,38 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
+    const cleanSlug = slug.toLowerCase();
     const searchParams = req.nextUrl.searchParams;
     const selectedCourse = searchParams.get("course") || "";
 
-    const country = await prisma.studyAbroadCountry.findUnique({
-      where: { slug: slug.toLowerCase() }
+    let country = await db.studyAbroadCountry.findUnique({
+      where: { slug: cleanSlug }
     });
+
+    if (!country) {
+      const fallback = defaultCountriesData.find(
+        (c) => c.slug.toLowerCase() === cleanSlug
+      );
+
+      if (fallback) {
+        try {
+          country = await db.studyAbroadCountry.upsert({
+            where: { slug: cleanSlug },
+            update: fallback,
+            create: fallback,
+          });
+        } catch (dbErr) {
+          console.warn("Could not auto-seed fallback country into DB:", dbErr);
+          country = {
+            id: `fallback-${cleanSlug}`,
+            ...fallback,
+            status: "PUBLISHED",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          } as any;
+        }
+      }
+    }
 
     if (!country) {
       return NextResponse.json(
@@ -67,7 +92,7 @@ export async function GET(
       };
     }
 
-    const universities = await prisma.collegeProfile.findMany({
+    const universities = await db.collegeProfile.findMany({
       where: collegeWhere,
       select: {
         id: true,

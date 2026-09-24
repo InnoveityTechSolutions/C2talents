@@ -116,8 +116,8 @@ export function LoginModal({
         }}
       />
 
-      {/* 2-PANEL DIALOG CARD WITH ELEGANT SHADOW & ROUNDED CORNERS */}
-      <div className="relative z-10 bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[94vh] overflow-hidden grid grid-cols-1 md:grid-cols-12 animate-in fade-in zoom-in-95 duration-200 my-auto border border-stone-200/80">
+      {/* 2-PANEL DIALOG CARD WITH GOOGLE-STYLE PILL AESTHETICS & ROUNDED CORNERS */}
+      <div className="relative z-10 bg-white rounded-[32px] shadow-2xl max-w-4xl w-full max-h-[94vh] overflow-hidden grid grid-cols-1 md:grid-cols-12 animate-in fade-in zoom-in-95 duration-200 my-auto border border-stone-200/80">
         
         {/* Close Button */}
         <button
@@ -126,26 +126,26 @@ export function LoginModal({
             setIsOpen(false);
             setShowGooglePrompt(false);
           }}
-          className="absolute top-4 right-4 z-30 w-8 h-8 rounded-full bg-slate-900/10 hover:bg-slate-900/20 text-white md:bg-white/10 md:hover:bg-white/25 flex items-center justify-center transition-all cursor-pointer backdrop-blur-md border border-white/20"
+          className="absolute top-4 right-4 z-30 w-8 h-8 rounded-full bg-stone-900/10 hover:bg-stone-900/20 text-white md:bg-white/15 md:hover:bg-white/30 flex items-center justify-center transition-all cursor-pointer backdrop-blur-md border border-white/20"
           title="Close modal"
         >
           <X className="w-4 h-4" />
         </button>
 
-        {/* LEFT PANEL: AUTH FORM AREA */}
-        <div className="md:col-span-7 p-6 sm:p-9 flex flex-col justify-between space-y-5 bg-white relative z-10 overflow-y-auto max-h-[88vh]">
+        {/* LEFT PANEL: AUTH FORM AREA (GOOGLE CARD DESIGN) */}
+        <div className="md:col-span-7 p-6 sm:p-10 flex flex-col justify-between space-y-6 bg-white relative z-10 overflow-y-auto max-h-[88vh]">
           <div>
             {/* Header: Logo & Badge */}
-            <div className="flex items-center justify-between mb-5">
-              <img src="/logo.png" alt="C2Talents Logo" loading="lazy" decoding="async" className="h-10 w-auto object-contain" />
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-50 px-3 py-1 rounded-full border border-purple-100/80 shadow-2xs">
+            <div className="flex items-center justify-between mb-6">
+              <img src="/logo.png" alt="C2Talents Logo" loading="lazy" decoding="async" className="h-9 w-auto object-contain" />
+              <span className="text-[11px] font-medium tracking-wide text-[#1a73e8] bg-blue-50/80 px-3.5 py-1 rounded-full border border-blue-100 shadow-2xs">
                 Student & Partner Portal
               </span>
             </div>
 
             {/* ERROR BANNER */}
             {error && (
-              <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold leading-relaxed flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+              <div className="mb-5 p-3.5 rounded-2xl bg-[#fdeded] border border-[#f5c2c2] text-[#5f2120] text-xs font-medium leading-relaxed flex items-center gap-2.5 animate-in fade-in slide-in-from-top-1">
                 <span className="text-sm shrink-0">⚠️</span>
                 <span>{error}</span>
               </div>
@@ -160,15 +160,15 @@ export function LoginModal({
                     setShowGooglePrompt(false);
                     setError("");
                   }}
-                  className="text-xs font-bold text-stone-500 hover:text-stone-800 flex items-center gap-1.5 cursor-pointer mb-1 transition-colors"
+                  className="text-xs font-medium text-[#444746] hover:text-[#1f1f1f] flex items-center gap-1.5 cursor-pointer mb-2 transition-colors"
                 >
-                  <ArrowLeft className="w-4 h-4 text-stone-500" />
+                  <ArrowLeft className="w-4 h-4 text-[#747775]" />
                   <span>Back to standard login</span>
                 </button>
 
-                <div className="text-center space-y-2 bg-slate-50/80 p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+                <div className="text-center space-y-2 bg-[#f8fafd] p-6 rounded-[24px] border border-stone-200/80 shadow-2xs">
                   {/* Official Google G Logo */}
-                  <div className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-200/60 flex items-center justify-center mx-auto mb-1">
+                  <div className="w-12 h-12 bg-white rounded-full shadow-xs border border-stone-200/80 flex items-center justify-center mx-auto mb-1">
                     <svg className="w-6 h-6" viewBox="0 0 24 24">
                       <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98 1 12 1 7.35 1 3.37 3.65 1.43 7.54l3.87 3C6.24 7.62 8.91 5.04 12 5.04z" />
                       <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.43c-.28 1.44-1.09 2.67-2.3 3.49l3.86 3c2.26-2.09 3.5-5.17 3.5-8.64z" />
@@ -176,27 +176,27 @@ export function LoginModal({
                       <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.86-3c-1.08.72-2.48 1.16-4.1 1.16-3.09 0-5.76-2.58-6.7-5.5l-3.87 3C3.37 20.35 7.35 23 12 23z" />
                     </svg>
                   </div>
-                  <h3 className="text-base font-extrabold text-slate-900">Sign in with Google</h3>
-                  <p className="text-xs text-slate-500 font-medium max-w-xs mx-auto">
+                  <h3 className="text-lg font-normal text-[#1f1f1f]">Sign in with Google</h3>
+                  <p className="text-xs text-[#444746] font-normal max-w-xs mx-auto">
                     Enter your official Gmail or Google account email to authenticate with C2Talents
                   </p>
                 </div>
 
                 {/* Primary Email Input Form */}
-                <form onSubmit={handleCustomGoogleSubmit} className="space-y-3.5 pt-1">
+                <form onSubmit={handleCustomGoogleSubmit} className="space-y-4 pt-1">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label className="block text-sm font-medium text-[#1f1f1f] mb-2">
                       Your Gmail / Google Email Address *
                     </label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <Mail className="w-4 h-4 text-[#747775] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
                         type="email"
                         required
                         placeholder="e.g. yourname@gmail.com"
                         value={customGoogleEmail}
                         onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                        className="w-full pl-10 pr-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-purple-600 focus:ring-4 focus:ring-purple-500/10 font-medium transition-all"
+                        className="w-full pl-11 pr-4 py-3.5 rounded-full bg-white border border-[#747775]/50 hover:border-[#1f1f1f] text-sm text-[#1f1f1f] placeholder:text-[#8e918f] focus:outline-none focus:border-[#1a73e8] focus:ring-2 focus:ring-blue-100 font-normal transition-all"
                       />
                     </div>
                   </div>
@@ -204,7 +204,7 @@ export function LoginModal({
                   <button
                     type="submit"
                     disabled={loading || !customGoogleEmail.trim()}
-                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 hover:from-purple-800 hover:to-indigo-800 text-white font-extrabold text-xs uppercase tracking-wider transition-all shadow-lg shadow-purple-900/20 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-3.5 rounded-full bg-[#1a73e8] hover:bg-[#1557b0] active:bg-[#0b57d0] text-white font-medium text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {loading ? (
                       <>
@@ -218,8 +218,8 @@ export function LoginModal({
                 </form>
 
                 {/* Quick One-Tap Suggestions */}
-                <div className="pt-3 border-t border-slate-100 space-y-2">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                <div className="pt-3 border-t border-stone-100 space-y-2">
+                  <span className="text-[11px] font-medium text-[#747775] uppercase tracking-wider block">
                     Or select a quick account:
                   </span>
                   <div className="space-y-2">
@@ -230,18 +230,18 @@ export function LoginModal({
                         setCustomGoogleEmail("praveen.natarajan.in@gmail.com");
                         executeGoogleAuth("praveen.natarajan.in@gmail.com");
                       }}
-                      className="w-full p-3 border border-slate-200/80 rounded-2xl hover:bg-purple-50/50 hover:border-purple-300 transition-all text-left flex items-center justify-between cursor-pointer group shadow-2xs"
+                      className="w-full p-3.5 border border-stone-200/80 rounded-full hover:bg-[#f8fafd] hover:border-[#1a73e8] transition-all text-left flex items-center justify-between cursor-pointer group shadow-2xs"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-700 to-indigo-600 text-white font-bold flex items-center justify-center text-xs shadow-sm">
+                        <div className="w-8 h-8 rounded-full bg-[#1a73e8] text-white font-bold flex items-center justify-center text-xs shadow-xs">
                           P
                         </div>
                         <div>
-                          <p className="text-xs font-extrabold text-slate-900 group-hover:text-purple-700 transition-colors">Praveen Natarajan</p>
-                          <p className="text-[11px] text-slate-500 font-medium">praveen.natarajan.in@gmail.com</p>
+                          <p className="text-xs font-medium text-[#1f1f1f] group-hover:text-[#1a73e8] transition-colors">Praveen Natarajan</p>
+                          <p className="text-[11px] text-[#747775]">praveen.natarajan.in@gmail.com</p>
                         </div>
                       </div>
-                      <span className="text-xs font-bold text-slate-400 group-hover:text-purple-700 transition-colors">
+                      <span className="text-xs font-medium text-[#1a73e8] group-hover:underline">
                         Sign in →
                       </span>
                     </button>
@@ -250,64 +250,64 @@ export function LoginModal({
               </div>
             ) : (
               <>
-                {/* Welcome Title */}
-                <div className="space-y-1 mb-5">
-                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                {/* Welcome Title (Clean Google Careers Styling) */}
+                <div className="space-y-1.5 mb-6">
+                  <h2 className="text-3xl sm:text-[32px] font-normal text-[#1f1f1f] tracking-tight leading-tight">
                     {mode === "login" ? "Welcome back" : "Create your account"}
                   </h2>
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className="text-sm text-[#444746] font-normal leading-relaxed">
                     {mode === "login" 
                       ? "Enter your credentials to access your personalized AI counselor."
                       : "Sign up today to explore 250+ top accredited colleges."}
                   </p>
                 </div>
 
-                {/* Auth Form */}
+                {/* Auth Form with Pill Outline Inputs & Vibrant Action Button */}
                 <form onSubmit={handleFormSubmit} className="space-y-4">
                   {/* Username / Email */}
                   <div>
-                    <label className="block text-[11px] font-extrabold uppercase text-slate-500 mb-1.5 tracking-wider">
+                    <label className="block text-sm font-medium text-[#1f1f1f] mb-1.5">
                       Username / Email
                     </label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <Mail className="w-4 h-4 text-[#747775] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
                         type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="student@example.com"
-                        className={`w-full pl-10 pr-10 py-3 rounded-2xl bg-slate-50/80 border text-xs text-slate-900 focus:outline-none focus:bg-white font-medium transition-all ${
+                        className={`w-full pl-11 pr-11 py-3.5 rounded-full bg-white border text-sm text-[#1f1f1f] placeholder:text-[#8e918f] font-normal focus:outline-none transition-all ${
                           isEmailValid
-                            ? "border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-                            : "border-slate-200 focus:border-purple-600 focus:ring-4 focus:ring-purple-500/10"
+                            ? "border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                            : "border-[#747775]/50 hover:border-[#1f1f1f] focus:border-[#1a73e8] focus:ring-2 focus:ring-blue-100"
                         }`}
                       />
                       {isEmailValid && (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 absolute right-3.5 top-1/2 -translate-y-1/2 shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 absolute right-4 top-1/2 -translate-y-1/2 shrink-0" />
                       )}
                     </div>
                   </div>
 
                   {/* Password */}
                   <div>
-                    <label className="block text-[11px] font-extrabold uppercase text-slate-500 mb-1.5 tracking-wider">
+                    <label className="block text-sm font-medium text-[#1f1f1f] mb-1.5">
                       Password
                     </label>
                     <div className="relative">
-                      <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <Lock className="w-4 h-4 text-[#747775] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
                         type={showPassword ? "text" : "password"}
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••••"
-                        className="w-full pl-10 pr-10 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-purple-600 focus:ring-4 focus:ring-purple-500/10 font-medium transition-all"
+                        className="w-full pl-11 pr-11 py-3.5 rounded-full bg-white border border-[#747775]/50 hover:border-[#1f1f1f] text-sm text-[#1f1f1f] placeholder:text-[#8e918f] focus:outline-none focus:border-[#1a73e8] focus:ring-2 focus:ring-blue-100 font-normal transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer p-1"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[#747775] hover:text-[#1f1f1f] transition-colors cursor-pointer p-1"
                         title={showPassword ? "Hide password" : "Show password"}
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -316,47 +316,49 @@ export function LoginModal({
                   </div>
 
                   {/* Remember me & Forgot Password */}
-                  <div className="flex items-center justify-between text-xs pt-0.5">
-                    <label className="flex items-center gap-2 font-semibold text-slate-600 cursor-pointer select-none">
+                  <div className="flex items-center justify-between text-sm pt-1">
+                    <label className="flex items-center gap-2 text-[#444746] font-normal cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
-                        className="w-4 h-4 rounded-md border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer accent-purple-600"
+                        className="w-4 h-4 rounded-md border-stone-300 text-[#1a73e8] focus:ring-[#1a73e8] cursor-pointer accent-[#1a73e8]"
                       />
                       <span>Remember me</span>
                     </label>
 
-                    <a href="#" className="font-extrabold text-purple-700 hover:text-purple-900 hover:underline transition-colors">
+                    <a href="#" className="font-medium text-[#1a73e8] hover:text-[#1557b0] hover:underline transition-colors">
                       Forgot Password?
                     </a>
                   </div>
 
-                  {/* PRIMARY LOGIN BUTTON */}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 hover:from-purple-800 hover:to-indigo-800 text-white font-extrabold text-xs uppercase tracking-wider transition-all shadow-lg shadow-purple-900/25 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-white" />
-                        <span>AUTHENTICATING...</span>
-                      </>
-                    ) : (
-                      <span>{mode === "login" ? "LOG IN TO ACCOUNT" : "CREATE FREE ACCOUNT"}</span>
-                    )}
-                  </button>
+                  {/* Actions Row: Submit Button (Vibrant Blue Pill Style as in Reference Image) */}
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full py-3.5 px-8 rounded-full bg-[#1a73e8] hover:bg-[#1557b0] active:bg-[#0b57d0] text-white font-medium text-sm tracking-normal transition-all duration-150 shadow-sm hover:shadow active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                          <span>AUTHENTICATING...</span>
+                        </>
+                      ) : (
+                        <span>{mode === "login" ? "LOG IN TO ACCOUNT" : "CREATE FREE ACCOUNT"}</span>
+                      )}
+                    </button>
+                  </div>
 
                   {/* Divider */}
-                  <div className="relative my-3 flex items-center justify-center">
-                    <div className="border-t border-slate-200 w-full" />
-                    <span className="bg-white px-3 text-[10px] font-extrabold uppercase text-slate-400 tracking-wider shrink-0 absolute">
+                  <div className="relative my-4 flex items-center justify-center">
+                    <div className="border-t border-stone-200 w-full" />
+                    <span className="bg-white px-3 text-xs text-[#747775] font-normal tracking-wide shrink-0 absolute">
                       or
                     </span>
                   </div>
 
-                  {/* GOOGLE AUTHENTICATION BUTTON */}
+                  {/* GOOGLE AUTHENTICATION BUTTON (Pill Design) */}
                   <button
                     type="button"
                     onClick={() => {
@@ -373,7 +375,7 @@ export function LoginModal({
                       }
                     }}
                     disabled={loading}
-                    className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-extrabold text-xs border border-slate-200/90 flex items-center justify-center gap-3 transition-all shadow-xs hover:shadow-sm cursor-pointer"
+                    className="w-full py-3.5 px-5 rounded-full bg-white hover:bg-[#f8fafd] text-[#1f1f1f] font-medium text-sm border border-[#747775]/40 hover:border-[#747775] flex items-center justify-center gap-3 transition-all shadow-2xs cursor-pointer"
                   >
                     <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                       <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98 1 12 1 7.35 1 3.37 3.65 1.43 7.54l3.87 3C6.24 7.62 8.91 5.04 12 5.04z" />
@@ -385,12 +387,12 @@ export function LoginModal({
                   </button>
 
                   {/* Switch Sign Up / Login */}
-                  <div className="text-center pt-2 text-xs font-semibold text-slate-500">
+                  <div className="text-center pt-2 text-sm font-normal text-[#444746]">
                     {mode === "login" ? "Don't have an account?" : "Already have an account?"}{" "}
                     <button
                       type="button"
                       onClick={() => setMode(mode === "login" ? "signup" : "login")}
-                      className="font-extrabold text-purple-700 hover:text-purple-900 hover:underline cursor-pointer transition-colors"
+                      className="font-medium text-[#1a73e8] hover:text-[#1557b0] hover:underline cursor-pointer transition-colors"
                     >
                       {mode === "login" ? "Sign up now" : "Log in here"}
                     </button>
@@ -401,70 +403,70 @@ export function LoginModal({
           </div>
 
           {/* Footer Links */}
-          <div className="pt-4 text-center text-[11px] font-semibold text-slate-400 border-t border-slate-100 flex items-center justify-center gap-3">
-            <a href="#" className="hover:text-slate-700 transition-colors">FAQ</a>
+          <div className="pt-4 text-center text-xs font-normal text-[#747775] border-t border-stone-100 flex items-center justify-center gap-3">
+            <a href="#" className="hover:text-[#1f1f1f] transition-colors">FAQ</a>
             <span>•</span>
-            <a href="#" className="hover:text-slate-700 transition-colors">Features</a>
+            <a href="#" className="hover:text-[#1f1f1f] transition-colors">Features</a>
             <span>•</span>
-            <a href="#" className="hover:text-slate-700 transition-colors">Support & Help</a>
+            <a href="#" className="hover:text-[#1f1f1f] transition-colors">Support & Help</a>
           </div>
         </div>
 
-        {/* RIGHT PANEL: ROYAL DARK PURPLE BRANDING & FEATURE PANEL */}
-        <div className="md:col-span-5 bg-gradient-to-br from-[#0e0622] via-[#1b0c3a] to-[#2e135b] p-6 sm:p-9 text-white flex flex-col justify-between relative overflow-hidden">
+        {/* RIGHT PANEL: ROYAL DARK INDIGO/NAVY BRANDING & FEATURE PANEL */}
+        <div className="md:col-span-5 bg-gradient-to-br from-[#0c1024] via-[#151b3d] to-[#25124b] p-6 sm:p-9 text-white flex flex-col justify-between relative overflow-hidden">
           
           {/* Subtle Ambient Glowing Spheres */}
-          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
 
           {/* Content */}
           <div className="space-y-6 relative z-20">
-            <div className="flex items-center gap-2 bg-amber-400/15 text-amber-300 px-3.5 py-1.5 rounded-full border border-amber-400/25 text-[10px] font-extrabold uppercase tracking-wider w-fit shadow-xs backdrop-blur-md">
+            <div className="flex items-center gap-2 bg-white/10 text-amber-300 px-3.5 py-1.5 rounded-full border border-white/15 text-[11px] font-semibold tracking-wide w-fit shadow-xs backdrop-blur-md">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" /> AI Education Portal
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-2xl font-black text-white tracking-tight leading-tight">
+              <h3 className="text-2xl sm:text-[26px] font-bold text-white tracking-tight leading-tight">
                 About C2Talents
               </h3>
-              <p className="text-xs text-purple-200/90 leading-relaxed font-medium">
+              <p className="text-xs sm:text-[13px] text-stone-300 leading-relaxed font-normal">
                 India&apos;s leading AI-guided platform connecting students with top accredited engineering & autonomous colleges.
               </p>
             </div>
 
             {/* Feature Highlights */}
             <div className="space-y-3 pt-1">
-              <h4 className="text-[11px] font-extrabold text-amber-300 uppercase tracking-wider">
+              <h4 className="text-[11px] font-bold text-amber-300/90 uppercase tracking-wider">
                 Platform Highlights
               </h4>
               <div className="space-y-2.5">
-                <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-full bg-amber-400/20 border border-amber-400/30 flex items-center justify-center shrink-0 mt-0.5">
                     <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-white">AI Matching Engine</p>
-                    <p className="text-[11px] text-purple-200/70 font-medium leading-tight">Smart college predictor & fee estimator</p>
+                    <p className="text-xs font-semibold text-white">AI Matching Engine</p>
+                    <p className="text-[11px] text-stone-300/80 font-normal leading-tight mt-0.5">Smart college predictor & fee estimator</p>
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-xl bg-emerald-400/20 border border-emerald-400/30 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-full bg-emerald-400/20 border border-emerald-400/30 flex items-center justify-center shrink-0 mt-0.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-white">Verified Reviews & CTC</p>
-                    <p className="text-[11px] text-purple-200/70 font-medium leading-tight">100% genuine campus placement statistics</p>
+                    <p className="text-xs font-semibold text-white">Verified Reviews & CTC</p>
+                    <p className="text-[11px] text-stone-300/80 font-normal leading-tight mt-0.5">100% genuine campus placement statistics</p>
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-xl bg-purple-400/20 border border-purple-400/30 flex items-center justify-center shrink-0 mt-0.5">
-                    <GraduationCap className="w-3.5 h-3.5 text-purple-300" />
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-full bg-blue-400/20 border border-blue-400/30 flex items-center justify-center shrink-0 mt-0.5">
+                    <GraduationCap className="w-3.5 h-3.5 text-blue-300" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-white">Direct Admission Tracker</p>
-                    <p className="text-[11px] text-purple-200/70 font-medium leading-tight">Seamless seat booking & application manager</p>
+                    <p className="text-xs font-semibold text-white">Scholarships & Cutoff Alerts</p>
+                    <p className="text-[11px] text-stone-300/80 font-normal leading-tight mt-0.5">Real-time updates on eligibility & deadlines</p>
                   </div>
                 </div>
               </div>
@@ -472,24 +474,24 @@ export function LoginModal({
           </div>
 
           {/* Bottom Stats Cards */}
-          <div className="relative z-20 pt-4 border-t border-purple-800/40 grid grid-cols-2 gap-3 text-xs">
-            <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-amber-400/15 flex items-center justify-center text-amber-300 font-bold shrink-0">
+          <div className="relative z-20 pt-4 border-t border-white/10 grid grid-cols-2 gap-3 text-xs">
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-amber-400/15 flex items-center justify-center text-amber-300 font-bold shrink-0">
                 <GraduationCap className="w-4 h-4 text-amber-300" />
               </div>
               <div>
-                <p className="text-xs font-black text-white">25k+</p>
-                <p className="text-[10px] text-purple-200/70 font-medium">Students</p>
+                <p className="text-sm font-bold text-white">25k+</p>
+                <p className="text-[11px] text-stone-300 font-normal">Students</p>
               </div>
             </div>
 
-            <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-amber-400/15 flex items-center justify-center text-amber-300 font-bold shrink-0">
-                <Building2 className="w-4 h-4 text-amber-300" />
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-blue-400/15 flex items-center justify-center text-blue-300 font-bold shrink-0">
+                <Building2 className="w-4 h-4 text-blue-300" />
               </div>
               <div>
-                <p className="text-xs font-black text-white">250+</p>
-                <p className="text-[10px] text-purple-200/70 font-medium">Colleges</p>
+                <p className="text-sm font-bold text-white">250+</p>
+                <p className="text-[11px] text-stone-300 font-normal">Colleges</p>
               </div>
             </div>
           </div>

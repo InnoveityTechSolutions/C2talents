@@ -23,6 +23,13 @@ export async function GET(req: Request, context: { params: Promise<{ token: stri
       );
     }
 
+    if (requestItem.tokenExpiresAt && new Date() > requestItem.tokenExpiresAt) {
+      return NextResponse.json(
+        { error: "This registration access link has expired. Please contact administration to renew your link." },
+        { status: 410 }
+      );
+    }
+
     if (requestItem.status === "REJECTED") {
       return NextResponse.json(
         { error: "This college registration request has been rejected." },
@@ -77,6 +84,13 @@ export async function POST(req: Request, context: { params: Promise<{ token: str
 
     if (!requestItem) {
       return NextResponse.json({ error: "Invalid or expired access token." }, { status: 404 });
+    }
+
+    if (requestItem.tokenExpiresAt && new Date() > requestItem.tokenExpiresAt) {
+      return NextResponse.json(
+        { error: "This registration access link has expired. Please contact administration to renew your link." },
+        { status: 410 }
+      );
     }
 
     if (requestItem.status === "REJECTED") {

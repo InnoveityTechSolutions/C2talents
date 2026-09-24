@@ -1,5 +1,5 @@
-import StandaloneLoginPage from "@/app/login/page";
+import StandaloneManagerLoginPage from "@/app/manager/login/page";
 
 export default function AdminLoginPage() {
-  return <StandaloneLoginPage />;
+  return <StandaloneManagerLoginPage />;
 }

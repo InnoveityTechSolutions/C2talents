@@ -1207,7 +1207,7 @@ export default function CollegeApplyPage({ params }: { params: Promise<{ id: str
                 href={`/dashboard/applications?id=${submittedApplicationId}`}
                 className="flex-1 py-3 bg-purple-100 hover:bg-purple-200 text-purple-950 font-extrabold text-xs rounded-2xl text-center border border-purple-200"
               >
-                Track Application Status
+                View Application Details
               </Link>
             </div>
           </div>

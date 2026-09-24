@@ -117,7 +117,7 @@ function MetricBar({ stats }: MetricBarProps) {
 }
 
 // STATUS BADGES
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, emailSent }: { status: string; emailSent?: boolean }) {
   switch (status) {
     case "PENDING":
       return (
@@ -127,9 +127,20 @@ function StatusBadge({ status }: { status: string }) {
       );
     case "APPROVED":
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 text-[11px] font-extrabold shadow-2xs">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Approved
-        </span>
+        <div className="space-y-1">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 text-[11px] font-extrabold shadow-2xs">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Approved
+          </span>
+          {emailSent ? (
+            <div className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Email Sent
+            </div>
+          ) : (
+            <div className="text-[10px] text-amber-700 font-bold flex items-center gap-1">
+              <AlertCircle className="w-3 h-3 text-amber-600" /> Email Pending
+            </div>
+          )}
+        </div>
       );
     case "DATA_SUBMITTED":
       return (
@@ -250,6 +261,42 @@ export default function AdminRegistrationRequestsPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
+  async function handleResendEmail(reqItem: any) {
+    setResendingId(reqItem.id);
+    try {
+      const res = await fetch(`/api/admin/registration-requests/${reqItem.id}/resend-email`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPopup({
+          isOpen: true,
+          title: "Email Sent Successfully",
+          message: `Approval email has been sent to ${reqItem.email}.`,
+          type: "success",
+        });
+        fetchRequests();
+      } else {
+        setPopup({
+          isOpen: true,
+          title: "Email Delivery Failed",
+          message: data.error || "Failed to send email. Please configure your SMTP settings in Settings > SMTP Settings.",
+          type: "error",
+        });
+      }
+    } catch (err: any) {
+      setPopup({
+        isOpen: true,
+        title: "Error",
+        message: err.message || "An unexpected error occurred while resending email.",
+        type: "error",
+      });
+    } finally {
+      setResendingId(null);
+    }
+  }
 
   useEffect(() => {
     fetchRequests();
@@ -349,8 +396,8 @@ export default function AdminRegistrationRequestsPage() {
           type: "VIEW_LINK",
           request: data.request,
           adminNotes: data.emailSent
-            ? "Approval successful! Confirmation email dispatched to college."
-            : `Approval successful! (Email note: ${data.emailWarning || "Copy token link below to share directly"}).`,
+            ? `Approval successful! Confirmation email was dispatched to ${data.request?.email || actionModal.request.email}.`
+            : `Approval successful! Note: ${data.emailError || "Email could not be delivered. Please configure SMTP in Settings."}`,
           accessUrl: data.accessUrl,
         });
         fetchRequests();
@@ -557,7 +604,7 @@ export default function AdminRegistrationRequestsPage() {
 
                       {/* STATUS COLUMN */}
                       <td className="py-4 px-5">
-                        <StatusBadge status={reqItem.status} />
+                        <StatusBadge status={reqItem.status} emailSent={reqItem.emailSent} />
                       </td>
 
                       {/* WEBSITE COLUMN */}
@@ -602,6 +649,20 @@ export default function AdminRegistrationRequestsPage() {
                             reqItem.status === "DATA_SUBMITTED" ||
                             reqItem.status === "PUBLISHED") && (
                             <>
+                              <button
+                                onClick={() => handleResendEmail(reqItem)}
+                                disabled={resendingId === reqItem.id}
+                                className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-extrabold text-xs transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
+                                title="Resend approval email to institution"
+                              >
+                                {resendingId === reqItem.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-700" />
+                                ) : (
+                                  <Send className="w-3.5 h-3.5 text-amber-700" />
+                                )}
+                                <span>Resend Email</span>
+                              </button>
+
                               <button
                                 onClick={() => handleOpenViewLinkModal(reqItem)}
                                 className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-[#3b2075] border border-purple-200 font-extrabold text-xs transition-all cursor-pointer inline-flex items-center gap-1.5"
@@ -734,9 +795,32 @@ export default function AdminRegistrationRequestsPage() {
             {actionModal.type === "VIEW_LINK" && actionModal.accessUrl && (
               <div className="space-y-4">
                 {actionModal.adminNotes && (
-                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-extrabold flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <div className={`p-3 rounded-xl border text-xs font-extrabold flex items-center gap-2 ${
+                    actionModal.request?.emailSent
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                      : "bg-amber-50 border-amber-200 text-amber-800"
+                  }`}>
+                    {actionModal.request?.emailSent ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    )}
                     <span>{actionModal.adminNotes}</span>
+                  </div>
+                )}
+
+                {actionModal.request && !actionModal.request.emailSent && (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-purple-50 border border-purple-100 text-xs text-purple-900">
+                    <span className="font-medium">Deliver email to <strong>{actionModal.request.email}</strong>?</span>
+                    <button
+                      type="button"
+                      onClick={() => handleResendEmail(actionModal.request)}
+                      disabled={resendingId === actionModal.request?.id}
+                      className="px-3 py-1.5 rounded-lg bg-[#3b2075] text-amber-300 font-bold text-xs cursor-pointer hover:bg-[#4c1d95] transition-colors inline-flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {resendingId === actionModal.request?.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                      Send Email Now
+                    </button>
                   </div>
                 )}
 

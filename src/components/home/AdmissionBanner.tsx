@@ -42,13 +42,6 @@ export function AdmissionBanner() {
                 <span>Predict My Colleges</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
-
-              <Link
-                href="/counselor"
-                className="px-7 py-3.5 rounded-full border border-white/25 hover:bg-white/10 text-white text-xs font-extrabold transition-all cursor-pointer"
-              >
-                Track Applications
-              </Link>
             </div>
           </div>
 

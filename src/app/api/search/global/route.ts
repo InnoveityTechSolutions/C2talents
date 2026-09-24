@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { parseSearchIntentAI, StructuredSearchIntent } from "@/lib/search/aiSearchParser";
 import { calculateHaversineDistance, formatDistance, getCollegeCoordinates, CITY_COORDINATES } from "@/lib/search/haversine";
+import { detectCourseFromQuery, getPrismaCourseRelationalFilter, isCollegeOfferingCourse } from "@/lib/courses/courseNormalizer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -50,6 +51,8 @@ export async function GET(req: Request) {
   console.log("==================================================\n");
 
   try {
+    const targetCourse = detectCourseFromQuery(q);
+
     // 2. Fetch Colleges with Domain Candidate Filtering & Strict Exclusion
     const collegeWhere: any = {
       status: { not: "DRAFT" },
@@ -57,8 +60,10 @@ export async function GET(req: Request) {
     };
     const andConditions: any[] = [];
 
-    // Filter by parsed domains (Support Multi-Domain queries e.g. ["ARTS", "SCIENCE"])
-    if (parsedIntent.domains && parsedIntent.domains.length > 0) {
+    // STRICT COURSE FILTERING
+    if (targetCourse) {
+      andConditions.push(getPrismaCourseRelationalFilter(targetCourse));
+    } else if (parsedIntent.domains && parsedIntent.domains.length > 0) {
       const domainOrFilters: any[] = [];
 
       parsedIntent.domains.forEach((dom) => {
@@ -143,13 +148,18 @@ export async function GET(req: Request) {
     const dbColleges = await db.collegeProfile.findMany({
       where: collegeWhere,
       include: {
-        courses: { take: 10 },
+        courses: { where: { isDeleted: false } },
       },
       take: 100,
     });
 
-    // STRICT MULTI-DOMAIN EXCLUSION STEP
+    // STRICT MULTI-DOMAIN EXCLUSION & COURSE VALIDATION STEP
     const filteredColleges = dbColleges.filter((c) => {
+      // ZERO-TOLERANCE COURSE CHECK
+      if (targetCourse && !isCollegeOfferingCourse(c, targetCourse)) {
+        return false;
+      }
+
       const nameL = c.name.toLowerCase();
       const hasArtsScience =
         /arts|science|humanities|liberal arts/i.test(nameL) ||

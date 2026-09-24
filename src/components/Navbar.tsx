@@ -170,14 +170,11 @@ export function Navbar() {
     }
   };
 
-  const getDashboardLink = () => {
-    if (!user) return "/";
-    if (user.role === "STUDENT") return "/tracker";
-    return "/";
-  };
+
+  const isStudentUser = Boolean(user && user.role === "STUDENT" && !user.name?.toLowerCase().includes("admin"));
 
   return (
-    <header className="relative z-30 w-full font-sans border-b border-stone-200/40 shadow-2xs bg-[#FAF9F5] md:bg-white overflow-visible animate-load-header">
+    <header className="relative z-50 w-full font-sans border-b border-stone-200/40 shadow-2xs bg-[#FAF9F5] md:bg-white overflow-visible animate-load-header">
       {/* ----------------- TOP INFORMATION BAR ----------------- */}
       <div className="w-full h-[34px] md:h-[36px] bg-[#FFFFFF] border-b border-[#E5E7EB] flex items-center justify-between whitespace-nowrap overflow-hidden flex-nowrap relative z-10 px-6 font-sans">
         <div className="flex items-center justify-start gap-6 h-full flex-nowrap">
@@ -210,18 +207,18 @@ export function Navbar() {
       {/* ----------------- DESKTOP LAYOUT (2 ROWS) ----------------- */}
       <div className="hidden md:block">
         {/* ROW 1: Search, Logo, Actions */}
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-6 relative z-[110]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-4 lg:gap-6 relative z-[110]">
           {/* Left: Logo */}
           <Link href="/" className="flex items-center space-x-2 shrink-0 group">
             <img
               src="/logo.png"
               alt="C2Talents Logo"
-              className="h-15 w-auto transition-transform duration-300 group-hover:scale-[1.03]"
+              className="h-14 lg:h-15 w-auto transition-transform duration-300 group-hover:scale-[1.03]"
             />
           </Link>
 
-          {/* Center: Live Auto-Complete Search Box */}
-          <div className="absolute left-1/2 -translate-x-1/2 w-96 cursor-pointer" ref={searchMenuRef} onClick={() => setOverlayOpen(true)}>
+          {/* Center: Live Auto-Complete Search Box (Flex child to prevent any overlapping with buttons) */}
+          <div className="flex-1 max-w-sm lg:max-w-md mx-2 lg:mx-4 cursor-pointer" ref={searchMenuRef} onClick={() => setOverlayOpen(true)}>
             <div className="relative flex items-center bg-stone-100 hover:bg-stone-150/90 border border-stone-200 rounded-xl px-3.5 py-2 text-xs text-stone-500 font-medium h-9.5 shadow-2xs transition-all">
               <Search className="w-4 h-4 text-stone-400 mr-2.5 shrink-0" />
               <span className="truncate">Search colleges, courses, locations...</span>
@@ -230,7 +227,7 @@ export function Navbar() {
           </div>
 
           {/* Right: Write a Review, Compare, Save, Account */}
-          <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-2.5 lg:gap-4 shrink-0">
             {/* Write a Review Button (Styled as dark pill button matching user design) */}
             <Link
               href="/write-review"
@@ -254,23 +251,10 @@ export function Navbar() {
               </div>
             </div>
 
-            {/* Saved Applications */}
-            <div className="relative group">
-              <Link
-                href="/tracker"
-                className="w-9 h-9 flex items-center justify-center text-stone-500 hover:text-indigo-900 bg-stone-50 hover:bg-indigo-50 rounded-xl border border-stone-200/60 transition-all"
-              >
-                <Bookmark className="w-4 h-4" />
-              </Link>
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1 bg-stone-900 text-stone-100 text-[10px] font-bold rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap shadow-md z-50">
-                Saved Applications
-              </div>
-            </div>
-
             <div className="h-6 w-px bg-stone-200"></div>
 
             {/* Profile Dropdown */}
-            {user ? (
+            {isStudentUser && user ? (
               <div className="relative z-[110]" ref={profileMenuRef}>
                 <button
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
@@ -298,15 +282,6 @@ export function Navbar() {
                         <div className="text-xs font-bold text-brand-navy truncate">{user.name}</div>
                         <div className="text-[10px] text-stone-400 mt-0.5 truncate">{user.email}</div>
                       </div>
-
-                      <Link
-                        href={getDashboardLink()}
-                        onClick={() => setProfileDropdownOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-stone-600 hover:bg-orange-50 hover:text-orange-600 active:bg-orange-100 transition-colors"
-                      >
-                        <ClipboardList className="w-3.5 h-3.5 text-stone-400" />
-                        Application Tracker
-                      </Link>
 
                       <Link
                         href="/compare"
@@ -341,8 +316,8 @@ export function Navbar() {
         </div>
 
         {/* ROW 2: Horizontal Navigation Bar (Theme background: solid dark emerald green / bg-indigo-900) */}
-        <div className="w-full bg-indigo-900 text-white shadow-inner relative z-30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-11 flex items-center justify-between gap-2 md:gap-3 lg:gap-4 xl:gap-5 whitespace-nowrap overflow-visible">
+        <div className="w-full bg-indigo-900 text-white shadow-inner relative z-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-11 flex items-center justify-center gap-3 sm:gap-4 md:gap-5 lg:gap-6 xl:gap-7 whitespace-nowrap overflow-visible">
             {/* Home Link */}
             <Link
               href="/"
@@ -365,8 +340,7 @@ export function Navbar() {
             <div className="relative shrink-0" ref={streamMenuRef}>
               <button
                 suppressHydrationWarning
-                onClick={() => setStreamDropdownOpen(!streamDropdownOpen)}
-                onMouseEnter={() => setStreamDropdownOpen(true)}
+                onClick={() => setStreamDropdownOpen((prev) => !prev)}
                 className="group flex items-center gap-1 py-1 text-[11px] lg:text-xs font-extrabold text-white hover:text-orange-400 active:text-orange-400 transition-colors cursor-pointer uppercase tracking-wider whitespace-nowrap shrink-0"
               >
                 <span>Explore Streams</span>
@@ -379,7 +353,6 @@ export function Navbar() {
                     initial={{ opacity: 0, y: 8, scale: 0.97 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.97 }}
-                    onMouseLeave={() => setStreamDropdownOpen(false)}
                     className="absolute left-0 mt-2 w-64 bg-white border border-stone-200 rounded-2xl shadow-2xl overflow-hidden z-[9999] text-stone-800 font-sans divide-y divide-stone-100"
                   >
                     {[
@@ -426,13 +399,7 @@ export function Navbar() {
               <span>Exam Corner</span>
             </Link>
 
-            <Link
-              href="/tracker"
-              className="flex items-center gap-1.5 text-[11px] lg:text-xs font-extrabold hover:text-orange-400 active:text-orange-400 transition-colors py-1 uppercase tracking-wider whitespace-nowrap shrink-0"
-            >
-              <ClipboardList className="w-3.5 h-3.5 shrink-0" />
-              <span>Application Tracker</span>
-            </Link>
+
 
             {/* AI Counselor Premium link */}
             <Link
@@ -584,21 +551,10 @@ export function Navbar() {
               >
                 Exam Corner
               </Link>
-              <Link
-                href="/tracker"
-                onClick={() => setIsOpen(false)}
-                className="text-[13px] font-bold text-stone-700 hover:text-orange-600 active:text-orange-600 py-2 border-b border-stone-100 transition-colors uppercase tracking-wider block"
-              >
-                Application Tracker
-              </Link>
-
               {/* Utility shortcuts */}
-              <div className="grid grid-cols-2 gap-2 pt-2 text-center text-xs font-bold text-stone-500">
-                <Link href="/compare" onClick={() => setIsOpen(false)} className="p-2 border border-stone-200 rounded-xl">
+              <div className="pt-2 text-center text-xs font-bold text-stone-500">
+                <Link href="/compare" onClick={() => setIsOpen(false)} className="block p-2 border border-stone-200 rounded-xl">
                   Compare Colleges
-                </Link>
-                <Link href="/tracker" onClick={() => setIsOpen(false)} className="p-2 border border-stone-200 rounded-xl">
-                  My Applications
                 </Link>
               </div>
 
@@ -621,7 +577,7 @@ export function Navbar() {
                   <Sparkles className="w-4 h-4 text-amber-300" />
                   Ask AI Counselor
                 </Link>
-                {user ? (
+                {isStudentUser && user ? (
                   <button
                     onClick={() => {
                       logout();

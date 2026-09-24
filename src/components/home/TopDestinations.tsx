@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Landmark, Compass } from "lucide-react";
-import { motion } from "framer-motion";
+import { Compass, Building2, ArrowRight, MapPin, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 const cities = [
@@ -15,8 +15,118 @@ const cities = [
   { name: "Madurai", count: "12 Colleges", code: "madurai", image: "/images/madurai-artwork.jpg" },
 ];
 
+interface CollegePreview {
+  id: string;
+  name: string;
+  category?: string;
+  naacGrade?: string;
+  ownership?: string;
+}
+
+interface CityTooltipProps {
+  city: (typeof cities)[0];
+  visible: boolean;
+}
+
+function CityTooltip({ city, visible }: CityTooltipProps) {
+  const [colleges, setColleges] = React.useState<CollegePreview[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [fetched, setFetched] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!visible || fetched) return;
+    setLoading(true);
+    fetch(`/api/colleges?location=${encodeURIComponent(city.code)}&limit=4`)
+      .then((r) => r.json())
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data.results ?? []);
+        setColleges(list.slice(0, 4));
+        setFetched(true);
+      })
+      .catch(() => setColleges([]))
+      .finally(() => setLoading(false));
+  }, [visible, city.code, fetched]);
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 8, scale: 0.95 }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 bg-white rounded-2xl shadow-[0_16px_48px_-8px_rgba(0,0,0,0.22)] border border-stone-100 overflow-hidden z-[9999] pointer-events-auto"
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-[#1f0c3d] to-[#3b2075] px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-3.5 h-3.5 text-orange-300 shrink-0" />
+              <span className="text-white font-extrabold text-xs uppercase tracking-wider">
+                {city.name}
+              </span>
+            </div>
+            <span className="text-orange-300 text-[10px] font-bold">{city.count}</span>
+          </div>
+
+          {/* College List */}
+          <div className="p-2 space-y-0.5">
+            {loading ? (
+              <div className="flex items-center justify-center py-5">
+                <Loader2 className="w-5 h-5 text-[#3b2075] animate-spin" />
+              </div>
+            ) : colleges.length === 0 ? (
+              <p className="text-center text-xs text-stone-400 py-4 font-medium">No colleges found</p>
+            ) : (
+              colleges.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/colleges/${c.id}`}
+                  className="flex items-start gap-2.5 px-2.5 py-2 rounded-xl hover:bg-orange-50 transition-colors group"
+                >
+                  <div className="w-7 h-7 bg-[#f3eeff] rounded-lg flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-orange-100 transition-colors">
+                    <Building2 className="w-3.5 h-3.5 text-[#3b2075] group-hover:text-orange-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-bold text-stone-800 leading-tight truncate group-hover:text-orange-600 transition-colors">
+                      {c.name}
+                    </p>
+                    <p className="text-[10px] text-stone-400 font-medium mt-0.5 flex items-center gap-1">
+                      {c.category && <span>{c.category}</span>}
+                      {c.naacGrade && (
+                        <>
+                          <span className="text-stone-300">·</span>
+                          <span className="text-emerald-600 font-bold">NAAC {c.naacGrade}</span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+
+          {/* Footer CTA */}
+          <div className="border-t border-stone-100 px-3 py-2.5">
+            <Link
+              href={`/colleges?location=${city.code}`}
+              className="flex items-center justify-center gap-1.5 text-[11px] font-extrabold text-[#3b2075] hover:text-orange-600 transition-colors group"
+            >
+              <span>View all colleges in {city.name}</span>
+              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+
+          {/* Arrow pointer */}
+          <div className="absolute -bottom-[6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-stone-100 rotate-45" />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export function TopDestinations() {
   const { ref, hasRevealed } = useScrollReveal<HTMLDivElement>();
+  const [hoveredCity, setHoveredCity] = React.useState<string | null>(null);
 
   return (
     <section
@@ -33,12 +143,12 @@ export function TopDestinations() {
             <span>Top Study Destinations</span>
           </h2>
           <p className="text-xs md:text-sm text-stone-500 max-w-xl font-sans leading-relaxed">
-            Explore colleges based in top educational clusters with strong job recruitment networks.
+            Hover over a city to preview colleges — click to explore all.
           </p>
         </div>
 
         {/* Floating Rotated Diamond Cards Container */}
-        <div className="relative pt-6 pb-10 overflow-x-auto no-scrollbar">
+        <div className="relative pt-6 pb-10 overflow-x-auto no-scrollbar overflow-y-visible">
           <div className="flex items-center justify-start md:justify-center -space-x-3 sm:-space-x-2 md:space-x-1 lg:space-x-3 min-w-max md:min-w-0 px-8 py-8">
             {cities.map((city, idx) => (
               <motion.div
@@ -50,8 +160,16 @@ export function TopDestinations() {
                   delay: idx * 0.11,
                   ease: [0.16, 1, 0.3, 1],
                 }}
-                className="relative group z-10 hover:z-30 shrink-0"
+                className="relative group z-10 hover:z-[100] shrink-0"
+                onMouseEnter={() => setHoveredCity(city.code)}
+                onMouseLeave={() => setHoveredCity(null)}
+                onTouchStart={() =>
+                  setHoveredCity(hoveredCity === city.code ? null : city.code)
+                }
               >
+                {/* Hover Tooltip */}
+                <CityTooltip city={city} visible={hoveredCity === city.code} />
+
                 <Link
                   href={`/colleges?location=${city.code}`}
                   aria-label={`View colleges in ${city.name}`}
@@ -82,4 +200,5 @@ export function TopDestinations() {
     </section>
   );
 }
+
 

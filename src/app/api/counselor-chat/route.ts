@@ -173,6 +173,106 @@ function isCollegeStreamCompatible(
   return true;
 }
 
+// Multi-Criteria Strict Match Filter Engine
+function isCollegeStrictlyMatching(col: any, profile: StudentProfile): boolean {
+  // 1. Stream & Specialization
+  if (!isCollegeStreamCompatible(col, profile.stream, profile.specialization)) {
+    return false;
+  }
+
+  // 2. Location Preference
+  if (profile.locationPreference) {
+    const locPref = profile.locationPreference.toLowerCase().trim();
+    if (!locPref.includes("any") && !locPref.includes("no preference")) {
+      const city = (col.city || "").toLowerCase();
+      const location = (col.location || "").toLowerCase();
+      const state = (col.state || "").toLowerCase();
+      const area = (col.area || "").toLowerCase();
+      const name = (col.name || "").toLowerCase();
+
+      const kwMatches = locPref
+        .replace(/any location in|location|city|district|near|in/gi, "")
+        .trim()
+        .split(/[\s,]+/)
+        .filter((w) => w.length > 2);
+
+      if (kwMatches.length > 0) {
+        const isLocMatch = kwMatches.some(
+          (kw) =>
+            city.includes(kw) ||
+            location.includes(kw) ||
+            area.includes(kw) ||
+            name.includes(kw) ||
+            (kw === "tn" && (state.includes("tamil nadu") || state.includes("tn")))
+        );
+
+        if (!isLocMatch) {
+          return false;
+        }
+      }
+    }
+  }
+
+  // 3. Ownership / College Type
+  if (profile.ownershipPreference) {
+    const ownPref = profile.ownershipPreference.toLowerCase();
+    if (!ownPref.includes("no preference") && !ownPref.includes("any")) {
+      const type = (col.type || "").toLowerCase();
+      const ownership = (col.ownership || "").toLowerCase();
+
+      if (ownPref.includes("government") || ownPref.includes("govt")) {
+        const isGovt =
+          type.includes("govt") ||
+          type.includes("government") ||
+          type.includes("aided") ||
+          ownership.includes("govt") ||
+          ownership.includes("government") ||
+          ownership.includes("aided");
+        if (!isGovt) return false;
+      } else if (ownPref.includes("autonomous")) {
+        const isAuto =
+          col.isAutonomous === true ||
+          type.includes("autonomous") ||
+          ownership.includes("autonomous") ||
+          (col.name || "").toLowerCase().includes("autonomous");
+        if (!isAuto) return false;
+      } else if (ownPref.includes("private") || ownPref.includes("deemed")) {
+        const isPrivate =
+          type.includes("private") ||
+          type.includes("deemed") ||
+          type.includes("self-financing") ||
+          ownership.includes("private") ||
+          ownership.includes("deemed") ||
+          ownership.includes("self-financing");
+        if (!isPrivate) return false;
+      }
+    }
+  }
+
+  // 4. Hostel Requirement
+  if (profile.hostel) {
+    const hostelPref = profile.hostel.toLowerCase();
+    if (hostelPref.includes("yes") || hostelPref.includes("required") || hostelPref.includes("on-campus")) {
+      const hasHostel =
+        col.hostelAvailable === true ||
+        (col.hostelFees && col.hostelFees > 0) ||
+        (col.hostelFeePerYear && col.hostelFeePerYear > 0);
+      if (!hasHostel) return false;
+    }
+  }
+
+  // 5. Budget Limit
+  if (profile.budget) {
+    const budgetLimit = parseBudgetLimit(profile.budget);
+    const annualFee = col.feesPerYear || 0;
+    if (annualFee > 0 && annualFee > budgetLimit * 1.3) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export async function POST(req: Request) {
   try {
     const { message, history, currentProfile } = await req.json();
@@ -254,7 +354,14 @@ export async function POST(req: Request) {
       else if (/no|day scholar|commuting/i.test(textLower)) profile.hostel = "No — Day scholar / commuting";
     }
 
-    // 6. Expected Package
+    // 6. Ownership Preference
+    if (!profile.ownershipPreference) {
+      if (/govt|government|aided/i.test(textLower)) profile.ownershipPreference = "Government / Govt-Aided";
+      else if (/autonomous/i.test(textLower)) profile.ownershipPreference = "Autonomous Institutions";
+      else if (/private|deemed|self-financing/i.test(textLower)) profile.ownershipPreference = "Top Private Universities";
+    }
+
+    // 7. Expected Package
     if (!profile.expectedPackage) {
       if (textLower.includes("4-6") || textLower.includes("4–6")) profile.expectedPackage = "₹4–6 LPA";
       else if (textLower.includes("6-10") || textLower.includes("6–10")) profile.expectedPackage = "₹6–10 LPA";
@@ -262,10 +369,11 @@ export async function POST(req: Request) {
       else if (textLower.includes("15+")) profile.expectedPackage = "₹15+ LPA";
     }
 
-    // 7. Location Preference
+    // 8. Location Preference
     if (!profile.locationPreference) {
-      const cityMatch = textLower.match(/in\s+(chennai|coimbatore|madurai|trichy|salem|vellore|bangalore|hyderabad|delhi|mumbai)/i);
-      if (cityMatch) profile.locationPreference = cityMatch[1].toUpperCase();
+      const cityMatch = textLower.match(/(?:in|at|near|around)\s+(chennai|coimbatore|madurai|trichy|salem|vellore|kanchipuram|thanjavur|tanjore|tirunelveli|erode|namakkal|bangalore|hyderabad|delhi|mumbai)/i)
+        || textLower.match(/\b(chennai|coimbatore|madurai|trichy|salem|vellore|kanchipuram|thanjavur|tanjore|tirunelveli|erode|namakkal)\b/i);
+      if (cityMatch) profile.locationPreference = cityMatch[1].charAt(0).toUpperCase() + cityMatch[1].slice(1);
     }
 
     // Perform REAL DATABASE QUERY (Strict Anti-Hallucination)
@@ -280,14 +388,7 @@ export async function POST(req: Request) {
     const targetPkg = parsePackageTarget(profile.expectedPackage);
     const scoreVal = parseScoreValue(profile.score12th);
 
-    const scoredColleges: RecommendationResult[] = [];
-
-    for (const col of dbColleges) {
-      // 0. Stream Compatibility Filter (Strict Root Area Check)
-      if (!isCollegeStreamCompatible(col, profile.stream, profile.specialization)) {
-        continue;
-      }
-
+    const evaluateCollege = (col: any, isStrictPass: boolean): RecommendationResult => {
       let score = 0;
       const reasons: string[] = [];
 
@@ -297,7 +398,7 @@ export async function POST(req: Request) {
 
       if (profile.specialization || profile.stream) {
         const specTerm = (profile.specialization || profile.stream || "").toLowerCase();
-        const matchedCourse = col.courses.find((c) => {
+        const matchedCourse = col.courses.find((c: any) => {
           const title = c.title.toLowerCase();
           return title.includes(specTerm) || specTerm.split(" ").some((w) => w.length > 2 && title.includes(w));
         });
@@ -314,12 +415,12 @@ export async function POST(req: Request) {
           score += 20;
         }
       } else {
-        score += 20; // Default base course points if student hasn't selected stream yet
+        score += 20;
       }
 
-      // 2. Academic Eligibility & Cutoff Fit (30 pts max / penalty for score gap)
+      // 2. Academic Eligibility & Cutoff Fit (30 pts)
       let requiredMinGpa = 50.0;
-      const matchingCourseWithMinGpa = col.courses.find((c) => c.minGpa && c.minGpa > 0);
+      const matchingCourseWithMinGpa = col.courses.find((c: any) => c.minGpa && c.minGpa > 0);
       if (matchingCourseWithMinGpa && matchingCourseWithMinGpa.minGpa) {
         requiredMinGpa = matchingCourseWithMinGpa.minGpa;
       } else {
@@ -336,18 +437,15 @@ export async function POST(req: Request) {
 
       if (scoreVal >= requiredMinGpa) {
         score += 25;
-        reasons.push(`✔ Academic Eligibility Met: Your score (${scoreVal}%) meets required cutoff (~${requiredMinGpa}%)`);
+        reasons.push(`✔ Academic Eligibility Met: Cutoff (~${requiredMinGpa}%) met by your ${scoreVal}% score`);
       } else {
         const gap = requiredMinGpa - scoreVal;
         if (gap > 30) {
           score -= 40;
-          reasons.push(`⚠️ High Cutoff Alert: Required cutoff (~${requiredMinGpa}%) is significantly higher than your ${scoreVal}% score`);
+          reasons.push(`⚠️ High Cutoff Alert: Required cutoff (~${requiredMinGpa}%) vs your ${scoreVal}% score`);
         } else if (gap > 15) {
           score -= 25;
-          reasons.push(`⚠️ Merit Gap: Requires ~${requiredMinGpa}% cutoff (Your score: ${scoreVal}%)`);
-        } else if (gap > 5) {
-          score -= 10;
-          reasons.push(`⚠️ Slightly below typical cutoff (~${requiredMinGpa}%)`);
+          reasons.push(`⚠️ Merit Gap: Requires ~${requiredMinGpa}% cutoff`);
         } else {
           score += 15;
           reasons.push(`✔ Within Cutoff Range (~${requiredMinGpa}%)`);
@@ -355,7 +453,7 @@ export async function POST(req: Request) {
       }
 
       // 3. Budget & Fee Fit (25 pts)
-      const annualFee = courseMatchFee || col.feesPerYear;
+      const annualFee = courseMatchFee || col.feesPerYear || 0;
       if (annualFee > 0) {
         if (annualFee <= budgetLimit) {
           score += 25;
@@ -385,7 +483,7 @@ export async function POST(req: Request) {
       // 5. Hostel & Facilities (15 pts)
       const needsHostel = (profile.hostel || "").toLowerCase().includes("yes");
       if (needsHostel) {
-        if (col.hostelAvailable) {
+        if (col.hostelAvailable || (col.hostelFees && col.hostelFees > 0)) {
           score += 15;
           reasons.push(`✔ Verified On-Campus Hostel & Mess Available`);
         } else {
@@ -406,21 +504,20 @@ export async function POST(req: Request) {
       }
 
       // 7. Location Preference Match
-      if (profile.locationPreference && col.city && col.city.toUpperCase().includes(profile.locationPreference)) {
+      if (profile.locationPreference && col.city && col.city.toUpperCase().includes(profile.locationPreference.toUpperCase())) {
         score += 10;
         reasons.push(`✔ Located in preferred location (${col.city})`);
       }
 
-      const matchScore = Math.min(98, Math.max(35, Math.round(score)));
+      const matchScore = Math.min(98, Math.max(40, Math.round(score)));
 
-      // Real Data Rationale Generation
       const rationaleText =
         `${col.name} is recommended with a ${matchScore}% match score. ` +
         `It offers ${courseMatchTitle || "degree programs"}, has an annual fee of ₹${annualFee.toLocaleString("en-IN")}, ` +
         `and reports an average placement CTC of ₹${avgPkg} LPA (Highest: ₹${highestPkg} LPA). ` +
         (col.naacGrade ? `Accredited with NAAC Grade ${col.naacGrade}` : "Verified institutional profile.");
 
-      scoredColleges.push({
+      return {
         id: col.id,
         name: col.name,
         shortName: col.shortName,
@@ -446,7 +543,25 @@ export async function POST(req: Request) {
         matchScore,
         matchReasons: reasons,
         rationale: rationaleText,
-      });
+      };
+    };
+
+    let scoredColleges: RecommendationResult[] = [];
+
+    // Pass 1: Strict Multi-Criteria Filter (Stream + Location + Ownership + Hostel + Budget)
+    for (const col of dbColleges) {
+      if (isCollegeStrictlyMatching(col, profile)) {
+        scoredColleges.push(evaluateCollege(col, true));
+      }
+    }
+
+    // Pass 2: Fallback if 0 colleges matched all strict criteria simultaneously
+    if (scoredColleges.length === 0) {
+      for (const col of dbColleges) {
+        if (isCollegeStreamCompatible(col, profile.stream, profile.specialization)) {
+          scoredColleges.push(evaluateCollege(col, false));
+        }
+      }
     }
 
     // Sort by highest match score

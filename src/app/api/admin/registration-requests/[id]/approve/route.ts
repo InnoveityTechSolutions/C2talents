@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { sendEmail, generateCollegeApprovalEmailHtml } from "@/lib/email";
+import { sendEmail, generateCollegeApprovalEmailDetails } from "@/lib/email";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -21,12 +21,16 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
 
     // Generate fresh secure accessToken if not present
     const accessToken = requestItem.accessToken || crypto.randomUUID();
+    // Default 14-day validity for token
+    const tokenExpiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
     const updatedRequest = await db.collegeRegistrationRequest.update({
       where: { id },
       data: {
         status: "APPROVED",
         accessToken,
+        tokenExpiresAt,
+        approvedAt: new Date(),
         adminNotes: adminNotes || requestItem.adminNotes || "Approved by Admin",
       },
     });
@@ -37,32 +41,51 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${hostHeader}`;
     const accessUrl = `${baseUrl}/college-portal/${accessToken}`;
 
-    // Dispatch email asynchronously in background so approval response returns immediately (<100ms)
-    (async () => {
-      try {
-        const { generateCollegeApprovalEmailDetails } = await import("@/lib/email");
-        const { subject: dynamicSubject, html: emailHtml } = await generateCollegeApprovalEmailDetails({
-          collegeName: updatedRequest.collegeName,
-          contactPerson: updatedRequest.contactPerson,
-          accessUrl,
-        });
+    // Await email dispatch directly to the organization email entered in registration form
+    let emailSent = false;
+    let emailError: string | null = null;
 
-        await sendEmail({
-          to: updatedRequest.email,
-          subject: dynamicSubject,
-          html: emailHtml,
+    try {
+      const emailDetails = await generateCollegeApprovalEmailDetails({
+        collegeName: updatedRequest.collegeName,
+        contactPerson: updatedRequest.contactPerson,
+        accessUrl,
+      });
+
+      const sendResult = await sendEmail({
+        to: updatedRequest.email,
+        subject: emailDetails.subject,
+        html: emailDetails.html,
+      });
+
+      if (sendResult.success && !sendResult.simulated) {
+        emailSent = true;
+        await db.collegeRegistrationRequest.update({
+          where: { id },
+          data: {
+            emailSent: true,
+            emailSentAt: new Date(),
+          },
         });
-      } catch (emailErr: any) {
-        console.warn(`[APPROVE EMAIL NOTICE]: Background SMTP email dispatch skipped for ${updatedRequest.collegeName}:`, emailErr.message);
+      } else if (sendResult.simulated) {
+        emailError = "SMTP credentials not configured. Please configure SMTP in Settings > SMTP Settings.";
+      } else {
+        emailError = sendResult.error || "Failed to dispatch email via SMTP.";
       }
-    })();
+    } catch (emailErr: any) {
+      console.error(`[APPROVE EMAIL ERROR] Failed for ${updatedRequest.email}:`, emailErr);
+      emailError = emailErr.message || "Failed to dispatch email.";
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Registration request for ${updatedRequest.collegeName} approved successfully! Verification token link generated.`,
+      message: emailSent
+        ? `Registration request for ${updatedRequest.collegeName} approved and official confirmation email sent to ${updatedRequest.email}!`
+        : `Registration request approved! Note: Email could not be delivered (${emailError}). You can configure SMTP or click Resend Email.`,
       request: updatedRequest,
       accessUrl,
-      emailSent: true,
+      emailSent,
+      emailError,
     });
   } catch (err: any) {
     console.error("[POST /api/admin/registration-requests/[id]/approve Error]:", err);

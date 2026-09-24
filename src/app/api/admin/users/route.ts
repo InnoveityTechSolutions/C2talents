@@ -7,6 +7,9 @@ const prisma = new PrismaClient();
 export async function GET() {
   try {
     const users = await prisma.user.findMany({
+      where: {
+        role: { in: ["SUPER_ADMIN", "ADMIN", "EDITOR"] },
+      },
       select: { id: true, email: true, name: true, role: true, createdAt: true },
       orderBy: { createdAt: "desc" },
     });

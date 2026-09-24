@@ -65,13 +65,46 @@ export async function getActiveSmtpConfig() {
   return null;
 }
 
+export async function verifySmtpConnection(customConfig?: {
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPass: string;
+  encryptionType?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const config = customConfig || (await getActiveSmtpConfig());
+    if (!config || !config.smtpHost || !config.smtpUser) {
+      return { success: false, error: "SMTP Host and Username are required." };
+    }
+    const nodemailer = await import("nodemailer");
+    const isSecure = config.encryptionType === "SSL" || config.smtpPort === 465;
+    const transporter = nodemailer.createTransport({
+      host: config.smtpHost,
+      port: config.smtpPort,
+      secure: isSecure,
+      auth: {
+        user: config.smtpUser,
+        pass: config.smtpPass,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+    await transporter.verify();
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to connect to SMTP server." };
+  }
+}
+
 export async function sendEmail({
   to,
   subject,
   html,
   text,
   overrideSmtpConfig,
-}: SendEmailOptions): Promise<{ success: boolean; messageId?: string; simulated?: boolean }> {
+}: SendEmailOptions): Promise<{ success: boolean; messageId?: string; simulated?: boolean; error?: string }> {
   const smtpConfig = overrideSmtpConfig || (await getActiveSmtpConfig());
 
   if (smtpConfig && smtpConfig.smtpHost && smtpConfig.smtpUser) {
@@ -132,18 +165,22 @@ export async function sendEmail({
       }
     } catch (err: any) {
       console.error(`[EMAIL SERVICE ERROR] Failed to send email to ${to}:`, err.message);
-      throw err;
+      return { success: false, error: err.message };
     }
   }
 
-  // Fallback simulation mode for development environments without active SMTP config
-  console.log("====================================================");
-  console.log(`[EMAIL SIMULATION] To: ${to}`);
-  console.log(`[EMAIL SIMULATION] Subject: ${subject}`);
-  console.log(`[EMAIL SIMULATION] Content:\n${html.replace(/<[^>]+>/g, " ").slice(0, 300)}...`);
-  console.log("====================================================");
+  // When no active SMTP config is found
+  console.warn("====================================================");
+  console.warn(`[EMAIL WARNING] SMTP credentials not configured. Email to ${to} could NOT be delivered.`);
+  console.warn(`[EMAIL SIMULATION] Subject: ${subject}`);
+  console.warn(`[EMAIL SIMULATION] Content:\n${html.replace(/<[^>]+>/g, " ").slice(0, 300)}...`);
+  console.warn("====================================================");
 
-  return { success: true, simulated: true };
+  return {
+    success: false,
+    simulated: true,
+    error: "SMTP credentials not configured. Please configure SMTP in Settings > SMTP Settings or in your environment variables.",
+  };
 }
 
 // Utility to convert HTML to plain text
@@ -272,19 +309,12 @@ export function renderBaseEmailTemplate({
                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td align="left" style="vertical-align: middle;">
-                      <table cellpadding="0" cellspacing="0" border="0">
-                        <tr>
-                          <td style="vertical-align: middle; padding-right: 12px;">
-                            <img src="cid:c2talentslogo" alt="C2Talents Logo" height="32" style="height: 32px; width: auto; max-height: 32px; display: block; border: 0; outline: none;" onError="this.onerror=null;this.src='${logoUrl}';" />
-                          </td>
-                          <td style="vertical-align: middle;">
-                            <span style="font-size: 20px; font-weight: 700; color: #111827; letter-spacing: -0.3px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">C2Talents</span>
-                          </td>
-                        </tr>
-                      </table>
+                      <a href="${appUrl}" target="_blank" style="text-decoration: none; display: inline-block;">
+                        <img src="cid:c2talentslogo" alt="C2Talents Logo" height="42" style="height: 42px; width: auto; max-height: 42px; display: block; border: 0; outline: none;" onError="this.onerror=null;this.src='${logoUrl}';" />
+                      </a>
                     </td>
                     <td align="right" style="vertical-align: middle;">
-                      <span style="font-size: 11px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px;">Enterprise SaaS</span>
+                      <span style="font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.8px;">Higher Education Platform</span>
                     </td>
                   </tr>
                 </table>
@@ -379,7 +409,18 @@ export async function generateCollegeApprovalEmailDetails({
   contactPerson: string;
   accessUrl: string;
 }): Promise<{ subject: string; html: string }> {
-  return compileEmailTemplate("registration_approved", { collegeName, contactPerson, accessUrl });
+  const approvalDate = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  return compileEmailTemplate("registration_approved", {
+    collegeName,
+    contactPerson,
+    accessUrl,
+    portalLink: accessUrl,
+    approvalDate,
+  });
 }
 
 export async function generateCollegeApprovalEmailHtml(params: {

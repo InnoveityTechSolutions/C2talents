@@ -49,7 +49,7 @@ export const DEFAULT_EMAIL_TEMPLATES: Record<string, EmailTemplateDefinition> = 
     sampleData: {
       collegeName: "St. Xavier Institute of Technology",
       contactPerson: "Dr. Rajesh Kumar",
-      portalLink: "http://localhost:3000/tracker",
+      portalLink: "http://localhost:3000/dashboard/applications",
       supportEmail: "support@c2talents.com",
       companyName: "C2Talents Platform",
       currentYear: "2026",
@@ -59,15 +59,16 @@ export const DEFAULT_EMAIL_TEMPLATES: Record<string, EmailTemplateDefinition> = 
     templateKey: "registration_approved",
     templateName: "Registration Approved",
     category: "Approval",
-    subject: "Action Required: Registration Request Approved for {{collegeName}}",
+    subject: "College Registration Approved — Complete Your College Profile",
     preheader: "Your registration request for {{collegeName}} has been approved.",
     headerTitle: "Registration Approved",
     greeting: "Dear {{contactPerson}},",
     bodyHtml: `<p>We are pleased to inform you that your registration request for <strong>{{collegeName}}</strong> has been reviewed and approved on {{approvalDate}}.</p>
-<p>Your institution is now authorized to access the C2Talents onboarding portal to submit degree courses, fee structures, hostel information, and placement statistics.</p>`,
-    buttonText: "Access Onboarding Portal",
+<p>Your institution is now authorized to access the C2Talents onboarding portal to submit degree courses, fee structures, hostel information, and placement statistics.</p>
+<p>Please click the button below to complete your institutional profile. This link is unique and secure to your institution.</p>`,
+    buttonText: "Complete College Profile",
     buttonUrl: "{{portalLink}}",
-    footerHtml: `<p>&copy; {{currentYear}} {{companyName}}. All rights reserved.</p>`,
+    footerHtml: `<p>&copy; {{currentYear}} {{companyName}}. All rights reserved.</p><p>For assistance, contact <a href="mailto:{{supportEmail}}">{{supportEmail}}</a></p>`,
     status: "PUBLISHED",
     version: 1,
     updatedBy: "System Default",
@@ -75,6 +76,7 @@ export const DEFAULT_EMAIL_TEMPLATES: Record<string, EmailTemplateDefinition> = 
       { name: "collegeName", description: "Name of the institution" },
       { name: "contactPerson", description: "Contact person name" },
       { name: "portalLink", description: "Secure onboarding portal access URL" },
+      { name: "accessUrl", description: "Secure onboarding portal access URL" },
       { name: "approvalDate", description: "Date of approval" },
       { name: "supportEmail", description: "Support email" },
       { name: "companyName", description: "Company name" },
@@ -84,6 +86,7 @@ export const DEFAULT_EMAIL_TEMPLATES: Record<string, EmailTemplateDefinition> = 
       collegeName: "St. Xavier Institute of Technology",
       contactPerson: "Dr. Rajesh Kumar",
       portalLink: "http://localhost:3000/college-portal/token-12345",
+      accessUrl: "http://localhost:3000/college-portal/token-12345",
       approvalDate: "August 4, 2026",
       supportEmail: "support@c2talents.com",
       companyName: "C2Talents Platform",
@@ -435,7 +438,7 @@ export async function compileEmailTemplate(
   const fullVars = {
     collegeName: variables.collegeName || "Institution",
     contactPerson: variables.contactPerson || variables.recipientName || "Valued Customer",
-    portalLink: variables.portalLink || variables.accessUrl || "http://localhost:3000/tracker",
+    portalLink: variables.portalLink || variables.accessUrl || "http://localhost:3000/dashboard/applications",
     profileUrl: variables.profileUrl || variables.liveUrl || "http://localhost:3000",
     resetUrl: variables.resetUrl || "http://localhost:3000/reset-password",
     acceptUrl: variables.acceptUrl || "http://localhost:3000/accept-invitation",
@@ -457,54 +460,181 @@ export async function compileEmailTemplate(
   const compiledButtonUrl = template.buttonUrl ? replacePlaceholders(template.buttonUrl, fullVars) : undefined;
   const compiledFooterHtml = template.footerHtml ? replacePlaceholders(template.footerHtml, fullVars) : undefined;
 
-  // Build complete responsive HTML email wrapper
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://c2talents.com";
+  const logoFallbackUrl = `${appUrl}/logo.png`;
+
+  // Institutional Summary Table for Registration Approved / Changes
+  const showInstitutionSummary =
+    templateKey === "registration_approved" || templateKey === "registration_received" || templateKey === "changes_requested";
+
+  const institutionSummaryHtml = showInstitutionSummary
+    ? `
+      <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; margin: 24px 0; padding: 18px 22px;">
+        <div style="font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px;">
+          Institution Verification Summary
+        </div>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 13px; line-height: 1.6;">
+          <tr>
+            <td style="padding: 6px 0; color: #64748B; font-weight: 600; width: 140px; vertical-align: top;">Institution Name:</td>
+            <td style="padding: 6px 0; color: #0F172A; font-weight: 700; font-size: 14px;">${fullVars.collegeName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B; font-weight: 600; vertical-align: top;">Representative:</td>
+            <td style="padding: 6px 0; color: #1E293B; font-weight: 600;">${fullVars.contactPerson}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B; font-weight: 600; vertical-align: top;">Verification:</td>
+            <td style="padding: 6px 0;">
+              <span style="display: inline-block; background-color: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 4px;">
+                ✓ Verified & Authorized
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748B; font-weight: 600; vertical-align: top;">Access Period:</td>
+            <td style="padding: 6px 0; color: #475569; font-weight: 500;">14 Days from Approval</td>
+          </tr>
+        </table>
+      </div>
+    `
+    : "";
+
+  // Next Steps Guidance for Onboarding
+  const nextStepsHtml =
+    templateKey === "registration_approved"
+      ? `
+      <div style="background-color: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 10px; padding: 18px 22px; margin: 24px 0;">
+        <div style="font-size: 11px; font-weight: 800; color: #5B21B6; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px;">
+          Next Steps to Complete Onboarding:
+        </div>
+        <ol style="margin: 0; padding-left: 20px; color: #4C1D95; font-size: 13px; line-height: 1.6;">
+          <li style="margin-bottom: 6px;">Click the <strong>${compiledButtonText || "Complete College Profile"}</strong> button below to open your dedicated onboarding portal.</li>
+          <li style="margin-bottom: 6px;">Enter your degree programs, fee structures, facilities, and placement statistics.</li>
+          <li>Submit for final review to publish your college live on the C2Talents platform.</li>
+        </ol>
+      </div>
+    `
+      : "";
+
+  // Build complete responsive HTML email wrapper with pristine white high-contrast header
   const html = `
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${compiledSubject}</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 0; color: #334155; }
-    .email-container { max-width: 600px; margin: 30px auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(15,23,42,0.05); }
-    .email-header { background: linear-gradient(135deg, #1e0a38 0%, #2e1065 100%); padding: 32px 36px; text-align: center; }
-    .email-header h1 { color: #f59e0b; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
-    .email-body { padding: 36px; line-height: 1.6; font-size: 15px; }
-    .greeting { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 16px; }
-    .button-wrapper { text-align: center; margin: 28px 0; }
-    .cta-button { display: inline-block; background-color: #7c3aed; color: #ffffff !important; font-weight: 700; font-size: 14px; padding: 12px 28px; border-radius: 8px; text-decoration: none; box-shadow: 0 2px 8px rgba(124,58,237,0.3); }
-    .email-footer { background-color: #f1f5f9; padding: 24px 36px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
-    .email-footer a { color: #7c3aed; text-decoration: none; }
-  </style>
 </head>
-<body>
-  <div style="display:none;font-size:1px;color:#333333;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+<body style="margin: 0; padding: 0; min-width: 100%; background-color: #F8FAFC; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #334155;">
+  <!-- Preheader preview text -->
+  <div style="display: none; max-height: 0px; overflow: hidden; mso-hide: all; font-size: 1px; line-height: 1px; color: #F8FAFC; opacity: 0;">
     ${compiledPreheader}
   </div>
-  <div class="email-container">
-    <div class="email-header">
-      <div style="margin-bottom: 12px; text-align: center;">
-        <img src="cid:c2talentslogo" alt="C2Talents Logo" height="38" style="height: 38px; width: auto; max-height: 38px; display: inline-block; border: 0; outline: none; margin: 0 auto;" />
-      </div>
-      <div style="margin-bottom: 8px;">
-        <span style="background: rgba(245,158,11,0.2); color: #f59e0b; border: 1px solid rgba(245,158,11,0.4); padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">C2Talents Platform</span>
-      </div>
-      <h1>${compiledHeaderTitle}</h1>
-    </div>
-    <div class="email-body">
-      ${compiledGreeting ? `<div class="greeting">${compiledGreeting}</div>` : ""}
-      ${compiledBodyHtml}
-      ${
-        compiledButtonText && compiledButtonUrl
-          ? `<div class="button-wrapper"><a href="${compiledButtonUrl}" class="cta-button" target="_blank">${compiledButtonText}</a></div>`
-          : ""
-      }
-    </div>
-    <div class="email-footer">
-      ${compiledFooterHtml || `<p>&copy; ${new Date().getFullYear()} C2Talents Platform. All rights reserved.</p>`}
-    </div>
-  </div>
+
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F8FAFC; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <!-- Main Card Container -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 16px; border: 1px solid #E2E8F0; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05); text-align: left;">
+          
+          <!-- Top Brand Accent Gradient Bar -->
+          <tr>
+            <td style="height: 5px; background: linear-gradient(90deg, #1e0a38 0%, #4338ca 45%, #f59e0b 100%); line-height: 5px; font-size: 1px;">
+              &nbsp;
+            </td>
+          </tr>
+
+          <!-- Clean Pristine Header with Highly Visible Logo on White -->
+          <tr>
+            <td style="padding: 32px 36px 20px 36px; background-color: #FFFFFF; text-align: center; border-bottom: 1px solid #F1F5F9;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="vertical-align: middle;">
+                    <a href="${appUrl}" target="_blank" style="text-decoration: none; display: inline-block;">
+                      <img src="cid:c2talentslogo" alt="C2Talents Logo" height="48" style="height: 48px; max-height: 48px; width: auto; display: block; border: 0; outline: none; margin: 0 auto;" onError="this.onerror=null;this.src='${logoFallbackUrl}';" />
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-top: 10px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #64748B; letter-spacing: 1.5px; text-transform: uppercase;">
+                      Higher Education Platform &bull; Official Notice
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Title & Status Header -->
+          <tr>
+            <td style="padding: 28px 36px 8px 36px; text-align: center; background-color: #FAFAFA; border-bottom: 1px solid #F1F5F9;">
+              <div style="margin-bottom: 12px;">
+                <span style="display: inline-block; background-color: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 11px; font-weight: 800; padding: 4px 14px; border-radius: 9999px; letter-spacing: 0.5px; text-transform: uppercase;">
+                  &#10003;&nbsp; ${templateKey === "registration_approved" ? "Registration Approved" : "Official Update"}
+                </span>
+              </div>
+              <h1 style="font-size: 22px; font-weight: 800; color: #0F172A; margin: 0 0 6px 0; letter-spacing: -0.4px; line-height: 1.3;">
+                ${compiledHeaderTitle}
+              </h1>
+              <p style="font-size: 13px; color: #64748B; margin: 0; line-height: 1.5;">
+                ${compiledPreheader}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Main Email Content Area -->
+          <tr>
+            <td style="padding: 32px 36px; color: #334155; font-size: 14px; line-height: 1.6;">
+              ${compiledGreeting ? `<div style="font-size: 16px; font-weight: 700; color: #0F172A; margin-bottom: 14px;">${compiledGreeting}</div>` : ""}
+
+              <div style="line-height: 1.7; color: #334155;">
+                ${compiledBodyHtml}
+              </div>
+
+              ${institutionSummaryHtml}
+              ${nextStepsHtml}
+
+              <!-- Action Button Area -->
+              ${
+                compiledButtonText && compiledButtonUrl
+                  ? `
+                  <div style="text-align: center; margin: 32px 0 24px 0;">
+                    <a href="${compiledButtonUrl}" target="_blank" style="background: linear-gradient(135deg, #1e0a38 0%, #3b1473 100%); background-color: #1e0a38; color: #FFFFFF !important; font-size: 14px; font-weight: 700; text-decoration: none; padding: 14px 36px; border-radius: 8px; display: inline-block; letter-spacing: 0.3px; box-shadow: 0 4px 14px rgba(30, 10, 56, 0.25);">
+                      ${compiledButtonText} &rarr;
+                    </a>
+                    <div style="margin-top: 14px; font-size: 11px; color: #94A3B8; word-break: break-all; max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+                      If the button does not work, copy and paste this link into your browser:<br />
+                      <a href="${compiledButtonUrl}" style="color: #4338ca; text-decoration: underline;">${compiledButtonUrl}</a>
+                    </div>
+                  </div>
+                `
+                  : ""
+              }
+            </td>
+          </tr>
+
+          <!-- Clean SaaS Footer -->
+          <tr>
+            <td style="padding: 24px 36px; background-color: #F8FAFC; border-top: 1px solid #E2E8F0; text-align: center; font-size: 12px; color: #64748B; line-height: 1.6;">
+              <p style="margin: 0 0 6px 0; font-weight: 600; color: #475569;">
+                C2Talents Platform &bull; Connecting Students with Premier Institutions
+              </p>
+              <p style="margin: 0 0 12px 0;">
+                <a href="${appUrl}" style="color: #4338ca; text-decoration: none; font-weight: 600;">Official Website</a> &nbsp;|&nbsp;
+                <a href="mailto:support@c2talents.com" style="color: #4338ca; text-decoration: none; font-weight: 600;">Support Desk</a> &nbsp;|&nbsp;
+                <a href="${appUrl}/privacy" style="color: #64748B; text-decoration: none;">Privacy Policy</a>
+              </p>
+              <div style="border-top: 1px solid #E2E8F0; padding-top: 12px; margin-top: 12px; font-size: 11px; color: #94A3B8;">
+                &copy; ${new Date().getFullYear()} C2Talents Inc. All rights reserved. This is an automated official transmission delivered to an authorized institutional email.
+              </div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
   `.trim();

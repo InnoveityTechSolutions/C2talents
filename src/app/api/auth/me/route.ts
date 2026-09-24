@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     if (!token) {
       const cookieHeader = req.headers.get("cookie");
       if (cookieHeader) {
-        const match = cookieHeader.match(/(?:token|admin_token)=([^;]+)/);
+        const match = cookieHeader.match(/(?:^|;\s*)token=([^;]+)/);
         if (match) token = match[1];
       }
     }
@@ -35,6 +35,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ message: "Invalid token payload" }, { status: 401 });
     }
 
+    // Block admin/superadmin accounts from logging into the public user website
+    if (decoded.role === "ADMIN" || decoded.role === "SUPER_ADMIN" || decoded.role === "CONTENT_MANAGER") {
+      return NextResponse.json({ message: "Admin accounts cannot session in public student website." }, { status: 401 });
+    }
+
     let user = null;
     try {
       user = await db.user.findUnique({
@@ -46,6 +51,10 @@ export async function GET(req: Request) {
       });
     } catch (dbErr: any) {
       console.warn("[AUTH ME DB NOTICE]: Database unavailable, using token payload fallback:", dbErr?.message || dbErr);
+    }
+
+    if (user && (user.role === "ADMIN" || (user.role as any) === "SUPER_ADMIN")) {
+      return NextResponse.json({ message: "Admin accounts cannot session in public student website." }, { status: 401 });
     }
 
     if (!user) {

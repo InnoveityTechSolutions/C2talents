@@ -226,58 +226,59 @@ export default function AdminStudyAbroadLeadsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[1050px]">
               <thead>
-                <tr className="bg-stone-50 border-b border-stone-200 text-[10.5px] font-extrabold text-stone-500 uppercase tracking-wider">
-                  <th className="py-3.5 px-4">Student</th>
-                  <th className="py-3.5 px-4">Selected Country</th>
-                  <th className="py-3.5 px-4">Course & Qualification</th>
-                  <th className="py-3.5 px-4">Score & English Test</th>
-                  <th className="py-3.5 px-4">Budget & Intake</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4">Date</th>
-                  <th className="py-3.5 px-4 text-right">Action</th>
+                <tr className="bg-stone-50/80 border-b border-stone-200 text-[11px] font-extrabold text-stone-500 uppercase tracking-wider">
+                  <th className="py-3.5 px-4 min-w-[200px] whitespace-nowrap">Student</th>
+                  <th className="py-3.5 px-4 min-w-[170px] whitespace-nowrap">Selected Country</th>
+                  <th className="py-3.5 px-4 min-w-[180px] whitespace-nowrap">Course & Qualification</th>
+                  <th className="py-3.5 px-4 min-w-[140px] whitespace-nowrap">Score & English Test</th>
+                  <th className="py-3.5 px-4 min-w-[170px] whitespace-nowrap">Budget & Intake</th>
+                  <th className="py-3.5 px-4 min-w-[110px] whitespace-nowrap">Status</th>
+                  <th className="py-3.5 px-4 min-w-[110px] whitespace-nowrap">Date</th>
+                  <th className="py-3.5 px-4 min-w-[110px] text-right whitespace-nowrap">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 text-xs font-sans">
                 {leads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-purple-50/30 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <div className="font-bold text-[#1f0c3d]">{lead.studentName}</div>
-                      <div className="text-[11px] text-stone-500 font-mono">{lead.email}</div>
-                      <div className="text-[11px] text-stone-500">{lead.phone}</div>
+                  <tr key={lead.id} className="hover:bg-purple-50/40 transition-colors">
+                    <td className="py-4 px-4 align-top">
+                      <div className="font-bold text-[#1f0c3d] text-sm">{lead.studentName}</div>
+                      <div className="text-[11px] text-stone-500 font-mono mt-0.5 break-all select-all">{lead.email}</div>
+                      <div className="text-[11px] text-stone-500 mt-0.5">{lead.phone}</div>
                     </td>
 
-                    <td className="py-3.5 px-4">
-                      <span className="font-bold text-purple-900 bg-purple-50 border border-purple-200 px-2.5 py-1 rounded-lg">
-                        {lead.selectedCountry}
+                    <td className="py-4 px-4 align-top">
+                      <span className="inline-flex items-center gap-1.5 font-bold text-[#1f0c3d] bg-purple-50 border border-purple-200/90 px-2.5 py-1 rounded-lg text-xs whitespace-nowrap shadow-2xs">
+                        <Globe className="w-3.5 h-3.5 text-[#3b2075] shrink-0" />
+                        <span>{lead.selectedCountry}</span>
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-stone-900">{lead.preferredCourse}</div>
-                      <div className="text-[11px] text-stone-500">{lead.qualification}</div>
+                    <td className="py-4 px-4 align-top">
+                      <div className="font-semibold text-stone-900 leading-snug">{lead.preferredCourse}</div>
+                      <div className="text-[11px] text-stone-500 mt-0.5">{lead.qualification}</div>
                     </td>
 
-                    <td className="py-3.5 px-4">
+                    <td className="py-4 px-4 align-top">
                       <div className="font-semibold text-stone-800">Score: {lead.academicScore}</div>
-                      <div className="text-[11px] text-stone-500">
-                        {lead.englishTest}: {lead.englishScore || "N/A"}
+                      <div className="text-[11px] text-stone-500 mt-0.5">
+                        {lead.englishTest}: <span className="font-medium text-stone-700">{lead.englishScore || "N/A"}</span>
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-[#ea580c]">{lead.budget}</div>
-                      <div className="text-[11px] text-stone-500">{lead.preferredIntake}</div>
+                    <td className="py-4 px-4 align-top">
+                      <div className="font-bold text-[#ea580c] whitespace-nowrap leading-tight">{lead.budget}</div>
+                      <div className="text-[11px] text-stone-500 mt-0.5 leading-snug">{lead.preferredIntake}</div>
                     </td>
 
-                    <td className="py-3.5 px-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border ${getStatusBadge(lead.status)}`}>
+                    <td className="py-4 px-4 align-top">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border whitespace-nowrap tracking-wider ${getStatusBadge(lead.status)}`}>
                         {lead.status}
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4 text-stone-500 text-[11px]">
+                    <td className="py-4 px-4 align-top text-stone-500 text-[11px] font-medium whitespace-nowrap">
                       {new Date(lead.createdAt).toLocaleDateString("en-IN", {
                         day: "numeric",
                         month: "short",
@@ -285,10 +286,10 @@ export default function AdminStudyAbroadLeadsPage() {
                       })}
                     </td>
 
-                    <td className="py-3.5 px-4 text-right">
+                    <td className="py-4 px-4 align-top text-right whitespace-nowrap">
                       <button
                         onClick={() => openLeadDrawer(lead)}
-                        className="px-3 py-1.5 bg-[#3b2075] hover:bg-[#ea580c] text-white text-[11px] font-extrabold rounded-lg transition-all cursor-pointer shadow-2xs"
+                        className="inline-flex items-center justify-center px-3.5 py-1.5 bg-[#3b2075] hover:bg-[#ea580c] text-white text-[11px] font-extrabold rounded-lg transition-all cursor-pointer shadow-2xs hover:shadow-xs"
                       >
                         Inspect Lead
                       </button>

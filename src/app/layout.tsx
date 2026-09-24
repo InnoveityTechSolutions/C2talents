@@ -24,9 +24,9 @@ export const metadata: Metadata = {
   title: "C2Talents | India's Premium College Discovery & AI Counselor",
   description: "Get personalized college matches based on your scores, budget, and placements, guided by India's first AI-powered admissions counselor.",
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
   },
 };
 

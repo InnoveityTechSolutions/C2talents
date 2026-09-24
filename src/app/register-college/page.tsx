@@ -10,7 +10,6 @@ import {
   Globe,
   MapPin,
   FileText,
-  Sparkles,
   CheckCircle2,
   ArrowRight,
   ShieldCheck,
@@ -203,9 +202,6 @@ export default function CollegeRegistrationPage() {
         {/* Left Column: Platform Value Props & Dynamic AI Image Card */}
         <div className="lg:col-span-5 space-y-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-900 text-xs font-extrabold mb-4 shadow-2xs">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600 fill-amber-500" /> Direct Self-Service College Onboarding
-            </div>
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-[#2e266f] tracking-tight leading-tight">
               Join the Premier <span className="text-amber-600">C2Talents</span> Platform
             </h1>

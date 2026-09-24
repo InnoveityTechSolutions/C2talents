@@ -7,8 +7,9 @@ export function middleware(req: NextRequest) {
   // STRICT SECURITY RULE: Only admin_token grants access to Admin Manager routes
   const adminToken = req.cookies.get("admin_token")?.value;
 
-  const isManagerRoute = pathname.startsWith("/manager") || pathname.startsWith("/admin");
-  const isManagerLoginPage = pathname === "/manager/login" || pathname === "/admin/login";
+  const isSuperAdminRoute = pathname.startsWith("/superadmin") || pathname.startsWith("/super-admin");
+  const isManagerRoute = pathname.startsWith("/manager") || pathname.startsWith("/admin") || isSuperAdminRoute;
+  const isManagerLoginPage = pathname === "/manager/login" || pathname === "/admin/login" || pathname === "/superadmin/login" || pathname === "/super-admin/login";
 
   // Allow static assets, public registration, college portal & auth API endpoints without interference
   if (
@@ -22,6 +23,28 @@ export function middleware(req: NextRequest) {
     pathname.includes(".")
   ) {
     return NextResponse.next();
+  }
+
+  // Handle superadmin routes -> redirect to manager dashboard or login
+  if (isSuperAdminRoute) {
+    if (pathname === "/superadmin/login" || pathname === "/super-admin/login") {
+      return NextResponse.redirect(new URL("/manager/login", req.url));
+    }
+    if (adminToken) {
+      return NextResponse.redirect(new URL("/manager/dashboard", req.url));
+    } else {
+      return NextResponse.redirect(new URL("/manager/login", req.url));
+    }
+  }
+
+  // Handle admin routes -> redirect to corresponding manager routes
+  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
+    const managerEquivalent = pathname.replace(/^\/admin/, "/manager");
+    if (adminToken) {
+      return NextResponse.redirect(new URL(managerEquivalent, req.url));
+    } else {
+      return NextResponse.redirect(new URL("/manager/login", req.url));
+    }
   }
 
   // 1. Root /manager or /admin -> redirect to dashboard if adminToken exists, else login
@@ -41,7 +64,7 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // 3. If authenticated admin visits /manager/login -> Redirect to /manager/dashboard
+  // 3. If authenticated admin visits login pages -> Redirect to /manager/dashboard
   if (isManagerLoginPage && adminToken) {
     return NextResponse.redirect(new URL("/manager/dashboard", req.url));
   }
@@ -51,7 +74,13 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/manager",
     "/manager/:path*",
+    "/admin",
     "/admin/:path*",
+    "/superadmin",
+    "/superadmin/:path*",
+    "/super-admin",
+    "/super-admin/:path*",
   ],
 };

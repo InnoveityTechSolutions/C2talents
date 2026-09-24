@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 
 export async function GET(
   request: Request,
@@ -43,15 +44,35 @@ export async function PUT(
     if (body.scholarshipType !== undefined) updateData.scholarshipType = body.scholarshipType;
     if (body.description !== undefined) updateData.description = body.description;
     if (body.eligibilityCriteria !== undefined) updateData.eligibilityCriteria = body.eligibilityCriteria;
-    if (body.minPercentage !== undefined) updateData.minPercentage = body.minPercentage ? parseFloat(body.minPercentage) : null;
+    if (body.minPercentage !== undefined) {
+      updateData.minPercentage =
+        body.minPercentage !== null && body.minPercentage !== "" && !isNaN(Number(body.minPercentage))
+          ? parseFloat(body.minPercentage)
+          : null;
+    }
     if (body.eligibleCourses !== undefined) updateData.eligibleCourses = body.eligibleCourses;
     if (body.eligibleStates !== undefined) updateData.eligibleStates = body.eligibleStates;
-    if (body.familyIncomeLimit !== undefined) updateData.familyIncomeLimit = body.familyIncomeLimit ? parseFloat(body.familyIncomeLimit) : null;
+    if (body.familyIncomeLimit !== undefined) {
+      updateData.familyIncomeLimit =
+        body.familyIncomeLimit !== null && body.familyIncomeLimit !== "" && !isNaN(Number(body.familyIncomeLimit))
+          ? parseFloat(body.familyIncomeLimit)
+          : null;
+    }
     if (body.familyIncomeLimitText !== undefined) updateData.familyIncomeLimitText = body.familyIncomeLimitText;
     if (body.amount !== undefined) updateData.amount = body.amount;
-    if (body.amountValue !== undefined) updateData.amountValue = body.amountValue ? parseFloat(body.amountValue) : null;
+    if (body.amountValue !== undefined) {
+      updateData.amountValue =
+        body.amountValue !== null && body.amountValue !== "" && !isNaN(Number(body.amountValue))
+          ? parseFloat(body.amountValue)
+          : null;
+    }
     if (body.deadline !== undefined) updateData.deadline = body.deadline;
-    if (body.deadlineDate !== undefined) updateData.deadlineDate = body.deadlineDate ? new Date(body.deadlineDate) : null;
+    if (body.deadlineDate !== undefined) {
+      updateData.deadlineDate =
+        body.deadlineDate && !isNaN(new Date(body.deadlineDate).getTime())
+          ? new Date(body.deadlineDate)
+          : null;
+    }
     if (body.officialWebsite !== undefined) updateData.officialWebsite = body.officialWebsite;
     if (body.applyLink !== undefined) updateData.applyLink = body.applyLink;
     if (body.requiredDocuments !== undefined) updateData.requiredDocuments = body.requiredDocuments;
@@ -67,6 +88,12 @@ export async function PUT(
       where: { id },
       data: updateData,
     });
+
+    try {
+      revalidatePath("/scholarships");
+      revalidatePath("/api/scholarships");
+      revalidatePath("/manager/scholarships");
+    } catch (e) {}
 
     return NextResponse.json(scholarship);
   } catch (error) {
@@ -88,6 +115,12 @@ export async function DELETE(
       where: { id },
     });
 
+    try {
+      revalidatePath("/scholarships");
+      revalidatePath("/api/scholarships");
+      revalidatePath("/manager/scholarships");
+    } catch (e) {}
+
     return NextResponse.json({ message: "Scholarship deleted successfully" });
   } catch (error) {
     console.error("Admin API delete scholarship failed:", error);
@@ -97,3 +130,4 @@ export async function DELETE(
     );
   }
 }
+

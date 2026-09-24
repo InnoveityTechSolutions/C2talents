@@ -94,10 +94,6 @@ export function ExploreCourses() {
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-1">
           {/* Header */}
           <div className="space-y-1.5 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-white/10 text-amber-300 border border-white/15 text-[10.5px] font-extrabold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>EDITORIAL SHOWCASE</span>
-            </div>
 
             <h2 className="text-2xl sm:text-3xl font-serif text-white font-bold tracking-tight">
               Explore <span className="bg-gradient-to-r from-amber-300 via-orange-400 to-purple-300 bg-clip-text text-transparent">Courses by Level</span>

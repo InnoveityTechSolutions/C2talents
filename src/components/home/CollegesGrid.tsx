@@ -158,7 +158,7 @@ export function CollegesGrid({ colleges }: Props) {
                     <div className="pt-2 flex items-center gap-2">
                       <Link
                         href={`/colleges/${college.id}`}
-                        className="flex-1 text-center py-2.5 px-4 rounded-xl bg-brand-navy hover:bg-[#3b2075] active:bg-[#3b2075] focus:bg-[#3b2075] text-white text-xs font-bold transition-all duration-200 shadow-2xs cursor-pointer active:scale-[0.98]"
+                        className="flex-1 text-center py-2.5 px-4 rounded-xl bg-brand-navy hover:bg-[#ea580c] active:bg-[#ea580c] focus:bg-[#ea580c] text-white text-xs font-bold transition-all duration-200 shadow-2xs cursor-pointer active:scale-[0.98]"
                       >
                         View Details
                       </Link>

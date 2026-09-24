@@ -48,11 +48,13 @@ interface College {
 
 function CollegesContent() {
   const searchParams = useSearchParams();
+  const initialCourse = searchParams.get("course") || searchParams.get("program") || "";
   const initialCategory = searchParams.get("category") || searchParams.get("stream") || "";
   const initialLocation = searchParams.get("location") || "";
   const initialSearch = searchParams.get("search") || searchParams.get("q") || "";
 
   const [search, setSearch] = useState(initialSearch);
+  const [courseFilter, setCourseFilter] = useState(initialCourse);
   const [categoryFilter, setCategoryFilter] = useState(initialCategory);
   const [locationFilter, setLocationFilter] = useState(initialLocation);
   const [ownershipFilter, setOwnershipFilter] = useState("");
@@ -97,6 +99,8 @@ function CollegesContent() {
   useEffect(() => {
     const qParam = searchParams.get("search") || searchParams.get("q");
     if (qParam !== null) setSearch(qParam);
+    const crsParam = searchParams.get("course") || searchParams.get("program");
+    if (crsParam !== null) setCourseFilter(crsParam);
     const catParam = searchParams.get("category") || searchParams.get("stream");
     if (catParam !== null) setCategoryFilter(catParam);
     const locParam = searchParams.get("location");
@@ -113,6 +117,7 @@ function CollegesContent() {
       try {
         const params = new URLSearchParams();
         if (search) params.set("search", search);
+        if (courseFilter) params.set("course", courseFilter);
         if (categoryFilter) params.set("category", categoryFilter);
         if (locationFilter) params.set("location", locationFilter);
         if (ownershipFilter) params.set("ownership", ownershipFilter);
@@ -195,9 +200,6 @@ function CollegesContent() {
           <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100/70 border border-purple-200 text-[#2e266f] text-xs font-black uppercase tracking-wider mb-2">
-                  <Building2 className="w-3.5 h-3.5 text-amber-500" /> Global Smart Search Directory
-                </div>
                 <h1 className="text-3xl md:text-4xl font-black text-[#2e266f] tracking-tight">Find Your Ideal Institution</h1>
                 <p className="text-stone-600 text-xs md:text-sm mt-1 font-medium">
                   Search across verified colleges, locations, NAAC accreditation, government/private status, rankings, and distance radius.
@@ -291,8 +293,8 @@ function CollegesContent() {
                       onClick={() => setCategoryFilter(opt.value)}
                       className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all duration-200 border cursor-pointer shrink-0 flex items-center gap-1.5 ${
                         isSelected
-                          ? "bg-indigo-900 text-white border-indigo-900 shadow-md ring-2 ring-orange-300/50"
-                          : "bg-white text-stone-700 border-stone-200 hover:border-orange-500 hover:text-orange-600 hover:bg-orange-50/60 active:bg-orange-100 active:text-orange-600 shadow-2xs"
+                          ? "bg-[#ea580c] text-white border-[#ea580c] shadow-md ring-2 ring-orange-300/50"
+                          : "bg-white text-stone-700 border-stone-200 hover:border-[#ea580c] hover:bg-[#ea580c] hover:text-white active:bg-[#ea580c] active:text-white shadow-2xs"
                       }`}
                     >
                       <span>{opt.label}</span>
@@ -350,54 +352,64 @@ function CollegesContent() {
           </div>
         </div>
 
-        {/* Results Banner */}
-        <div className="max-w-7xl mx-auto px-6 pt-6 pb-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200/80 shadow-2xs">
-            <div className="flex items-center gap-2.5">
-              <span className={`w-2.5 h-2.5 rounded-full ${colleges.length > 0 ? "bg-emerald-500 animate-pulse" : "bg-amber-500"} shrink-0`} />
-              <div className="flex items-center gap-2 flex-wrap text-sm sm:text-base font-extrabold text-[#2e266f] tracking-tight">
-                {search ? (
-                  <>
-                    <span>SEARCH RESULTS</span>
-                    <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-orange-50 text-orange-600 border border-orange-200/80 font-black text-xs sm:text-sm shadow-2xs">
-                      {colleges.length} {colleges.length === 1 ? "COLLEGE FOUND" : "COLLEGES FOUND"}
-                    </span>
-                    <span className="text-stone-600 font-medium text-xs sm:text-sm">
-                      FOR &quot;<span className="text-stone-900 font-extrabold">{search}</span>&quot;
-                    </span>
-                  </>
-                ) : categoryFilter ? (
-                  <>
-                    <span>SHOWING</span>
-                    <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-orange-50 text-orange-600 border border-orange-200/80 font-black text-xs sm:text-sm shadow-2xs">
-                      {colleges.length} {categoryFilter.toUpperCase()} COLLEGES
-                    </span>
-                    <span className="text-stone-600 font-medium text-xs sm:text-sm">IN DATABASE</span>
-                  </>
-                ) : (
-                  <>
-                    <span>SHOWING</span>
-                    <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-orange-50 text-orange-600 border border-orange-200/80 font-black text-xs sm:text-sm shadow-2xs">
-                      {colleges.length} TOTAL VERIFIED COLLEGES
-                    </span>
-                    <span className="text-stone-600 font-medium text-xs sm:text-sm">IN DATABASE</span>
-                  </>
-                )}
+        {/* Results Banner (only when colleges are found) */}
+        {!loading && !errorMessage && colleges.length > 0 && (
+          <div className="max-w-7xl mx-auto px-6 pt-6 pb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200/80 shadow-2xs">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <div className="flex items-center gap-2 flex-wrap text-sm sm:text-base font-extrabold text-[#2e266f] tracking-tight">
+                  {search ? (
+                    <>
+                      <span>SEARCH RESULTS</span>
+                      <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-orange-50 text-orange-600 border border-orange-200/80 font-black text-xs sm:text-sm shadow-2xs">
+                        {colleges.length} {colleges.length === 1 ? "COLLEGE FOUND" : "COLLEGES FOUND"}
+                      </span>
+                      <span className="text-stone-600 font-medium text-xs sm:text-sm">
+                        FOR &quot;<span className="text-stone-900 font-extrabold">{search}</span>&quot;
+                      </span>
+                    </>
+                  ) : courseFilter ? (
+                    <>
+                      <span>SHOWING</span>
+                      <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-orange-50 text-orange-600 border border-orange-200/80 font-black text-xs sm:text-sm shadow-2xs">
+                        {colleges.length} {courseFilter.toUpperCase()} COLLEGES
+                      </span>
+                      <span className="text-stone-600 font-medium text-xs sm:text-sm">OFFERING THIS PROGRAM</span>
+                    </>
+                  ) : categoryFilter ? (
+                    <>
+                      <span>SHOWING</span>
+                      <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-orange-50 text-orange-600 border border-orange-200/80 font-black text-xs sm:text-sm shadow-2xs">
+                        {colleges.length} {categoryFilter.toUpperCase()} COLLEGES
+                      </span>
+                      <span className="text-stone-600 font-medium text-xs sm:text-sm">IN DATABASE</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>SHOWING</span>
+                      <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-orange-50 text-orange-600 border border-orange-200/80 font-black text-xs sm:text-sm shadow-2xs">
+                        {colleges.length} TOTAL VERIFIED COLLEGES
+                      </span>
+                      <span className="text-stone-600 font-medium text-xs sm:text-sm">IN DATABASE</span>
+                    </>
+                  )}
+                </div>
               </div>
+
+              {userCoords && (
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200 shrink-0 flex items-center gap-1.5">
+                  <Navigation className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
+                  Sorted by Distance (User Location Active)
+                </span>
+              )}
             </div>
-
-            {userCoords && (
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200 shrink-0 flex items-center gap-1.5">
-                <Navigation className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
-                Sorted by Distance (User Location Active)
-              </span>
-            )}
           </div>
-        </div>
+        )}
 
-        {/* College Grid */}
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          {loading ? (
+        {/* Loading Skeleton */}
+        {loading && (
+          <div className="max-w-7xl mx-auto px-6 py-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="bg-white border border-stone-200 rounded-2xl overflow-hidden animate-pulse-subtle">
@@ -410,36 +422,114 @@ function CollegesContent() {
                 </div>
               ))}
             </div>
-          ) : errorMessage ? (
-            <div className="text-center py-20 bg-rose-50 border border-rose-200 rounded-3xl p-8 max-w-xl mx-auto space-y-3">
-              <h3 className="text-lg font-bold text-rose-700">{errorMessage}</h3>
-              <p className="text-xs text-rose-600">The server or database is temporarily unreachable. Please check connection.</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {!loading && errorMessage && (
+          <div className="w-full bg-[#090e24] min-h-[70vh] flex items-center justify-center px-6 py-16">
+            <div className="max-w-xl mx-auto text-center space-y-4 bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
+              <h3 className="text-xl font-bold text-rose-400">{errorMessage}</h3>
+              <p className="text-sm text-white/70">The server or database is temporarily unreachable. Please check your connection or try again.</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-2.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-extrabold uppercase tracking-wider transition-all shadow-md"
+              >
+                Retry
+              </button>
             </div>
-          ) : colleges.length === 0 ? (
-            <div className="text-center py-20 px-6 bg-white border border-stone-200/80 rounded-3xl max-w-lg mx-auto space-y-4 shadow-sm my-4">
-              <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-amber-600">
-                <Building2 className="w-8 h-8" />
+          </div>
+        )}
+
+        {/* Full-Screen 404 Not Found State */}
+        {!loading && !errorMessage && colleges.length === 0 && (
+          <section className="w-full bg-[#090e24] min-h-[75vh] flex items-center justify-center px-6 py-16 sm:py-24 border-t border-white/5">
+            <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-center gap-10 md:gap-16 w-full">
+              {/* Left: Oops Illustration */}
+              <div className="flex-shrink-0">
+                <img
+                  src="/images/no-colleges-found.jpg"
+                  alt="No colleges found"
+                  className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 object-contain drop-shadow-2xl select-none"
+                  draggable={false}
+                />
               </div>
-              <h3 className="text-xl font-black text-[#2e266f] tracking-tight uppercase">NO COLLEGES FOUND</h3>
-              <p className="text-sm text-stone-600 font-medium leading-relaxed">
-                No colleges matching &quot;<strong>{search || categoryFilter || locationFilter}</strong>&quot; were found{locationFilter ? ` in ${locationFilter}` : ""}.
-              </p>
-              <div className="pt-2 flex flex-col gap-1.5 text-xs font-semibold text-stone-500 bg-stone-50 p-4 rounded-xl border border-stone-100 text-left">
-                <span className="font-bold text-stone-700">Suggestions:</span>
-                <span>• Search for another city or broader region</span>
-                <span>• Check spelling or try a different academic stream</span>
-                <span>• Clear specific ownership or budget filters</span>
-              </div>
-              <div className="pt-2">
-                <button
-                  onClick={() => { setCategoryFilter(""); setOwnershipFilter(""); setFeesFilter(""); setSearch(""); setLocationFilter(""); }}
-                  className="px-5 py-2.5 bg-[#2e266f] text-white text-xs font-extrabold rounded-xl hover:bg-[#3d338f] transition-all shadow-md cursor-pointer"
-                >
-                  Clear Search & Filters
-                </button>
+
+              {/* Right: Text content & Quick Actions */}
+              <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-5 max-w-lg">
+                <p className="text-7xl sm:text-8xl md:text-9xl font-black text-white leading-none tracking-tight" style={{ fontFamily: "serif" }}>
+                  404
+                </p>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
+                  Sorry, no colleges found
+                  {locationFilter ? (
+                    <span className="block text-orange-400 text-xl sm:text-2xl font-bold mt-1">
+                      in &quot;{locationFilter}&quot;
+                    </span>
+                  ) : courseFilter ? (
+                    <span className="block text-orange-400 text-xl sm:text-2xl font-bold mt-1">
+                      offering &quot;{courseFilter}&quot;
+                    </span>
+                  ) : search || categoryFilter ? (
+                    <span className="block text-orange-400 text-xl sm:text-2xl font-bold mt-1">
+                      for &quot;{search || categoryFilter}&quot;
+                    </span>
+                  ) : null}
+                </h2>
+                <p className="text-sm sm:text-base text-white/70 font-medium leading-relaxed">
+                  We couldn&apos;t find any verified colleges offering this program or matching your filters. Try adjusting your search keywords, clearing filters, or exploring popular institutions.
+                </p>
+
+                {/* Action buttons */}
+                <div className="flex flex-wrap gap-3.5 pt-2 justify-center md:justify-start">
+                  <button
+                    onClick={() => { setCourseFilter(""); setCategoryFilter(""); setOwnershipFilter(""); setFeesFilter(""); setSearch(""); setLocationFilter(""); }}
+                    className="px-6 py-3 rounded-full border border-white/30 text-white text-xs sm:text-sm font-extrabold hover:bg-white/10 transition-all cursor-pointer tracking-wider uppercase"
+                  >
+                    Clear Filters
+                  </button>
+                  <a
+                    href="/colleges"
+                    className="px-6 py-3 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm font-extrabold transition-all cursor-pointer tracking-wider uppercase shadow-lg hover:shadow-orange-500/25"
+                  >
+                    Browse All Colleges
+                  </a>
+                  <a
+                    href="/"
+                    className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-extrabold border border-white/20 transition-all cursor-pointer tracking-wider uppercase"
+                  >
+                    Home
+                  </a>
+                </div>
+
+                {/* Popular City Chips */}
+                <div className="pt-4 border-t border-white/10 w-full">
+                  <p className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2.5">
+                    Popular Destinations:
+                  </p>
+                  <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                    {["chennai", "coimbatore", "madurai", "trichy", "salem", "bangalore"].map((city) => (
+                      <button
+                        key={city}
+                        onClick={() => {
+                          setLocationFilter(city);
+                          setSearch("");
+                        }}
+                        className="px-3 py-1 rounded-full text-xs font-bold bg-white/10 hover:bg-white/20 text-white/90 border border-white/15 transition-all cursor-pointer capitalize"
+                      >
+                        {city}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-          ) : (
+          </section>
+        )}
+
+        {/* College Grid (only when colleges are present) */}
+        {!loading && !errorMessage && colleges.length > 0 && (
+          <div className="max-w-7xl mx-auto px-6 py-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {colleges.map((college, i) => (
                 <motion.div
@@ -544,8 +634,8 @@ function CollegesContent() {
                 </motion.div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </main>
       <Footer />
     </>

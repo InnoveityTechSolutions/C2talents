@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Mail, Smartphone, CheckCircle2, Sparkles, Send, BellRing } from "lucide-react";
+import { Mail, Smartphone, CheckCircle2, Sparkles, Send } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function NewsletterBanner() {
@@ -56,20 +56,7 @@ export function NewsletterBanner() {
           {/* Subtle top border glowing orange accent bar */}
           <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-[#ea580c] via-[#f97316] to-[#amber-500]" />
 
-          {/* Floating Category Pill */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-100/90 text-orange-950 border border-orange-200/90 text-[11px] font-extrabold uppercase tracking-wider shadow-2xs"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ea580c] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#ea580c]"></span>
-            </span>
-            <BellRing className="w-3.5 h-3.5 text-[#ea580c]" />
-            <span>Instant Admission Alerts</span>
-          </motion.div>
+
 
           {/* Header Section */}
           <div className="space-y-3 max-w-2xl mx-auto">
@@ -112,9 +99,8 @@ export function NewsletterBanner() {
               className="relative w-full md:w-1/2"
             >
               <div
-                className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-                  focusedInput === "email" ? "text-[#ea580c]" : "text-stone-400"
-                }`}
+                className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedInput === "email" ? "text-[#ea580c]" : "text-stone-400"
+                  }`}
               >
                 <Mail className="w-4 h-4" />
               </div>
@@ -137,9 +123,8 @@ export function NewsletterBanner() {
               className="relative w-full md:w-1/2"
             >
               <div
-                className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-                  focusedInput === "mobile" ? "text-[#ea580c]" : "text-stone-400"
-                }`}
+                className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedInput === "mobile" ? "text-[#ea580c]" : "text-stone-400"
+                  }`}
               >
                 <Smartphone className="w-4 h-4" />
               </div>
@@ -165,7 +150,7 @@ export function NewsletterBanner() {
             >
               {/* Shine Sweep Effect */}
               <div className="absolute inset-0 w-1/2 h-full bg-white/25 skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-1000 ease-in-out" />
-              
+
               <span>Subscribe</span>
               <Send className="w-3.5 h-3.5 text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
             </motion.button>

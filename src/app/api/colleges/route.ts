@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { parseSearchIntentAI, generateMatchReasons, StructuredSearchIntent } from "@/lib/search/aiSearchParser";
 import { calculateHaversineDistance, formatDistance, getCollegeCoordinates, CITY_COORDINATES } from "@/lib/search/haversine";
+import { detectCourseFromQuery, getPrismaCourseRelationalFilter, isCollegeOfferingCourse } from "@/lib/courses/courseNormalizer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -11,12 +12,16 @@ export async function GET(req: Request) {
 
   // 1. Raw Query Parameters
   const searchInput = searchParams.get("search") || searchParams.get("q") || "";
+  const explicitCourse = searchParams.get("course") || searchParams.get("program") || "";
   const explicitCategory = searchParams.get("category") || searchParams.get("stream") || "";
   const explicitOwnership = searchParams.get("ownership") || searchParams.get("type") || "";
   const explicitLocation = searchParams.get("location") || "";
   const explicitNaac = searchParams.get("naacGrade") || "";
   const explicitMaxFees = searchParams.get("maxFees") ? parseFloat(searchParams.get("maxFees")!) : null;
   const minAvgPackage = searchParams.get("minAveragePackage") ? parseFloat(searchParams.get("minAveragePackage")!) : null;
+
+  // Strict Course Normalization & Detection
+  const targetCourse = detectCourseFromQuery(explicitCourse) || detectCourseFromQuery(searchInput);
 
   // Lat / Lng parameters (from browser geolocation)
   const latParam = searchParams.get("lat");
@@ -88,8 +93,10 @@ export async function GET(req: Request) {
       });
     }
 
-    // MULTI-DOMAIN CANDIDATE MATCHING IN PRISMA
-    if (parsedIntent.domains && parsedIntent.domains.length > 0 && parsedIntent.intent !== "COMPARE") {
+    // STRICT COURSE FILTERING (Prisma Relational Course Check)
+    if (targetCourse) {
+      andConditions.push(getPrismaCourseRelationalFilter(targetCourse));
+    } else if (parsedIntent.domains && parsedIntent.domains.length > 0 && parsedIntent.intent !== "COMPARE") {
       const domainOrFilters: any[] = [];
 
       parsedIntent.domains.forEach((dom) => {
@@ -148,7 +155,7 @@ export async function GET(req: Request) {
       if (domainOrFilters.length > 0) {
         andConditions.push({ OR: domainOrFilters });
       }
-    } else if (category) {
+    } else if (category && !targetCourse) {
       andConditions.push({
         OR: [
           { category: { contains: category } },
@@ -238,14 +245,19 @@ export async function GET(req: Request) {
     const dbColleges = await db.collegeProfile.findMany({
       where,
       include: {
-        courses: { take: 10 },
+        courses: { where: { isDeleted: false } },
         reviews: { take: 5, orderBy: { createdAt: "desc" } },
       },
       take: 100,
     });
 
-    // 3. HARD LOCATION & DOMAIN RELEVANCE CHECK BEFORE DISPLAY (Requirement 4 & 21)
+    // 3. HARD COURSE, LOCATION & DOMAIN RELEVANCE CHECK BEFORE DISPLAY
     const filteredColleges = dbColleges.filter((c) => {
+      // ZERO-TOLERANCE COURSE VALIDATION
+      if (targetCourse && !isCollegeOfferingCourse(c, targetCourse)) {
+        return false;
+      }
+
       const nameL = c.name.toLowerCase();
       const locL = (c.location || "").toLowerCase();
       const cityL = (c.city || "").toLowerCase();

@@ -108,7 +108,7 @@ export default function StudentApplicationsDashboard() {
                 C2<span className="text-amber-400">Talents</span>
               </span>
               <span className="text-[10px] text-amber-300 font-extrabold uppercase tracking-wider block">
-                Student Admission Tracker
+                Student Applications Portal
               </span>
             </div>
           </Link>
@@ -128,7 +128,7 @@ export default function StudentApplicationsDashboard() {
         <div className="bg-white p-5 rounded-3xl border border-purple-100 shadow-sm flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-base font-black text-[#1c0b36]">My Admission Applications</h1>
-            <p className="text-xs text-slate-500 font-medium">Track your submitted college applications and status updates in real-time.</p>
+            <p className="text-xs text-slate-500 font-medium">View your submitted college applications and status updates in real-time.</p>
           </div>
 
           <form onSubmit={handleManualSearch} className="flex items-center gap-2">
@@ -202,7 +202,7 @@ export default function StudentApplicationsDashboard() {
               })}
             </div>
 
-            {/* Right Application Detail Tracker */}
+            {/* Right Application Detail */}
             {selectedApp && (
               <div className="md:col-span-2 bg-white p-6 rounded-3xl border border-purple-100 shadow-sm space-y-6">
                 <div className="flex items-center justify-between border-b border-purple-100 pb-4">
@@ -215,7 +215,7 @@ export default function StudentApplicationsDashboard() {
                   <div>{getStatusBadge(selectedApp.status)}</div>
                 </div>
 
-                {/* Progress Tracker Bar */}
+                {/* Progress Timeline Bar */}
                 <div className="space-y-2 bg-purple-50/70 p-4 rounded-2xl border border-purple-100">
                   <span className="text-xs font-black text-[#1c0b36] block">Admission Process Timeline</span>
                   <div className="grid grid-cols-4 gap-2 text-center text-[10.5px] font-bold">

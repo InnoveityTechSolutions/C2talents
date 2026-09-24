@@ -55,7 +55,7 @@ const FALLBACK_SCHOLARSHIPS_LIST: ScholarshipItem[] = REAL_SCHOLARSHIPS_100.map(
 
 export function ScholarshipsClient({ initialScholarships }: Props) {
   const [scholarships, setScholarships] = useState<ScholarshipItem[]>(
-    initialScholarships && initialScholarships.length > 0 ? initialScholarships : FALLBACK_SCHOLARSHIPS_LIST
+    Array.isArray(initialScholarships) ? initialScholarships : FALLBACK_SCHOLARSHIPS_LIST
   );
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -69,7 +69,7 @@ export function ScholarshipsClient({ initialScholarships }: Props) {
 
   useEffect(() => {
     setIsMounted(true);
-    if (initialScholarships && initialScholarships.length > 0) {
+    if (Array.isArray(initialScholarships)) {
       setScholarships(initialScholarships);
     } else {
       setLoading(true);
@@ -81,7 +81,7 @@ export function ScholarshipsClient({ initialScholarships }: Props) {
           return res.json();
         })
         .then((data) => {
-          if (Array.isArray(data) && data.length > 0) {
+          if (Array.isArray(data)) {
             setScholarships(data);
           } else {
             setScholarships(FALLBACK_SCHOLARSHIPS_LIST);
@@ -777,7 +777,7 @@ function ScholarshipCard({
           <button
             onClick={() => onSelect(s)}
             suppressHydrationWarning
-            className="w-full py-2 px-3 bg-white hover:bg-[#3b2075] hover:border-[#3b2075] hover:text-white active:bg-[#3b2075] active:border-[#3b2075] active:text-white focus:bg-[#3b2075] focus:text-white text-stone-800 font-extrabold text-xs rounded-xl border border-stone-200/90 transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs group active:scale-[0.98]"
+            className="w-full py-2 px-3 bg-white hover:bg-[#ea580c] hover:border-[#ea580c] hover:text-white active:bg-[#ea580c] active:border-[#ea580c] active:text-white focus:bg-[#ea580c] focus:border-[#ea580c] focus:text-white text-stone-800 font-extrabold text-xs rounded-xl border border-stone-200/90 transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs group active:scale-[0.98]"
           >
             <FileText className="w-3.5 h-3.5 text-indigo-900 group-hover:text-white group-active:text-white transition-colors" />
             <span>View Details</span>

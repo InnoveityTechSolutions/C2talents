@@ -32,22 +32,23 @@ import { EligibilityModal } from "@/components/study-abroad/EligibilityModal";
 export default function CountryDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const slug = (params.slug as string) || "usa";
+  const rawSlug = Array.isArray(params?.slug) ? params.slug[0] : (params?.slug as string);
+  const slug = (rawSlug || "usa").toLowerCase();
 
   const [loading, setLoading] = React.useState(true);
   const [country, setCountry] = React.useState<any>(null);
   const [universities, setUniversities] = React.useState<any[]>([]);
-  const [selectedCourse, setSelectedCourse] = React.useState<string>("");
   const [isEligibilityOpen, setIsEligibilityOpen] = React.useState(false);
 
   React.useEffect(() => {
-    fetchCountryData(selectedCourse);
-  }, [slug, selectedCourse]);
+    if (!slug) return;
+    fetchCountryData();
+  }, [slug]);
 
-  async function fetchCountryData(courseFilter: string = "") {
+  async function fetchCountryData() {
     setLoading(true);
     try {
-      const url = `/api/study-abroad/countries/${slug}${courseFilter ? `?course=${encodeURIComponent(courseFilter)}` : ""}`;
+      const url = `/api/study-abroad/countries/${encodeURIComponent(slug)}`;
       const res = await fetch(url);
       if (!res.ok) {
         console.error("Failed response status:", res.status);
@@ -56,7 +57,7 @@ export default function CountryDetailPage() {
       }
       const data = await res.json();
 
-      if (data.success) {
+      if (data.success && data.country) {
         setCountry(data.country);
         setUniversities(data.universities || []);
       } else {
@@ -67,14 +68,6 @@ export default function CountryDetailPage() {
       setCountry(null);
     } finally {
       setLoading(false);
-    }
-  }
-
-  function handleCourseSelect(courseName: string) {
-    if (selectedCourse === courseName) {
-      setSelectedCourse("");
-    } else {
-      setSelectedCourse(courseName);
     }
   }
 
@@ -283,56 +276,7 @@ export default function CountryDetailPage() {
         </div>
       </section>
 
-      {/* 3. POPULAR COURSES & COURSE + COUNTRY FILTERING */}
-      <section className="py-16 px-6 bg-white border-y border-stone-200/60">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20 text-[11px] font-extrabold uppercase tracking-wider">
-                <BookOpen className="w-3.5 h-3.5 text-amber-600" />
-                <span>Course & Discipline Finder</span>
-              </div>
-              <h2 className="text-3xl font-serif font-bold text-[#1f0c3d]">
-                Popular Courses in {country.name}
-              </h2>
-              <p className="text-xs sm:text-sm text-stone-500 font-sans">
-                Click a course below to filter top universities offering that specific discipline in {country.name}.
-              </p>
-            </div>
-
-            {selectedCourse && (
-              <button
-                onClick={() => setSelectedCourse("")}
-                className="text-xs font-bold text-rose-600 hover:text-rose-700 underline flex items-center gap-1"
-              >
-                Clear Filter ({selectedCourse})
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            {coursesList.map((courseName) => {
-              const isSelected = selectedCourse === courseName;
-              return (
-                <button
-                  key={courseName}
-                  onClick={() => handleCourseSelect(courseName)}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer border flex items-center gap-2 ${
-                    isSelected
-                      ? "bg-[#3b2075] text-white border-[#3b2075] shadow-md scale-105"
-                      : "bg-stone-50 hover:bg-purple-50/60 text-stone-700 border-stone-200"
-                  }`}
-                >
-                  <span>{courseName}</span>
-                  {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-amber-300" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* 4. TOP UNIVERSITIES */}
+      {/* 3. TOP UNIVERSITIES */}
       <section id="universities" className="py-20 px-6 max-w-7xl mx-auto space-y-10">
         <div className="space-y-2 text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-purple-900/5 text-[#3b2075] border border-purple-900/15 text-[11px] font-extrabold uppercase tracking-wider">
@@ -343,25 +287,17 @@ export default function CountryDetailPage() {
             Top Universities in {country.name}
           </h2>
           <p className="text-sm text-stone-500 font-sans">
-            {selectedCourse
-              ? `Showing top institutions offering ${selectedCourse} in ${country.name}`
-              : `Explore leading institutions, tuition structures, and available program tracks.`}
+            Explore leading institutions, tuition structures, and available program tracks.
           </p>
         </div>
 
         {universities.length === 0 ? (
           <div className="p-10 text-center bg-white border border-stone-200 rounded-3xl space-y-3">
             <HelpCircle className="w-10 h-10 text-stone-400 mx-auto" />
-            <h3 className="font-bold text-stone-800 text-base">No Matching Universities Found</h3>
+            <h3 className="font-bold text-stone-800 text-base">No Universities Found</h3>
             <p className="text-xs text-stone-500 max-w-md mx-auto">
-              No institutions currently match the selected course filter &quot;{selectedCourse}&quot;. Try clearing the filter to view all institutions.
+              No institutions currently found for {country.name}.
             </p>
-            <button
-              onClick={() => setSelectedCourse("")}
-              className="px-5 py-2 bg-[#3b2075] text-white text-xs font-bold rounded-xl"
-            >
-              Show All Universities
-            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
@@ -433,7 +369,7 @@ export default function CountryDetailPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <Link
                       href={`/colleges/${uni.slug || uni.id}`}
-                      className="py-2.5 border border-stone-300 hover:bg-[#3b2075] hover:border-[#3b2075] hover:text-white active:bg-[#3b2075] active:border-[#3b2075] active:text-white focus:bg-[#3b2075] focus:text-white text-stone-700 font-bold text-xs rounded-xl text-center transition-all cursor-pointer active:scale-[0.98]"
+                      className="py-2.5 border border-stone-300 hover:bg-[#ea580c] hover:border-[#ea580c] hover:text-white active:bg-[#ea580c] active:border-[#ea580c] active:text-white focus:bg-[#ea580c] focus:border-[#ea580c] focus:text-white text-stone-700 font-bold text-xs rounded-xl text-center transition-all cursor-pointer active:scale-[0.98]"
                     >
                       View Details
                     </Link>
@@ -659,7 +595,7 @@ export default function CountryDetailPage() {
         isOpen={isEligibilityOpen}
         onClose={() => setIsEligibilityOpen(false)}
         defaultCountry={country.name}
-        defaultCourse={selectedCourse || coursesList[0] || "Computer Science"}
+        defaultCourse={coursesList[0] || "Computer Science"}
       />
     </div>
   );

@@ -175,16 +175,11 @@ export function Footer() {
                   </span>
                 </Link>
               </li>
+
               <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/tracker" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
+                <Link href="/news" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
                   <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
-                  <span>Application Tracker</span>
-                </Link>
-              </li>
-              <li className="border-b border-indigo-900/30 py-2.5">
-                <Link href="/scholarships" className="hover:text-orange-400 transition-colors flex items-center gap-2 group w-full">
-                  <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform">→</span>
-                  <span>Scholarship Hub</span>
+                  <span>News & Exam Alerts</span>
                 </Link>
               </li>
               <li className="py-2.5">
@@ -200,14 +195,14 @@ export function Footer() {
 
       {/* Footer Bottom copyright area */}
       <div className="relative z-10 bg-indigo-950 border-t border-indigo-900/20 py-6 text-center text-xs text-stone-500">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <span>© 2026 C2Talents. All rights reserved.</span>
-          </div>
-          <div className="flex space-x-6 text-[11px] font-semibold text-stone-400">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center justify-center gap-3 text-center">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-[11px] font-semibold text-stone-400">
             <Link href="/" className="hover:text-orange-400 transition-colors">Terms of Service</Link>
             <Link href="/" className="hover:text-orange-400 transition-colors">Privacy Policy</Link>
             <Link href="/" className="hover:text-orange-400 transition-colors">Disclaimer</Link>
+          </div>
+          <div>
+            <span>© 2026 C2Talents. All rights reserved.</span>
           </div>
         </div>
       </div>

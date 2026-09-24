@@ -23,6 +23,7 @@ import {
   ImageIcon,
   Award,
   UserCheck,
+  SearchCheck,
 } from "lucide-react";
 
 const navItems = [
@@ -37,6 +38,7 @@ const navItems = [
   { name: "Add College (AI)", href: "/manager/colleges/new", icon: PlusCircle, highlight: true },
   { name: "Categories", href: "/manager/categories", icon: FolderTree },
   { name: "Courses", href: "/manager/courses", icon: BookOpen },
+  { name: "SEO Management", href: "/manager/seo", icon: SearchCheck },
   { name: "News & Alerts", href: "/manager/news", icon: Newspaper },
   { name: "Users & Leads", href: "/manager/users", icon: Users },
   { name: "Analytics", href: "/manager/analytics", icon: BarChart3 },

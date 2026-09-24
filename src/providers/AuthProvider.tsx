@@ -59,6 +59,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const me = await res.json();
+      if (me.role === "ADMIN" || me.role === "SUPER_ADMIN" || me.role === "CONTENT_MANAGER") {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       if (me.token && typeof window !== "undefined") {
         localStorage.setItem("token", me.token);
       }
