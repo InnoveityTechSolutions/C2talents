@@ -24,7 +24,13 @@ import {
   Award,
   UserCheck,
   SearchCheck,
+  X,
 } from "lucide-react";
+
+interface AdminSidebarProps {
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}
 
 const navItems = [
   { name: "Dashboard", href: "/manager/dashboard", icon: LayoutDashboard },
@@ -46,7 +52,7 @@ const navItems = [
   { name: "SMTP Settings", href: "/manager/settings/smtp", icon: Mail },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebarProps) {
   const pathname = usePathname();
 
   async function handleLogout() {
@@ -58,20 +64,48 @@ export function AdminSidebar() {
   }
 
   return (
-    <aside className="w-60 bg-[#1f0c3d] text-purple-200 flex flex-col border-r border-[#3b2075]/40 shrink-0 h-full z-30 font-sans shadow-xl select-none">
-      {/* Brand Header */}
-      <div className="p-4 border-b border-[#3b2075]/40 flex items-center justify-between shrink-0 bg-[#16082d]">
-        <Link href="/manager/dashboard" className="flex items-center gap-2.5 group">
-          <img
-            src="/logo.png"
-            alt="C2Talents Logo"
-            className="h-7 w-auto object-contain brightness-0 invert opacity-95 group-hover:opacity-100 group-hover:scale-105 transition-all"
-          />
-          <span className="text-[9.5px] uppercase tracking-widest text-amber-400 font-black flex items-center gap-1 leading-tight shrink-0">
-            <Sparkles className="w-2.5 h-2.5 text-amber-300 animate-pulse" /> ADMIN PORTAL
-          </span>
-        </Link>
-      </div>
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {mobileOpen && (
+        <div
+          onClick={onCloseMobile}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 md:hidden transition-opacity duration-300"
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] bg-[#1f0c3d] text-purple-200 flex flex-col border-r border-[#3b2075]/40 font-sans shadow-2xl select-none transition-transform duration-300 ease-in-out
+          md:static md:w-60 md:h-full md:z-30 md:translate-x-0 md:shrink-0
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+        `}
+      >
+        {/* Brand Header */}
+        <div className="p-4 border-b border-[#3b2075]/40 flex items-center justify-between shrink-0 bg-[#16082d]">
+          <Link
+            href="/manager/dashboard"
+            onClick={() => onCloseMobile?.()}
+            className="flex items-center gap-2.5 group"
+          >
+            <img
+              src="/logo.png"
+              alt="C2Talents Logo"
+              className="h-7 w-auto object-contain brightness-0 invert opacity-95 group-hover:opacity-100 group-hover:scale-105 transition-all"
+            />
+            <span className="text-[9.5px] uppercase tracking-widest text-amber-400 font-black flex items-center gap-1 leading-tight shrink-0">
+              <Sparkles className="w-2.5 h-2.5 text-amber-300 animate-pulse" /> ADMIN PORTAL
+            </span>
+          </Link>
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            className="md:hidden p-1.5 rounded-lg text-purple-300 hover:text-white hover:bg-[#3b2075]/60 transition-colors cursor-pointer"
+            aria-label="Close Sidebar"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
       {/* Main Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -93,6 +127,7 @@ export function AdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => onCloseMobile?.()}
               className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
                 isActive
                   ? "bg-[#3b2075]/60 text-amber-300 border border-amber-500/40 shadow-xs"
@@ -132,5 +167,6 @@ export function AdminSidebar() {
         </a>
       </div>
     </aside>
+    </>
   );
 }

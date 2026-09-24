@@ -120,25 +120,25 @@ export function AdminDashboardView() {
   ];
 
   return (
-    <div className="space-y-8 pb-12 font-sans text-stone-900 w-full max-w-none">
+    <div className="space-y-6 sm:space-y-8 pb-12 font-sans text-stone-900 w-full max-w-none">
       {/* 1. HEADER BANNER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#1f0c3d] via-[#2d1659] to-[#3b2075] text-white p-6 rounded-3xl shadow-lg border border-[#3b2075]/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#1f0c3d] via-[#2d1659] to-[#3b2075] text-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-lg border border-[#3b2075]/60">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-amber-500/20 text-amber-300 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-amber-500/30 flex items-center gap-1">
               <ShieldCheck className="w-3 h-3 text-amber-300" /> Live Database Engine
             </span>
           </div>
-          <h1 className="text-2xl font-black tracking-tight">Enterprise Overview Metrics</h1>
+          <h1 className="text-xl sm:text-2xl font-black tracking-tight">Enterprise Overview Metrics</h1>
           <p className="text-xs text-purple-200/80 font-medium mt-0.5">
             Real-time live database metrics, recent activities & portal statistics across C2Talents.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button
             onClick={fetchDashboardData}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#3b2075]/70 hover:bg-[#3b2075] text-purple-100 text-xs font-bold transition-all border border-purple-400/30 shadow-2xs cursor-pointer"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 sm:px-3.5 py-2 rounded-xl bg-[#3b2075]/70 hover:bg-[#3b2075] text-purple-100 text-xs font-bold transition-all border border-purple-400/30 shadow-2xs cursor-pointer"
             title="Refresh Live Data"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-amber-300" : ""}`} />
@@ -147,7 +147,7 @@ export function AdminDashboardView() {
 
           <Link
             href="/manager/colleges/new"
-            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-xl text-xs shadow-md transition-all hover:scale-[1.01]"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-3.5 sm:px-4 py-2 rounded-xl text-xs shadow-md transition-all hover:scale-[1.01]"
           >
             <PlusCircle className="w-4 h-4 text-slate-950" />
             <span>Add College</span>

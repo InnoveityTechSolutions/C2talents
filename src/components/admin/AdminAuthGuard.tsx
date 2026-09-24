@@ -11,6 +11,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const isLoginPage = pathname === "/manager/login" || pathname === "/admin/login" || pathname === "/login";
 
@@ -79,11 +80,14 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
   // Authenticated User: Render Full Enterprise Admin Layout
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#FAF9F5] font-sans antialiased text-stone-900">
-      <AdminSidebar />
+    <div className="flex h-screen w-screen overflow-hidden bg-[#FAF9F5] font-sans antialiased text-stone-900 relative">
+      <AdminSidebar
+        mobileOpen={mobileSidebarOpen}
+        onCloseMobile={() => setMobileSidebarOpen(false)}
+      />
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        <AdminHeader />
-        <main className="flex-1 overflow-y-auto w-full p-6 md:p-8">
+        <AdminHeader onOpenMobileSidebar={() => setMobileSidebarOpen(true)} />
+        <main className="flex-1 overflow-y-auto w-full p-3 sm:p-5 md:p-8">
           {children}
         </main>
       </div>

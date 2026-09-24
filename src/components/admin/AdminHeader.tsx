@@ -13,9 +13,15 @@ import {
   MailCheck,
   Lock,
   Key,
+  Menu,
 } from "lucide-react";
 
-export function AdminHeader({ title }: { title?: string }) {
+interface AdminHeaderProps {
+  title?: string;
+  onOpenMobileSidebar?: () => void;
+}
+
+export function AdminHeader({ title, onOpenMobileSidebar }: AdminHeaderProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -59,44 +65,55 @@ export function AdminHeader({ title }: { title?: string }) {
   const adminEmail = user?.email || "admin@c2talents.com";
 
   return (
-    <header className="h-16 bg-white/95 backdrop-blur-md border-b border-purple-100 px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs font-sans shrink-0">
-      {/* Title / Breadcrumb */}
-      <div className="flex items-center gap-3">
-        <div className="w-8.5 h-8.5 rounded-xl bg-[#1c0b36] text-amber-400 flex items-center justify-center font-extrabold text-xs shadow-xs border border-purple-900/30">
+    <header className="h-16 bg-white/95 backdrop-blur-md border-b border-purple-100 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs font-sans shrink-0">
+      {/* Title / Breadcrumb / Mobile Hamburger */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <button
+          type="button"
+          onClick={onOpenMobileSidebar}
+          className="md:hidden p-2 rounded-xl text-stone-700 hover:bg-purple-50 hover:text-[#1c0b36] transition-colors flex items-center justify-center shrink-0 cursor-pointer"
+          aria-label="Open Navigation Menu"
+        >
+          <Menu className="w-5 h-5 text-[#1c0b36]" />
+        </button>
+
+        <div className="hidden sm:flex w-8.5 h-8.5 rounded-xl bg-[#1c0b36] text-amber-400 items-center justify-center font-extrabold text-xs shadow-xs border border-purple-900/30 shrink-0">
           <ShieldCheck className="w-4.5 h-4.5 text-amber-400" />
         </div>
-        <div>
-          <h2 className="text-xs font-extrabold text-[#1c0b36] tracking-wide uppercase">
+        <div className="min-w-0">
+          <h2 className="text-xs font-extrabold text-[#1c0b36] tracking-wide uppercase truncate max-w-[130px] sm:max-w-none">
             {title || "Admin Control Console"}
           </h2>
           <p className="text-[10px] text-purple-700/80 font-bold flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-            Private Enterprise Panel
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0"></span>
+            <span className="truncate hidden xs:inline">Private Enterprise Panel</span>
+            <span className="truncate xs:hidden">Enterprise</span>
           </p>
         </div>
       </div>
 
       {/* Right Quick Actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
         <Link
           href="/manager/colleges/new"
-          className="flex items-center gap-2 bg-[#1c0b36] hover:bg-[#2a104e] text-amber-300 font-extrabold px-3.5 py-2 rounded-xl text-xs border border-amber-500/30 shadow-xs transition-all transform hover:scale-[1.01]"
+          className="flex items-center gap-1.5 sm:gap-2 bg-[#1c0b36] hover:bg-[#2a104e] text-amber-300 font-extrabold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs border border-amber-500/30 shadow-xs transition-all transform hover:scale-[1.01] shrink-0"
         >
           <PlusCircle className="w-3.5 h-3.5 text-amber-400" />
-          <span>Add College</span>
+          <span className="hidden sm:inline">Add College</span>
+          <span className="sm:hidden text-[11px]">Add</span>
           <span className="bg-amber-400 text-stone-950 px-1.5 py-0.5 rounded text-[9px] font-extrabold flex items-center gap-0.5">
             <Sparkles className="w-2.5 h-2.5" /> AI
           </span>
         </Link>
 
         {/* Notification Icon */}
-        <button className="w-8 h-8 rounded-xl border border-stone-200 hover:bg-purple-50 flex items-center justify-center text-stone-600 relative transition-colors">
+        <button className="hidden xs:flex w-8 h-8 rounded-xl border border-stone-200 hover:bg-purple-50 items-center justify-center text-stone-600 relative transition-colors">
           <Bell className="w-3.5 h-3.5" />
           <span className="w-2 h-2 rounded-full bg-amber-500 absolute top-1.5 right-1.5 ring-2 ring-white"></span>
         </button>
 
         {/* Admin Profile Dropdown Badge */}
-        <div className="relative pl-3 border-l border-stone-200" ref={dropdownRef}>
+        <div className="relative pl-1.5 sm:pl-3 border-l border-stone-200" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-purple-50 transition-all cursor-pointer group"
