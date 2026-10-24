@@ -50,11 +50,18 @@ export async function POST(req: Request) {
           location: registrationRequest.location || undefined,
         });
 
-        await sendEmail({
+        const sendRes = await sendEmail({
           to: registrationRequest.email,
           subject: dynamicSubject,
           html: emailHtml,
         });
+
+        if (sendRes.success && !sendRes.simulated) {
+          await db.collegeRegistrationRequest.update({
+            where: { id: registrationRequest.id },
+            data: { emailSent: true, emailSentAt: new Date() },
+          });
+        }
       } catch (emailErr: any) {
         console.warn(
           `[REGISTRATION REQUEST EMAIL NOTICE]: Background SMTP email dispatch skipped for ${registrationRequest.email}:`,

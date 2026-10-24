@@ -81,14 +81,9 @@ export function AdminHeader({ title, onOpenMobileSidebar }: AdminHeaderProps) {
           <ShieldCheck className="w-4.5 h-4.5 text-amber-400" />
         </div>
         <div className="min-w-0">
-          <h2 className="text-xs font-extrabold text-[#1c0b36] tracking-wide uppercase truncate max-w-[130px] sm:max-w-none">
+          <h2 className="text-xs sm:text-sm font-extrabold text-[#1c0b36] tracking-wide uppercase truncate max-w-[160px] sm:max-w-none">
             {title || "Admin Control Console"}
           </h2>
-          <p className="text-[10px] text-purple-700/80 font-bold flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0"></span>
-            <span className="truncate hidden xs:inline">Private Enterprise Panel</span>
-            <span className="truncate xs:hidden">Enterprise</span>
-          </p>
         </div>
       </div>
 

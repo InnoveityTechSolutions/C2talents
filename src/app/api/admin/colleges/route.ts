@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { collegesData } from "@/data/colleges";
 import { checkForDuplicateCollege } from "@/lib/duplicateChecker";
+import {
+  generateSearchVariants,
+  extractCleanTokens,
+  matchesCollegeSearch,
+} from "@/lib/search/searchNormalizer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -89,9 +94,10 @@ function getStaticFallbackAdminColleges(query: string, category: string, status:
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const query = searchParams.get("query") || "";
-  const category = searchParams.get("category") || "";
-  const status = searchParams.get("status") || "";
+  const rawQuery = searchParams.get("query") || searchParams.get("search") || "";
+  const query = rawQuery.trim();
+  const category = (searchParams.get("category") || "").trim();
+  const status = (searchParams.get("status") || "").trim();
 
   try {
     const where: any = {
@@ -99,38 +105,95 @@ export async function GET(req: Request) {
       status: { not: "DELETED" },
     };
 
+    const andConditions: any[] = [
+      { isDeleted: false },
+      { status: { not: "DELETED" } },
+    ];
+
     if (query) {
-      where.AND = [
-        { isDeleted: false },
-        { status: { not: "DELETED" } },
-        {
-          OR: [
-            { name: { contains: query } },
-            { shortName: { contains: query } },
-            { city: { contains: query } },
-            { state: { contains: query } },
-          ],
-        },
-      ];
+      const variants = generateSearchVariants(query);
+      const { allTokens, distinctiveTokens } = extractCleanTokens(query);
+      const orConditions: any[] = [];
+
+      // Add conditions for all search variants (spelling, bracket-stripped, acronyms)
+      for (const v of variants) {
+        if (v.length >= 2) {
+          orConditions.push(
+            { name: { contains: v } },
+            { shortName: { contains: v } },
+            { slug: { contains: v } },
+            { slug: { contains: v.replace(/\s+/g, "-") } },
+            { city: { contains: v } },
+            { district: { contains: v } },
+            { location: { contains: v } },
+            { address: { contains: v } },
+            { state: { contains: v } },
+            { email: { contains: v } },
+            { website: { contains: v } },
+            { affiliatedUniversity: { contains: v } },
+            { courses: { some: { title: { contains: v }, isDeleted: false } } }
+          );
+        }
+      }
+
+      // Multi-word token search (handling stopwords, punctuation, and variants per token)
+      const tokensToMatch = distinctiveTokens.length > 0 ? distinctiveTokens : allTokens;
+      if (tokensToMatch.length > 1) {
+        // Also check if any tokens were inside brackets, e.g. "(CTTEC)"
+        const cleanNoBrackets = query.replace(/\([^)]*\)/g, " ");
+        const { distinctiveTokens: noBracketTokens } = extractCleanTokens(cleanNoBrackets);
+
+        const tokenGroups = [tokensToMatch];
+        if (noBracketTokens.length > 1 && noBracketTokens.length < tokensToMatch.length) {
+          tokenGroups.push(noBracketTokens);
+        }
+
+        for (const tGroup of tokenGroups) {
+          orConditions.push({
+            AND: tGroup.map((tok) => {
+              const tokVariants = [tok];
+              if (tok === "chevalier") tokVariants.push("chevaliar");
+              if (tok === "chevaliar") tokVariants.push("chevalier");
+
+              return {
+                OR: tokVariants.flatMap((tv) => [
+                  { name: { contains: tv } },
+                  { shortName: { contains: tv } },
+                  { city: { contains: tv } },
+                  { district: { contains: tv } },
+                  { location: { contains: tv } },
+                  { address: { contains: tv } },
+                  { state: { contains: tv } },
+                  { email: { contains: tv } },
+                  { website: { contains: tv } },
+                  { category: { contains: tv } },
+                  { categories: { contains: tv } },
+                  { affiliatedUniversity: { contains: tv } },
+                  { courses: { some: { title: { contains: tv }, isDeleted: false } } },
+                ]),
+              };
+            }),
+          });
+        }
+      }
+
+      andConditions.push({ OR: orConditions });
     }
+
     if (category) {
-      if (where.AND) {
-        where.AND.push({
-          OR: [
-            { category: { equals: category } },
-            { categories: { contains: category } },
-          ],
-        });
-      } else {
-        where.OR = [
+      andConditions.push({
+        OR: [
           { category: { equals: category } },
           { categories: { contains: category } },
-        ];
-      }
+        ],
+      });
     }
+
     if (status) {
       where.status = status;
     }
+
+    where.AND = andConditions;
 
     const dbPromise = Promise.all([
       db.collegeProfile.findMany({
@@ -151,13 +214,30 @@ export async function GET(req: Request) {
     ]);
 
     const timeoutPromise = new Promise<any[]>((resolve) =>
-      setTimeout(() => resolve([[], 0, 0, 0, 0, 0, 0]), 8000)
+      setTimeout(() => resolve([[], 0, 0, 0, 0, 0, 0]), 10000)
     );
 
-    const [colleges, totalCount, draftCount, publishedCount, featuredCount, usersCount, coursesCount] =
+    let [colleges, totalCount, draftCount, publishedCount, featuredCount, usersCount, coursesCount] =
       await Promise.race([dbPromise, timeoutPromise]);
 
-    if (Array.isArray(colleges) && colleges.length > 0) {
+    // If query was specified and SQL search returned 0 records, fallback to evaluation with dynamic acronyms & spelling variants
+    if (query && Array.isArray(colleges) && colleges.length === 0) {
+      const allActive = await db.collegeProfile.findMany({
+        where: {
+          isDeleted: false,
+          status: status ? status : { not: "DELETED" },
+        },
+        include: {
+          courses: { where: { isDeleted: false } },
+          placements: true,
+          galleryImages: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+      colleges = allActive.filter((c: any) => matchesCollegeSearch(c, query));
+    }
+
+    if (Array.isArray(colleges)) {
       const categoriesSet = new Set<string>();
       colleges.forEach((c: any) => {
         if (c.categories) {
@@ -188,41 +268,42 @@ export async function GET(req: Request) {
       );
     }
 
-    // Static fallback if DB query yields 0 results or times out
-    const fallbackList = getStaticFallbackAdminColleges(query, category, status);
     return NextResponse.json({
       success: true,
       stats: {
-        totalColleges: fallbackList.length,
+        totalColleges: 0,
         pendingColleges: 0,
-        publishedColleges: fallbackList.length,
-        featuredColleges: fallbackList.length,
-        categoriesCount: 7,
-        coursesCount: 3882,
-        usersCount: 291,
-        newsCount: 15,
+        publishedColleges: 0,
+        featuredColleges: 0,
+        categoriesCount: 0,
+        coursesCount: 0,
+        usersCount: 0,
+        newsCount: 0,
       },
-      colleges: fallbackList,
-      categoriesList: ["Engineering", "Medical", "Management", "Arts & Science", "Law", "Commerce", "Polytechnic"],
+      colleges: [],
+      categoriesList: [],
     });
   } catch (err: any) {
-    console.warn("[BACKEND DEBUG] GET /api/admin/colleges fallback notice:", err?.message || err);
-    const fallbackList = getStaticFallbackAdminColleges(query, category, status);
-    return NextResponse.json({
-      success: true,
-      stats: {
-        totalColleges: fallbackList.length,
-        pendingColleges: 0,
-        publishedColleges: fallbackList.length,
-        featuredColleges: fallbackList.length,
-        categoriesCount: 7,
-        coursesCount: 3882,
-        usersCount: 291,
-        newsCount: 15,
+    console.error("[BACKEND DEBUG] GET /api/admin/colleges error:", err?.message || err);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to fetch colleges",
+        colleges: [],
+        stats: {
+          totalColleges: 0,
+          pendingColleges: 0,
+          publishedColleges: 0,
+          featuredColleges: 0,
+          categoriesCount: 0,
+          coursesCount: 0,
+          usersCount: 0,
+          newsCount: 0,
+        },
+        categoriesList: [],
       },
-      colleges: fallbackList,
-      categoriesList: ["Engineering", "Medical", "Management", "Arts & Science", "Law", "Commerce", "Polytechnic"],
-    });
+      { status: 500 }
+    );
   }
 }
 

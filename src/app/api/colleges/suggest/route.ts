@@ -84,14 +84,15 @@ export async function GET(req: Request) {
       });
     }
 
-    // Keyword matching ONLY if not a generic "near me" phrase query and no targetCourse
-    if (q && !isNearMeQuery && !location && parsed.domains.length === 0 && !targetCourse) {
+    // Keyword matching whenever search text is provided
+    if (q && !isNearMeQuery) {
       andConditions.push({
         OR: [
           { name: { contains: q } },
           { shortName: { contains: q } },
           { city: { contains: q } },
           { location: { contains: q } },
+          { district: { contains: q } },
         ],
       });
     }
@@ -108,6 +109,8 @@ export async function GET(req: Request) {
         shortName: true,
         city: true,
         location: true,
+        district: true,
+        address: true,
         category: true,
         ownership: true,
         type: true,
@@ -120,23 +123,33 @@ export async function GET(req: Request) {
         isAutonomous: true,
         courses: { where: { isDeleted: false }, select: { title: true } },
       },
-      take: 20,
+      take: 50,
     });
 
-    // Apply strict exclusion & location validation
+    // Apply strict exclusion & location validation with direct name match safeguard
     const filtered = rawColleges.filter((c) => {
+      const nameL = c.name.toLowerCase();
+      const shortNameL = (c.shortName || "").toLowerCase();
+      const qLower = q.toLowerCase();
+
+      // If college directly matches search query by name or shortName, always keep it!
+      if (nameL.includes(qLower) || shortNameL.includes(qLower)) {
+        return true;
+      }
+
       // STRICT ZERO-TOLERANCE COURSE VALIDATION
       if (targetCourse && !isCollegeOfferingCourse(c as any, targetCourse)) {
         return false;
       }
 
-      const nameL = c.name.toLowerCase();
       const cityL = (c.city || "").toLowerCase();
       const locL = (c.location || "").toLowerCase();
+      const distL = ((c as any).district || "").toLowerCase();
+      const addrL = ((c as any).address || "").toLowerCase();
 
       if (location) {
         const targetL = location.toLowerCase().trim();
-        if (!cityL.includes(targetL) && !locL.includes(targetL) && !nameL.includes(targetL)) {
+        if (!cityL.includes(targetL) && !locL.includes(targetL) && !distL.includes(targetL) && !addrL.includes(targetL) && !nameL.includes(targetL)) {
           return false;
         }
       }
@@ -159,6 +172,7 @@ export async function GET(req: Request) {
     const collegeResults = filtered.map((c) => {
       let distance: number | null = null;
       let distanceText: string | null = null;
+
       if (userLat !== null && userLng !== null) {
         const coords = getCollegeCoordinates(c);
         if (coords) {
@@ -166,11 +180,44 @@ export async function GET(req: Request) {
           distanceText = formatDistance(distance);
         }
       }
+
       return {
-        ...c,
+        id: c.id,
+        name: c.name,
+        shortName: c.shortName,
+        city: c.city,
+        location: c.location,
+        category: c.category,
+        ownership: c.ownership,
+        type: c.type,
+        naacGrade: c.naacGrade,
+        rating: c.rating,
+        nirfRank: c.nirfRank,
+        image: c.image,
+        latitude: c.latitude,
+        longitude: c.longitude,
+        isAutonomous: c.isAutonomous,
+        courses: c.courses,
         distance,
         distanceText,
       };
+    });
+
+    // Sort by name relevance first, then rating
+    collegeResults.sort((a, b) => {
+      const aName = a.name.toLowerCase();
+      const bName = b.name.toLowerCase();
+      const qLower = q.toLowerCase();
+
+      const aExact = aName === qLower || (a.shortName && a.shortName.toLowerCase() === qLower) ? 1 : 0;
+      const bExact = bName === qLower || (b.shortName && b.shortName.toLowerCase() === qLower) ? 1 : 0;
+      if (bExact !== aExact) return bExact - aExact;
+
+      const aStarts = aName.startsWith(qLower) ? 1 : 0;
+      const bStarts = bName.startsWith(qLower) ? 1 : 0;
+      if (bStarts !== aStarts) return bStarts - aStarts;
+
+      return (b.rating || 0) - (a.rating || 0);
     });
 
     if (isNearMeQuery || parsed.nearbyRequested) {

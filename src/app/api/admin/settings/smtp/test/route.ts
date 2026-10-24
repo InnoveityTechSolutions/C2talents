@@ -69,6 +69,17 @@ export async function POST(req: Request) {
       overrideSmtpConfig: testConfig,
     });
 
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: result.error || "SMTP test email delivery failed. Please verify your credentials and host settings.",
+          result,
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       message: `Test email dispatched successfully to ${toEmail}! Please check your inbox.`,

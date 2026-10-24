@@ -19,6 +19,7 @@ import {
   Award,
   TrendingUp,
 } from "lucide-react";
+import { matchesCollegeSearch } from "@/lib/search/searchNormalizer";
 
 // Helper function to sanitize any malformed or duplicated title text in stored DB records
 function sanitizeCollegeName(rawName: string = ""): string {
@@ -44,10 +45,24 @@ export default function AdminAllCollegesPage() {
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: string; name: string }>({ open: false, id: "", name: "" });
   const [deleting, setDeleting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 50;
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const searchParam = urlParams.get("search") || urlParams.get("q") || urlParams.get("query");
+      if (searchParam) {
+        setSearchQuery(searchParam.trim());
+      }
+    }
   }, []);
+
+  // Reset to page 1 whenever search query or status filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
 
   async function fetchColleges() {
     setLoading(true);
@@ -93,18 +108,21 @@ export default function AdminAllCollegesPage() {
   };
 
   const filteredColleges = colleges.filter((c) => {
-    const cleanName = sanitizeCollegeName(c.name);
-    const matchesSearch =
-      cleanName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.city && c.city.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (c.shortName && c.shortName.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = matchesCollegeSearch(c, searchQuery);
+    if (!matchesSearch) return false;
 
-    if (statusFilter === "PUBLISHED") return matchesSearch && c.status === "PUBLISHED";
-    if (statusFilter === "DATA SUBMITTED") return matchesSearch && (c.status === "DATA_SUBMITTED" || c.status === "SUBMITTED");
-    if (statusFilter === "DRAFT") return matchesSearch && c.status === "DRAFT";
-    if (statusFilter === "FEATURED") return matchesSearch && c.featured;
-    return matchesSearch;
+    if (statusFilter === "PUBLISHED") return c.status === "PUBLISHED";
+    if (statusFilter === "DATA SUBMITTED") return c.status === "DATA_SUBMITTED" || c.status === "SUBMITTED";
+    if (statusFilter === "DRAFT") return c.status === "DRAFT";
+    if (statusFilter === "FEATURED") return Boolean(c.featured);
+    return true;
   });
+
+  const totalPages = Math.ceil(filteredColleges.length / pageSize) || 1;
+  const paginatedColleges = filteredColleges.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const totalCount = colleges.length;
   const publishedCount = colleges.filter((c) => c.status === "PUBLISHED").length;
@@ -304,7 +322,7 @@ export default function AdminAllCollegesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 font-medium">
-                {filteredColleges.map((college) => {
+                {paginatedColleges.map((college) => {
                   const cleanName = sanitizeCollegeName(college.name);
                   const hasValidLogo =
                     !brokenImages[college.id] && (college.logo || college.image);
@@ -442,6 +460,48 @@ export default function AdminAllCollegesPage() {
                 })}
               </tbody>
             </table>
+
+            {filteredColleges.length > 0 && (
+              <div className="px-5 py-3.5 bg-stone-50 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-600 font-medium">
+                <div>
+                  Showing{" "}
+                  <span className="font-extrabold text-[#1f0c3d]">
+                    {(currentPage - 1) * pageSize + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-extrabold text-[#1f0c3d]">
+                    {Math.min(currentPage * pageSize, filteredColleges.length)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-extrabold text-[#1f0c3d]">
+                    {filteredColleges.length}
+                  </span>{" "}
+                  colleges
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-lg border border-stone-200 bg-white font-bold text-stone-700 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      Previous
+                    </button>
+                    <span className="px-2 text-stone-500 font-bold">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1.5 rounded-lg border border-stone-200 bg-white font-bold text-stone-700 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

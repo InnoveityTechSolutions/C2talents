@@ -24,6 +24,8 @@ export function normalizeName(name: string): string {
   if (!name) return "";
   return name
     .toLowerCase()
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\bchevalier\b/gi, "chevaliar")
     .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ")
     .replace(/\s+/g, " ")
     .replace(/\b(autonomous|affiliated|college|institution|institute|university|of|technology|engineering|arts|science|commerce|management|research|campus|chennai|tamil nadu|india)\b/gi, "")
@@ -142,12 +144,15 @@ export async function checkForDuplicateCollege(params: DuplicateCheckParams): Pr
       id: true,
       name: true,
       shortName: true,
+      slug: true,
       website: true,
       email: true,
       phone: true,
       mobile: true,
       city: true,
+      location: true,
       state: true,
+      status: true,
       logo: true,
       image: true,
       createdAt: true,

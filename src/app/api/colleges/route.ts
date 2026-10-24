@@ -3,20 +3,45 @@ import { db } from "@/lib/db";
 import { parseSearchIntentAI, generateMatchReasons, StructuredSearchIntent } from "@/lib/search/aiSearchParser";
 import { calculateHaversineDistance, formatDistance, getCollegeCoordinates, CITY_COORDINATES } from "@/lib/search/haversine";
 import { detectCourseFromQuery, getPrismaCourseRelationalFilter, isCollegeOfferingCourse } from "@/lib/courses/courseNormalizer";
+import {
+  generateSearchVariants,
+  extractCleanTokens,
+  matchesCollegeSearch,
+} from "@/lib/search/searchNormalizer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+const STOP_WORDS = new Set([
+  "college", "colleges", "institute", "institutes", "institution", "institutions",
+  "university", "universities", "campus", "school", "schools", "of", "in", "at",
+  "near", "nearby", "me", "the", "and", "for", "with", "all", "best", "top", "good",
+  "fees", "fee", "low", "cheap", "ranking", "rankings"
+]);
+
+function extractSearchTokens(raw: string): string[] {
+  if (!raw) return [];
+  return raw
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .split(/\s+/)
+    .map((w) => w.trim())
+    .filter((w) => w.length >= 2 && !STOP_WORDS.has(w));
+}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
 
   // 1. Raw Query Parameters
-  const searchInput = searchParams.get("search") || searchParams.get("q") || "";
-  const explicitCourse = searchParams.get("course") || searchParams.get("program") || "";
-  const explicitCategory = searchParams.get("category") || searchParams.get("stream") || "";
-  const explicitOwnership = searchParams.get("ownership") || searchParams.get("type") || "";
-  const explicitLocation = searchParams.get("location") || "";
-  const explicitNaac = searchParams.get("naacGrade") || "";
+  const rawSearch = searchParams.get("search") || searchParams.get("q") || "";
+  const searchInput = rawSearch.trim();
+  const searchTokens = extractSearchTokens(searchInput);
+
+  const explicitCourse = (searchParams.get("course") || searchParams.get("program") || "").trim();
+  const explicitCategory = (searchParams.get("category") || searchParams.get("stream") || "").trim();
+  const explicitOwnership = (searchParams.get("ownership") || searchParams.get("type") || "").trim();
+  const explicitLocation = (searchParams.get("location") || "").trim();
+  const explicitNaac = (searchParams.get("naacGrade") || "").trim();
   const explicitMaxFees = searchParams.get("maxFees") ? parseFloat(searchParams.get("maxFees")!) : null;
   const minAvgPackage = searchParams.get("minAveragePackage") ? parseFloat(searchParams.get("minAveragePackage")!) : null;
 
@@ -68,6 +93,77 @@ export async function GET(req: Request) {
 
     const andConditions: any[] = [];
 
+    // KEYWORD SEARCH FILTER (College Name, ShortName, Slug, City, Location, Affiliation)
+    if (searchInput) {
+      const variants = generateSearchVariants(searchInput);
+      const { allTokens, distinctiveTokens } = extractCleanTokens(searchInput);
+      const keywordOrList: any[] = [];
+
+      for (const v of variants) {
+        if (v.length >= 2) {
+          keywordOrList.push(
+            { name: { contains: v } },
+            { shortName: { contains: v } },
+            { slug: { contains: v } },
+            { slug: { contains: v.replace(/\s+/g, "-") } },
+            { city: { contains: v } },
+            { location: { contains: v } },
+            { district: { contains: v } },
+            { address: { contains: v } },
+            { state: { contains: v } },
+            { email: { contains: v } },
+            { website: { contains: v } },
+            { category: { contains: v } },
+            { categories: { contains: v } },
+            { affiliatedUniversity: { contains: v } },
+            { courses: { some: { title: { contains: v }, isDeleted: false } } }
+          );
+        }
+      }
+
+      // Add token matches if search has multiple words
+      const tokensToMatch = distinctiveTokens.length > 0 ? distinctiveTokens : allTokens;
+      if (tokensToMatch.length > 1) {
+        const cleanNoBrackets = searchInput.replace(/\([^)]*\)/g, " ");
+        const { distinctiveTokens: noBracketTokens } = extractCleanTokens(cleanNoBrackets);
+
+        const tokenGroups = [tokensToMatch];
+        if (noBracketTokens.length > 1 && noBracketTokens.length < tokensToMatch.length) {
+          tokenGroups.push(noBracketTokens);
+        }
+
+        for (const tGroup of tokenGroups) {
+          keywordOrList.push({
+            AND: tGroup.map((tok) => {
+              const tokVariants = [tok];
+              if (tok === "chevalier") tokVariants.push("chevaliar");
+              if (tok === "chevaliar") tokVariants.push("chevalier");
+
+              return {
+                OR: tokVariants.flatMap((tv) => [
+                  { name: { contains: tv } },
+                  { shortName: { contains: tv } },
+                  { city: { contains: tv } },
+                  { location: { contains: tv } },
+                  { district: { contains: tv } },
+                  { address: { contains: tv } },
+                  { state: { contains: tv } },
+                  { email: { contains: tv } },
+                  { website: { contains: tv } },
+                  { category: { contains: tv } },
+                  { categories: { contains: tv } },
+                  { affiliatedUniversity: { contains: tv } },
+                  { courses: { some: { title: { contains: tv }, isDeleted: false } } },
+                ]),
+              };
+            }),
+          });
+        }
+      }
+
+      andConditions.push({ OR: keywordOrList });
+    }
+
     // COMPARISON INTENT SEARCH ("VIT vs SSN")
     if (parsedIntent.intent === "COMPARE" && parsedIntent.compareColleges.length > 0) {
       const compareOrFilters = parsedIntent.compareColleges.map((target) => ({
@@ -80,17 +176,31 @@ export async function GET(req: Request) {
       andConditions.push({ OR: compareOrFilters });
     }
 
-    // HARD LOCATION FILTER (Requirement 4, 5, 20: Location MUST be a hard filter)
+    // HARD LOCATION FILTER (Only when location is specified and not comparing)
     if (location && parsedIntent.intent !== "COMPARE") {
       const locTrim = location.trim();
-      andConditions.push({
-        OR: [
-          { city: { contains: locTrim } },
-          { location: { contains: locTrim } },
-          { district: { contains: locTrim } },
-          { address: { contains: locTrim } },
-        ],
-      });
+      // If searchInput directly matches a college name, location shouldn't block it; allow location or name match
+      if (searchInput && searchTokens.length > 0) {
+        andConditions.push({
+          OR: [
+            { city: { contains: locTrim } },
+            { location: { contains: locTrim } },
+            { district: { contains: locTrim } },
+            { address: { contains: locTrim } },
+            { name: { contains: searchInput } },
+            { shortName: { contains: searchInput } },
+          ],
+        });
+      } else {
+        andConditions.push({
+          OR: [
+            { city: { contains: locTrim } },
+            { location: { contains: locTrim } },
+            { district: { contains: locTrim } },
+            { address: { contains: locTrim } },
+          ],
+        });
+      }
     }
 
     // STRICT COURSE FILTERING (Prisma Relational Course Check)
@@ -153,16 +263,34 @@ export async function GET(req: Request) {
       });
 
       if (domainOrFilters.length > 0) {
+        // If user typed a search term, also allow the direct name match
+        if (searchInput) {
+          domainOrFilters.push(
+            { name: { contains: searchInput } },
+            { shortName: { contains: searchInput } }
+          );
+        }
         andConditions.push({ OR: domainOrFilters });
       }
     } else if (category && !targetCourse) {
-      andConditions.push({
-        OR: [
-          { category: { contains: category } },
-          { categories: { contains: category } },
-          { name: { contains: category } },
-        ],
-      });
+      if (searchInput) {
+        andConditions.push({
+          OR: [
+            { category: { contains: category } },
+            { categories: { contains: category } },
+            { name: { contains: searchInput } },
+            { shortName: { contains: searchInput } },
+          ],
+        });
+      } else {
+        andConditions.push({
+          OR: [
+            { category: { contains: category } },
+            { categories: { contains: category } },
+            { name: { contains: category } },
+          ],
+        });
+      }
     }
 
     // Ownership Filter
@@ -242,26 +370,53 @@ export async function GET(req: Request) {
     }
 
     // Fetch colleges from REAL Database
-    const dbColleges = await db.collegeProfile.findMany({
+    let dbColleges = await db.collegeProfile.findMany({
       where,
       include: {
         courses: { where: { isDeleted: false } },
         reviews: { take: 5, orderBy: { createdAt: "desc" } },
       },
-      take: 100,
+      orderBy: { updatedAt: "desc" },
     });
+
+    if (searchInput && dbColleges.length === 0) {
+      const candidateColleges = await db.collegeProfile.findMany({
+        where: {
+          status: { not: "DRAFT" },
+          isDeleted: false,
+        },
+        include: {
+          courses: { where: { isDeleted: false } },
+          reviews: { take: 5, orderBy: { createdAt: "desc" } },
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+      dbColleges = candidateColleges.filter((c: any) => matchesCollegeSearch(c, searchInput));
+    }
 
     // 3. HARD COURSE, LOCATION & DOMAIN RELEVANCE CHECK BEFORE DISPLAY
     const filteredColleges = dbColleges.filter((c) => {
+      const nameL = (c.name || "").toLowerCase();
+      const shortNameL = (c.shortName || "").toLowerCase();
+      const locL = (c.location || "").toLowerCase();
+      const cityL = (c.city || "").toLowerCase();
+      const distL = (c.district || "").toLowerCase();
+      const addrL = (c.address || "").toLowerCase();
+      const queryLower = (searchInput || "").toLowerCase().trim();
+
+      // Direct name match safeguard: If college matches search query, NEVER filter it out
+      const isDirectNameMatch = Boolean(
+        searchInput && matchesCollegeSearch(c, searchInput)
+      );
+
+      if (isDirectNameMatch) {
+        return true;
+      }
+
       // ZERO-TOLERANCE COURSE VALIDATION
       if (targetCourse && !isCollegeOfferingCourse(c, targetCourse)) {
         return false;
       }
-
-      const nameL = c.name.toLowerCase();
-      const locL = (c.location || "").toLowerCase();
-      const cityL = (c.city || "").toLowerCase();
-      const distL = (c.district || "").toLowerCase();
 
       // HARD LOCATION VALIDATION
       if (location && parsedIntent.intent !== "COMPARE") {
@@ -270,14 +425,15 @@ export async function GET(req: Request) {
           cityL.includes(targetLocL) ||
           locL.includes(targetLocL) ||
           distL.includes(targetLocL) ||
+          addrL.includes(targetLocL) ||
           nameL.includes(targetLocL);
 
         if (!matchesLocation) {
-          return false; // REMOVE COLLEGE FROM DIFFERENT CITY!
+          return false;
         }
       }
 
-      // HARD DOMAIN VALIDATION (ONLY if domain specified!)
+      // HARD DOMAIN VALIDATION (ONLY if domain specified and not comparing)
       if (parsedIntent.domains && parsedIntent.domains.length > 0 && parsedIntent.intent !== "COMPARE") {
         const hasBaBscCourse = c.courses.some((crt) =>
           /\bb\.?a\b|\bb\.?sc\b|\bbsc\b|\bba\b|\bm\.?sc\b|\bma\b/i.test(crt.title)
@@ -311,7 +467,7 @@ export async function GET(req: Request) {
       return true;
     });
 
-    // 4. Deterministic Ranking & Distance Calculation + Why This Matches Badges
+    // 4. Deterministic Ranking & Text Relevance Calculation
     const processedResults = filteredColleges.map((c) => {
       let distance: number | null = null;
       let distanceText: string | null = null;
@@ -324,7 +480,7 @@ export async function GET(req: Request) {
         }
       }
 
-      // Multi-Signal Deterministic Best/Ranking Score (Requirement 7 & 20)
+      // Multi-Signal Deterministic Best/Ranking Score
       let rankingScore = 0;
       if (c.nirfRank) rankingScore += Math.max(0, 250 - c.nirfRank);
       if (c.naacGrade === "A++") rankingScore += 100;
@@ -335,6 +491,83 @@ export async function GET(req: Request) {
       if (c.avgPackage) rankingScore += c.avgPackage * 5;
       if (c.isAutonomous) rankingScore += 30;
 
+      // Text Relevance Score when user has typed a search term
+      let textMatchScore = 0;
+      if (searchInput) {
+        const queryLower = searchInput.toLowerCase().trim();
+        const nameL = (c.name || "").toLowerCase();
+        const shortNameL = (c.shortName || "").toLowerCase();
+        const cityL = (c.city || "").toLowerCase();
+        const locL = (c.location || "").toLowerCase();
+        const distL = (c.district || "").toLowerCase();
+        const addrL = (c.address || "").toLowerCase();
+        const affilL = (c.affiliatedUniversity || "").toLowerCase();
+        const catL = (c.category || "").toLowerCase();
+        const catsL = (c.categories || "").toLowerCase();
+
+        if (matchesCollegeSearch(c, searchInput)) {
+          textMatchScore += 40000;
+        }
+
+        // Exact match on college name or shortName
+        if (nameL === queryLower || shortNameL === queryLower) {
+          textMatchScore += 100000;
+        }
+        // Exact city/district match (e.g. searching "Chennai" or "Madurai")
+        else if (cityL === queryLower || distL === queryLower || locL === queryLower) {
+          textMatchScore += 80000;
+        }
+        // Prefix match on college name or shortName
+        else if (nameL.startsWith(queryLower) || shortNameL.startsWith(queryLower)) {
+          textMatchScore += 60000;
+        }
+        // Word boundary match
+        else if (new RegExp(`\\b${queryLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(nameL)) {
+          textMatchScore += 40000;
+        }
+        // Full substring match on college name
+        else if (nameL.includes(queryLower)) {
+          textMatchScore += 30000;
+        }
+        else if (shortNameL.includes(queryLower)) {
+          textMatchScore += 25000;
+        }
+        // Substring match on location/city/district/address
+        else if (cityL.includes(queryLower) || locL.includes(queryLower) || distL.includes(queryLower) || addrL.includes(queryLower)) {
+          textMatchScore += 25000;
+        }
+        else if (affilL.includes(queryLower)) {
+          textMatchScore += 20000;
+        }
+
+        // Token matching for multi-word or compound queries
+        if (searchTokens.length > 0) {
+          let matchedCount = 0;
+          searchTokens.forEach((tok) => {
+            const hasNameMatch = tok.length <= 2
+              ? new RegExp(`\\b${tok.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'i').test(nameL) || shortNameL === tok
+              : nameL.includes(tok) || shortNameL.includes(tok);
+            const hasLocMatch = cityL.includes(tok) || locL.includes(tok) || distL.includes(tok) || addrL.includes(tok);
+            const hasOtherMatch = affilL.includes(tok) || catL.includes(tok) || catsL.includes(tok) ||
+              c.courses.some((crt) => (crt.title || "").toLowerCase().includes(tok));
+
+            if (hasNameMatch) {
+              textMatchScore += 8000;
+              matchedCount++;
+            } else if (hasLocMatch) {
+              textMatchScore += 6000;
+              matchedCount++;
+            } else if (hasOtherMatch) {
+              textMatchScore += 4000;
+              matchedCount++;
+            }
+          });
+          if (matchedCount === searchTokens.length && searchTokens.length > 1) {
+            textMatchScore += 20000;
+          }
+        }
+      }
+
       // Generate "Why This Matches" reasons list
       const matchReasons = generateMatchReasons(c, parsedIntent);
 
@@ -343,6 +576,7 @@ export async function GET(req: Request) {
         distance,
         distanceText,
         rankingScore,
+        textMatchScore,
         matchReasons,
       };
     });
@@ -356,13 +590,20 @@ export async function GET(req: Request) {
       });
     }
 
-    // 6. Priority Sorting (Distance for Nearby, Ranking Score DESC for BEST)
+    // 6. When a specific keyword query is made, filter out items that had 0 text relevance
+    if (searchInput && searchTokens.length > 0 && parsedIntent.intent === "GENERAL_SEARCH") {
+      finalResults = finalResults.filter((c) => (c as any).textMatchScore > 0);
+    }
+
+    // 7. Priority Sorting:
+    // Text search relevance FIRST, then Distance (if near me requested), then NIRF/NAAC Ranking
     finalResults.sort((a, b) => {
+      if (searchInput) {
+        const textDiff = ((b as any).textMatchScore || 0) - ((a as any).textMatchScore || 0);
+        if (textDiff !== 0) return textDiff;
+      }
       if (parsedIntent.nearbyRequested && a.distance !== null && b.distance !== null) {
         return a.distance - b.distance;
-      }
-      if (parsedIntent.rankingRequested) {
-        return b.rankingScore - a.rankingScore;
       }
       return b.rankingScore - a.rankingScore;
     });

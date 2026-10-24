@@ -48,3 +48,6 @@ next-env.d.ts
 .ai-cache/
 scratch/
 *.docx
+
+.vercel
+.env*

@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "predev": "node scripts/ensure-mysql.js",
+    "db:start": "node scripts/ensure-mysql.js",
     "build": "next build",
     "postinstall": "prisma generate",
     "start": "next start",

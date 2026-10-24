@@ -71,7 +71,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const keys = Object.keys(parsedData);
+    // If the imported JSON is wrapped in { success: true, data: { ... } } or { data: { ... } }
+    const rootData = (parsedData.data && typeof parsedData.data === "object" && !Array.isArray(parsedData.data))
+      ? parsedData.data
+      : parsedData;
+
+    const keys = Object.keys(rootData);
     if (keys.length === 0) {
       return NextResponse.json(
         { success: false, error: "The JSON file contains an empty object {} without any CMS fields." },
@@ -86,11 +91,26 @@ export async function POST(req: Request) {
       return val;
     };
 
-    // Validate required fields
-    const collegeName = extractVal(parsedData, "name");
+    // Validate required fields (supporting root, aliases, and section wrappers like basicInfo)
+    const collegeName =
+      extractVal(rootData, "name") ||
+      extractVal(rootData, "collegeName") ||
+      extractVal(rootData, "college_name") ||
+      extractVal(rootData, "officialName") ||
+      extractVal(rootData, "institutionName") ||
+      extractVal(rootData.basicInfo, "name") ||
+      extractVal(rootData.basic_info, "name") ||
+      extractVal(rootData.basicInfo, "collegeName") ||
+      extractVal(rootData.basicInfo, "officialName") ||
+      extractVal(rootData.basic_info, "college_name") ||
+      extractVal(parsedData, "name") ||
+      extractVal(parsedData, "officialName") ||
+      extractVal(parsedData, "institutionName") ||
+      extractVal(parsedData.basicInfo, "name");
+
     if (!collegeName || typeof collegeName !== "string" || collegeName.trim() === "") {
       return NextResponse.json(
-        { success: false, error: "Validation Error: Missing required field 'name'. The AI must provide the college name." },
+        { success: false, error: "Validation Error: Missing required field 'name' (or 'collegeName' / 'officialName' / 'institutionName' / 'basicInfo.name'). The AI must provide the college name." },
         { status: 400 }
       );
     }
@@ -98,14 +118,14 @@ export async function POST(req: Request) {
     // Count populated fields across root and section wrappers
     let fieldsCount = keys.length;
     for (const key of keys) {
-      if (parsedData[key] && typeof parsedData[key] === "object" && !Array.isArray(parsedData[key])) {
-        fieldsCount += Object.keys(parsedData[key]).length;
+      if (rootData[key] && typeof rootData[key] === "object" && !Array.isArray(rootData[key])) {
+        fieldsCount += Object.keys(rootData[key]).length;
       }
     }
 
     return NextResponse.json({
       success: true,
-      data: parsedData,
+      data: rootData,
       fieldsCount,
       filename,
       message: `Successfully validated and parsed JSON (${fieldsCount} fields detected).`,

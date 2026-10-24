@@ -66,6 +66,7 @@ function CollegesContent() {
   const [colleges, setColleges] = useState<College[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [retryTrigger, setRetryTrigger] = useState(0);
 
   const requestLocation = (setSearchQuery = false) => {
     if (typeof window !== "undefined" && "geolocation" in navigator) {
@@ -116,23 +117,31 @@ function CollegesContent() {
 
       try {
         const params = new URLSearchParams();
-        if (search) params.set("search", search);
-        if (courseFilter) params.set("course", courseFilter);
-        if (categoryFilter) params.set("category", categoryFilter);
-        if (locationFilter) params.set("location", locationFilter);
-        if (ownershipFilter) params.set("ownership", ownershipFilter);
-        if (feesFilter) params.set("maxFees", feesFilter);
+        const trimmedSearch = search.trim();
+        if (trimmedSearch) params.set("search", trimmedSearch);
+        if (courseFilter && courseFilter.trim()) params.set("course", courseFilter.trim());
+        if (categoryFilter && categoryFilter.trim()) params.set("category", categoryFilter.trim());
+        if (locationFilter && locationFilter.trim()) params.set("location", locationFilter.trim());
+        if (ownershipFilter && ownershipFilter.trim()) params.set("ownership", ownershipFilter.trim());
+        if (feesFilter && feesFilter.trim()) params.set("maxFees", feesFilter.trim());
         if (userCoords) {
           params.set("lat", userCoords.lat.toString());
           params.set("lng", userCoords.lng.toString());
         }
 
-        const res = await fetch(`/api/colleges?${params.toString()}`, {
+        let res = await fetch(`/api/colleges?${params.toString()}`, {
           cache: "no-store",
         });
 
         if (!res.ok) {
-          throw new Error(`Failed to load colleges: ${res.statusText}`);
+          // Transient retry attempt after 600ms
+          await new Promise((r) => setTimeout(r, 600));
+          res = await fetch(`/api/colleges?${params.toString()}`, {
+            cache: "no-store",
+          });
+          if (!res.ok) {
+            throw new Error(`Failed to load colleges: ${res.statusText}`);
+          }
         }
 
         const data = await res.json();
@@ -161,7 +170,7 @@ function CollegesContent() {
       isCancelled = true;
       clearTimeout(timer);
     };
-  }, [search, categoryFilter, locationFilter, ownershipFilter, feesFilter, userCoords]);
+  }, [search, courseFilter, categoryFilter, locationFilter, ownershipFilter, feesFilter, userCoords, retryTrigger]);
 
   const categoryOptions = [
     { value: "", label: "All Streams" },
@@ -432,8 +441,11 @@ function CollegesContent() {
               <h3 className="text-xl font-bold text-rose-400">{errorMessage}</h3>
               <p className="text-sm text-white/70">The server or database is temporarily unreachable. Please check your connection or try again.</p>
               <button
-                onClick={() => window.location.reload()}
-                className="px-6 py-2.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-extrabold uppercase tracking-wider transition-all shadow-md"
+                onClick={() => {
+                  setErrorMessage("");
+                  setRetryTrigger((prev) => prev + 1);
+                }}
+                className="px-6 py-2.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-extrabold uppercase tracking-wider transition-all shadow-md cursor-pointer"
               >
                 Retry
               </button>
