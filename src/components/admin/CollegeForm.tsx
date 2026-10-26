@@ -1761,8 +1761,8 @@ export function CollegeForm({
     const statusVal = extractVal(data, "status", ["publicationStatus", "profileStatus", "publishStatus"], ["status", "displayOptions", "settings"]);
     if (statusVal && typeof statusVal === "string" && statusVal.trim()) {
       const upperStatus = statusVal.toUpperCase().trim();
-      if (["PUBLISHED", "DRAFT", "PENDING"].includes(upperStatus)) {
-        setStatus(upperStatus);
+      if (["PUBLISHED", "DRAFT", "PENDING", "DATA_SUBMITTED", "SUBMITTED"].includes(upperStatus)) {
+        setStatus(upperStatus === "SUBMITTED" ? "DATA_SUBMITTED" : upperStatus);
         markPopulated();
       }
     }
@@ -1914,7 +1914,7 @@ CRITICAL INSTRUCTIONS & INTEGRITY RULES
    - highestPackage and avgPackage must be numbers in LPA (e.g., 44.5 for 44.5 LPA, 7.2 for 7.2 LPA).
    - placementPercentage must be a number from 0 to 100 (e.g., 92.5).
    - Boolean fields MUST be true, false, or null.
-   - Status fields must always be "DRAFT" ("status": "DRAFT", "contentStatus": "DRAFT").
+   - Status fields: Set "status" to "PUBLISHED" ("status": "PUBLISHED", "contentStatus": "PUBLISHED") unless draft is requested.
    - Reviews must NEVER be marked verified automatically ("isVerified": false). Do not fabricate verification metadata.
 3. EXACT SUPPORTED FACILITIES (Section 6):
    The "facilities" array must ONLY contain string values chosen from this exact list of 15 supported amenities:
@@ -2031,7 +2031,7 @@ EXPECTED JSON SCHEMA SPECIFICATION (ALL 14 SECTIONS)
     "metaKeywords": "college admissions, engineering courses, fee structure, placements, cutoff, ranking"
   },
   "status": {
-    "status": "DRAFT",
+    "status": "PUBLISHED",
     "featured": true,
     "trending": true
   },
@@ -2066,7 +2066,7 @@ EXPECTED JSON SCHEMA SPECIFICATION (ALL 14 SECTIONS)
       }
     ],
     "seoArticle": "Comprehensive 350-500 word narrative article summarizing everything about ${targetName} including history, academic programs, campus infrastructure, placements, and guidance for aspiring students.",
-    "contentStatus": "DRAFT"
+    "contentStatus": "PUBLISHED"
   },
   "reviews": [
     {
@@ -2813,12 +2813,33 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
             <span>Fetch Website</span>
           </button>
 
+          {/* Top Status Dropdown */}
+          <div className="relative">
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className={`appearance-none pl-2.5 pr-7 py-2 rounded-xl text-xs font-extrabold border transition-all cursor-pointer shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500/50 ${
+                status === "PUBLISHED"
+                  ? "bg-purple-50 border-purple-200 text-[#3b2075]"
+                  : status === "DATA_SUBMITTED"
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                  : "bg-amber-50 border-amber-200 text-amber-900"
+              }`}
+              title="Publication Status"
+            >
+              <option value="PUBLISHED">🟢 Published</option>
+              <option value="DRAFT">🟠 Draft</option>
+              <option value="DATA_SUBMITTED">🟣 Data Submitted</option>
+            </select>
+            <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" />
+          </div>
+
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-md transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-md transition-all disabled:opacity-50 cursor-pointer"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : <Save className="w-4 h-4 text-amber-300 shrink-0" />}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin shrink-0 text-amber-300" /> : <Save className="w-4 h-4 text-amber-300 shrink-0" />}
             <span>{collegeId ? "Update College" : "Save College"}</span>
           </button>
         </div>
@@ -4367,10 +4388,11 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="bg-slate-50/60 px-3.5 py-2 rounded-xl border border-slate-300 font-bold"
+              className="bg-slate-50/60 px-3.5 py-2 rounded-xl border border-slate-300 font-bold text-xs"
             >
               <option value="PUBLISHED">PUBLISHED (Visible Everywhere)</option>
               <option value="DRAFT">DRAFT (Hidden / Pending)</option>
+              <option value="DATA_SUBMITTED">DATA SUBMITTED (Pending Review)</option>
             </select>
           </div>
 
@@ -4702,40 +4724,68 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
         )}
       </section>
 
-      {/* Bottom Sticky Save Button */}
-      <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
-        <button
-          type="button"
-          onClick={() => router.push("/manager/colleges")}
-          className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
-        >
-          Cancel
-        </button>
+      {/* Bottom Sticky Action Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-3 pb-2 border-t border-slate-200 bg-white/95 backdrop-blur-md sticky bottom-2 z-20 px-3.5 py-2.5 rounded-2xl shadow-md border border-slate-200">
+        {/* Status Dropdown Setting ("scroll down option") */}
+        <div className="flex items-center gap-2.5">
+          <label htmlFor="bottomStatus" className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5 whitespace-nowrap">
+            <span className="text-slate-400 text-[10px] uppercase tracking-wider font-extrabold">Save Status:</span>
+          </label>
+          <div className="relative">
+            <select
+              id="bottomStatus"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className={`appearance-none pl-3 pr-8 py-2 rounded-xl text-xs font-extrabold border transition-all cursor-pointer shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500/50 ${
+                status === "PUBLISHED"
+                  ? "bg-purple-50 border-purple-200 text-[#3b2075]"
+                  : status === "DATA_SUBMITTED"
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                  : "bg-amber-50 border-amber-200 text-amber-900"
+              }`}
+            >
+              <option value="PUBLISHED">🟢 PUBLISHED (Live Everywhere)</option>
+              <option value="DRAFT">🟠 DRAFT (Hidden / Pending)</option>
+              <option value="DATA_SUBMITTED">🟣 DATA SUBMITTED (Review)</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" />
+          </div>
+          {status === "PUBLISHED" && (
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 bg-purple-50/60 px-2 py-0.5 rounded-lg border border-purple-200/50">
+              <CheckCircle2 className="w-3 h-3 text-purple-600" /> Visible on live website
+            </span>
+          )}
+          {status === "DRAFT" && (
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50/60 px-2 py-0.5 rounded-lg border border-amber-200/50">
+              Hidden from public search
+            </span>
+          )}
+          {status === "DATA_SUBMITTED" && (
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50/60 px-2 py-0.5 rounded-lg border border-emerald-200/50">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Pending admin review
+            </span>
+          )}
+        </div>
 
-        <button
-          type="button"
-          disabled={loading}
-          onClick={(e) => {
-            setStatus("DATA_SUBMITTED");
-            setTimeout(() => {
-              const form = (e.target as HTMLElement).closest("form");
-              if (form) form.requestSubmit();
-            }, 50);
-          }}
-          className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-md transition-all disabled:opacity-50 cursor-pointer"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 text-emerald-200" />}
-          <span>Save as Data Submitted</span>
-        </button>
+        {/* Buttons: Cancel & Only ONE Save College Button */}
+        <div className="flex items-center gap-2.5 ml-auto">
+          <button
+            type="button"
+            onClick={() => router.push("/manager/colleges")}
+            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer border border-slate-200"
+          >
+            Cancel
+          </button>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-md transition-all disabled:opacity-50 cursor-pointer"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-amber-300" />}
-          <span>{collegeId ? "Update College" : "Save College"}</span>
-        </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex items-center gap-2 px-6 py-2 rounded-xl bg-[#1f0c3d] hover:bg-[#3b2075] text-white text-xs font-extrabold shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin text-amber-300" /> : <Save className="w-4 h-4 text-amber-300" />}
+            <span>{collegeId ? "Update College" : "Save College"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Website Fetcher Modal */}

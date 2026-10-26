@@ -80,7 +80,7 @@ model CollegeProfile {
   slug                    String?            @unique
   description             String             @db.Text
   location                String
-  address                 String?
+  address                 String?            @db.Text
   landmark                String?
   area                    String?
   city                    String?
@@ -102,11 +102,11 @@ model CollegeProfile {
   type                    String             // Government, Private, Govt-Aided
   ownership               String?            // Government, Private, Aided, Deemed, Autonomous
   category                String?            @default("Engineering") // Engineering, Medical, Arts & Science, Commerce, Law, Management, Polytechnic, etc.
-  categories              String?            // Comma separated categories e.g. "Engineering, Autonomous, Co-Ed"
-  affiliatedUniversity    String?
+  categories              String?            @db.Text // Comma separated categories e.g. "Engineering, Autonomous, Co-Ed"
+  affiliatedUniversity    String?            @db.Text
   isAutonomous            Boolean            @default(false)
-  accreditation           String?
-  approval                String?            // AICTE, UGC, etc.
+  accreditation           String?            @db.Text
+  approval                String?            @db.Text // AICTE, UGC, etc.
   aicteApproved           Boolean            @default(true)
   ugcApproved             Boolean            @default(true)
   naacGrade               String?            // e.g. A++
@@ -224,13 +224,13 @@ model Course {
   college      CollegeProfile @relation(fields: [collegeId], references: [id], onDelete: Cascade)
   title        String
   duration     String         // e.g. "4 Years"
-  careerPath   String?
+  careerPath   String?        @db.Text
   demand       String?        // Exponential, Very High, High, etc.
   feesPerYear  Float
   minGpa       Float?         // Min percentage required
-  eligibility  String?
+  eligibility  String?        @db.Text
   seats        Int?
-  entranceExam String?
+  entranceExam String?        @db.Text
   isDeleted    Boolean        @default(false)
   deletedAt    DateTime?
   createdAt    DateTime       @default(now())
@@ -272,7 +272,7 @@ model Scholarship {
   updatedAt             DateTime  @updatedAt
 
   // Legacy compatibility fields
-  eligibility           String?
+  eligibility           String?   @db.Text
   value                 String?
   type                  String?
 
@@ -321,7 +321,7 @@ model PlacementOutcome {
   placedStudents   Int
   highestCtc       Float          // in LPA
   averageCtc       Float          // in LPA
-  topRecruiters    String         // comma-separated or text
+  topRecruiters    String         @db.Text // comma-separated or text
   createdAt        DateTime       @default(now())
 
   @@map("placementoutcome")
