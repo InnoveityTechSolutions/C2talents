@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getCourseDeduplicationKey, parseCourseFee, extractMinPercentage } from "@/lib/courses/courseDeduplication";
 
 // =====================================================================
 // FULL-DOCUMENT PARSER CONSTANTS
@@ -358,8 +359,9 @@ function parseFullDocument(text: string): Record<string, any> {
       const degreeNorm = rawDegree.replace(/\./g, "").trim();
       const title = spec ? `${rawDegree} ${spec}`.replace(/\s+/g, " ").trim() : rawDegree.trim();
 
-      if (!seenCourseTitles.has(title.toLowerCase())) {
-        seenCourseTitles.add(title.toLowerCase());
+      const dedupKey = getCourseDeduplicationKey(title);
+      if (!seenCourseTitles.has(dedupKey)) {
+        seenCourseTitles.add(dedupKey);
 
         if (!duration) {
           if (/B\.?Tech|B\.?E\.?/i.test(rawDegree)) duration = "4 Years";
@@ -374,14 +376,16 @@ function parseFullDocument(text: string): Record<string, any> {
         else if (/Ph\.?D/i.test(degreeNorm)) level = "PhD";
         else if (/Diploma|D\.Pharm/i.test(degreeNorm)) level = "Diploma";
 
-        if (!eligibility) eligibility = level === "UG" ? "10+2 Pass with minimum 50%" : "Graduation with minimum 50%";
+        const minGpa = extractMinPercentage(eligibility, null);
+        if (!eligibility) eligibility = level === "UG" ? "10+2 Pass" : "Graduation in relevant discipline";
         if (!entranceExam) entranceExam = result.admissionEntranceExams || "Merit Based";
 
         const courseEntry = {
           title,
           duration,
-          feesPerYear,
+          feesPerYear: feesPerYear !== null && feesPerYear !== undefined ? parseCourseFee(feesPerYear) || null : null,
           eligibility,
+          minGpa,
           seats,
           entranceExam,
         };
@@ -574,7 +578,7 @@ Return ONLY a raw valid JSON object with these exact keys:
   "instagram": string|null,
   "linkedin": string|null,
   "youtube": string|null,
-  "courses": [{"title":string,"duration":string,"feesPerYear":number|null,"eligibility":string,"seats":number|null,"entranceExam":string}],
+  "courses": [{"title":string,"duration":string,"feesPerYear":number|null,"eligibility":string,"minGpa":number|null,"seats":number|null,"entranceExam":string}],
   "feesPerYear": number|null,
   "courseWiseFees": string|null,
   "hostelFees": number|null,
@@ -663,9 +667,30 @@ Return ONLY a raw valid JSON object with these exact keys:
       }
     }
 
-    if (!Array.isArray(parsedData.courses) || parsedData.courses.length === 0) {
-      parsedData.courses = regexParsed.courses;
+    const coursesToProcess = Array.isArray(parsedData.courses) && parsedData.courses.length > 0
+      ? parsedData.courses
+      : regexParsed.courses;
+
+    const seenMap = new Map<string, any>();
+    for (const c of coursesToProcess) {
+      if (!c || !c.title) continue;
+      const key = getCourseDeduplicationKey(c.title);
+      if (!seenMap.has(key)) {
+        const rawEligibility = c.eligibility || "";
+        const minGpa = extractMinPercentage(rawEligibility, c.minGpa);
+        const fees = c.feesPerYear !== null && c.feesPerYear !== undefined ? parseCourseFee(c.feesPerYear) || null : null;
+        seenMap.set(key, {
+          title: c.title.trim(),
+          duration: c.duration || "4 Years",
+          feesPerYear: fees,
+          eligibility: rawEligibility || (minGpa ? `Minimum ${minGpa}% in 10+2` : "Eligibility not specified"),
+          minGpa,
+          seats: c.seats ? parseInt(String(c.seats), 10) || null : null,
+          entranceExam: c.entranceExam || "Merit Based",
+        });
+      }
     }
+    parsedData.courses = Array.from(seenMap.values());
 
     if (!Array.isArray(parsedData.facilities) || parsedData.facilities.length === 0) {
       parsedData.facilities = regexParsed.facilities;

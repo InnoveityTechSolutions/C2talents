@@ -190,102 +190,214 @@ export function generateSearchVariants(query: string): string[] {
   return Array.from(variants).filter((v) => v.length >= 2);
 }
 
+export const KNOWN_LOCATION_KEYWORDS = new Set([
+  "chennai", "coimbatore", "madurai", "trichy", "tiruchirappalli", "salem",
+  "tirunelveli", "erode", "vellore", "thanjavur", "dindigul", "kanchipuram",
+  "karur", "namakkal", "krishnagiri", "dharmapuri", "tiruppur", "cuddalore",
+  "villupuram", "nagapattinam", "pudukkottai", "ramanathapuram", "sivaganga",
+  "virudhunagar", "thoothukudi", "tuticorin", "kanyakumari", "nagercoil",
+  "theni", "nilgiris", "ooty", "tamil", "nadu", "tamilnadu", "bangalore",
+  "bengaluru", "hyderabad", "delhi", "mumbai", "pune", "kolkata", "noida", "gurugram"
+]);
+
+/**
+ * Builds safe, parameterized Prisma query conditions for college searches.
+ * Enforces that name tokens query college name/shortName/slug, and location tokens query city/district/location.
+ * Never allows street address names or unrelated fields to qualify an unrelated college.
+ */
+export function buildPrismaCollegeSearchConditions(searchInput: string): any[] {
+  if (!searchInput || !searchInput.trim()) return [];
+
+  const rawTrim = searchInput.trim();
+  const clean = rawTrim.toLowerCase().replace(/['’]/g, " ").replace(/[^\w\s]/g, " ").trim();
+  const allWords = clean.split(/\s+/).filter(Boolean);
+  if (allWords.length === 0) return [];
+
+  const locationTokens: string[] = [];
+  const nameTokens: string[] = [];
+
+  for (const w of allWords) {
+    if (KNOWN_LOCATION_KEYWORDS.has(w)) {
+      locationTokens.push(w);
+    } else if (w.length >= 2 && !STOP_WORDS.has(w)) {
+      nameTokens.push(w);
+    }
+  }
+
+  const andConditions: any[] = [];
+
+  if (nameTokens.length > 0) {
+    for (const tok of nameTokens) {
+      const tokVariants = new Set<string>([tok]);
+      if (tok === "chevalier") tokVariants.add("chevaliar");
+      if (tok === "chevaliar") tokVariants.add("chevalier");
+      if (tok === "women" || tok === "womens") {
+        tokVariants.add("women");
+        tokVariants.add("womens");
+      }
+      if (tok === "govt" || tok === "government") {
+        tokVariants.add("govt");
+        tokVariants.add("government");
+      }
+      if (tok === "st" || tok === "saint") {
+        tokVariants.add("st");
+        tokVariants.add("saint");
+      }
+      if (tok === "dr" || tok === "doctor") {
+        tokVariants.add("dr");
+        tokVariants.add("doctor");
+      }
+      if (tok.length > 3 && tok.endsWith("s")) {
+        tokVariants.add(tok.slice(0, -1));
+      }
+
+      andConditions.push({
+        OR: Array.from(tokVariants).flatMap((tv) => [
+          { name: { contains: tv } },
+          { shortName: { contains: tv } },
+          { slug: { contains: tv } },
+        ]),
+      });
+    }
+
+    if (locationTokens.length > 0) {
+      for (const loc of locationTokens) {
+        andConditions.push({
+          OR: [
+            { city: { contains: loc } },
+            { district: { contains: loc } },
+            { location: { contains: loc } },
+          ],
+        });
+      }
+    }
+  } else if (locationTokens.length > 0) {
+    for (const loc of locationTokens) {
+      andConditions.push({
+        OR: [
+          { city: { contains: loc } },
+          { district: { contains: loc } },
+          { location: { contains: loc } },
+        ],
+      });
+    }
+  } else {
+    andConditions.push({
+      OR: [
+        { name: { contains: rawTrim } },
+        { shortName: { contains: rawTrim } },
+        { slug: { contains: rawTrim } },
+      ],
+    });
+  }
+
+  return andConditions;
+}
+
 /**
  * Master multi-attribute search matcher for college records
  * Handles full names, partial names, case-insensitivity, acronyms, spelling variants,
- * location, course titles, email, website, and multi-word token queries.
+ * location, and multi-word token queries with zero tolerance for unrelated college bleed.
  */
 export function matchesCollegeSearch(college: any, searchQuery: string): boolean {
   if (!searchQuery || !searchQuery.trim()) return true;
   if (!college) return false;
 
-  const rawQuery = searchQuery.trim();
-  const q = rawQuery.toLowerCase();
-  const variants = generateSearchVariants(rawQuery);
-  const { distinctiveTokens, allTokens } = extractCleanTokens(rawQuery);
+  const rawTrim = searchQuery.trim();
+  const qLower = rawTrim.toLowerCase();
+  const qClean = qLower.replace(/['’]/g, " ").replace(/[^\w\s]/g, " ").trim();
+  const allWords = qClean.split(/\s+/).filter(Boolean);
+  if (allWords.length === 0) return true;
 
-  // Build spelling variations for the college name
-  const nameVariants = [college.name || ""];
-  if (/chevaliar/i.test(college.name || "")) {
-    nameVariants.push(college.name.replace(/chevaliar/gi, "chevalier"));
-  }
-  if (/chevalier/i.test(college.name || "")) {
-    nameVariants.push(college.name.replace(/chevalier/gi, "chevaliar"));
-  }
+  const cName = (college.name || "").toLowerCase().replace(/['’]/g, " ").replace(/[^\w\s]/g, " ");
+  const cShort = (college.shortName || "").toLowerCase().trim();
+  const cSlug = (college.slug || "").toLowerCase().trim();
+  const cCity = (college.city || "").toLowerCase().trim();
+  const cLoc = (college.location || "").toLowerCase().trim();
+  const cDist = (college.district || "").toLowerCase().trim();
 
-  // Generate dynamic acronyms for this college
-  const acronyms = getCollegeAcronyms(college.name || "", {
-    email: college.email,
-    website: college.website,
-  });
-  if (college.shortName) {
-    acronyms.push(college.shortName.toLowerCase());
+  // 1. Direct name exact or substring match
+  if (cName.includes(qClean) || (cShort && cShort === qClean)) {
+    return true;
   }
 
-  const nameVariantsStr = nameVariants.join(" ").toLowerCase();
-  const shortStr = (college.shortName || "").toLowerCase();
-  const slugStr = (college.slug || "").toLowerCase();
-  const cityStr = (college.city || "").toLowerCase();
-  const locStr = (college.location || "").toLowerCase();
-  const distStr = (college.district || "").toLowerCase();
-  const addrStr = (college.address || "").toLowerCase();
-  const stateStr = (college.state || "").toLowerCase();
-  const affilStr = (college.affiliatedUniversity || "").toLowerCase();
-  const catStr = (college.category || "").toLowerCase();
-  const catsStr = (college.categories || "").toLowerCase();
-  const emailStr = (college.email || "").toLowerCase();
-  const websiteStr = (college.website || "").toLowerCase();
-  const acronymsStr = acronyms.join(" ").toLowerCase();
-  const coursesStr = Array.isArray(college.courses)
-    ? college.courses.map((crs: any) => crs?.title || "").join(" ").toLowerCase()
-    : "";
+  // 2. Acronym match: if user query is a short code (2-8 chars, single word, e.g. "VIT", "EEC", "BWC")
+  if (allWords.length === 1 && rawTrim.length >= 2 && rawTrim.length <= 8 && !rawTrim.includes(" ")) {
+    const code = rawTrim.toLowerCase();
+    if (cShort === code) return true;
+    if (cSlug === code || cSlug.startsWith(code + "-")) return true;
+    const dynamicAcronyms = getCollegeAcronyms(college.name || "");
+    if (dynamicAcronyms.includes(code)) return true;
+  }
 
-  const combinedStr = [
-    nameVariantsStr,
-    shortStr,
-    acronymsStr,
-    slugStr,
-    cityStr,
-    locStr,
-    distStr,
-    addrStr,
-    stateStr,
-    affilStr,
-    catStr,
-    catsStr,
-    emailStr,
-    websiteStr,
-    coursesStr,
-  ].join(" ");
+  // 3. Separate location tokens from name tokens
+  const locationTokens: string[] = [];
+  const nameTokens: string[] = [];
 
-  // 1. Direct variants substring & acronym check
-  for (const v of variants) {
-    if (v.length >= 2) {
-      if (combinedStr.includes(v)) return true;
-      if (acronyms.includes(v)) return true;
-      if (slugStr.includes(v.replace(/\s+/g, "-"))) return true;
+  for (const w of allWords) {
+    if (KNOWN_LOCATION_KEYWORDS.has(w)) {
+      locationTokens.push(w);
+    } else if (w.length >= 2 && !STOP_WORDS.has(w)) {
+      nameTokens.push(w);
     }
   }
 
-  // 2. Token-based multi-word check
-  const tokensToCheck = distinctiveTokens.length > 0 ? distinctiveTokens : allTokens;
-  if (tokensToCheck.length > 0) {
-    const matchedCount = tokensToCheck.filter((tok) => {
-      if (combinedStr.includes(tok)) return true;
-      if (tok === "chevalier" && combinedStr.includes("chevaliar")) return true;
-      if (tok === "chevaliar" && combinedStr.includes("chevalier")) return true;
-      if (acronyms.includes(tok)) return true;
-      return false;
-    }).length;
+  // If there are distinctive name tokens (e.g. "bharathi", "easwari", "thomas")
+  if (nameTokens.length > 0) {
+    // EVERY name token MUST match college name, shortName, or slug
+    const allNameTokensMatch = nameTokens.every((tok) => {
+      const tokVariants = new Set<string>([tok]);
+      if (tok === "chevalier") tokVariants.add("chevaliar");
+      if (tok === "chevaliar") tokVariants.add("chevalier");
+      if (tok === "women" || tok === "womens") {
+        tokVariants.add("women");
+        tokVariants.add("womens");
+      }
+      if (tok === "govt" || tok === "government") {
+        tokVariants.add("govt");
+        tokVariants.add("government");
+      }
+      if (tok === "st" || tok === "saint") {
+        tokVariants.add("st");
+        tokVariants.add("saint");
+      }
+      if (tok === "dr" || tok === "doctor") {
+        tokVariants.add("dr");
+        tokVariants.add("doctor");
+      }
+      if (tok.length > 3 && tok.endsWith("s")) {
+        tokVariants.add(tok.slice(0, -1));
+      }
 
-    // Full match of all distinctive tokens
-    if (matchedCount === tokensToCheck.length) return true;
-    // For queries with 3+ distinctive tokens, allow a 60% match threshold
-    if (tokensToCheck.length >= 3 && matchedCount / tokensToCheck.length >= 0.6) return true;
+      return Array.from(tokVariants).some((tv) =>
+        cName.includes(tv) ||
+        (cShort && cShort.includes(tv)) ||
+        (cSlug && cSlug.includes(tv))
+      );
+    });
+
+    if (!allNameTokensMatch) return false;
+
+    // If location tokens are also present in query, college must also match location
+    if (locationTokens.length > 0) {
+      const locationMatch = locationTokens.some((loc) =>
+        cCity.includes(loc) || cLoc.includes(loc) || cDist.includes(loc)
+      );
+      if (!locationMatch) return false;
+    }
+
+    return true;
   }
 
-  // 3. Normalized string containment check
-  const normQ = normalizeSearchString(rawQuery);
+  // If only location tokens are present (e.g. "colleges in chennai", "madurai")
+  if (locationTokens.length > 0) {
+    return locationTokens.some((loc) =>
+      cCity.includes(loc) || cLoc.includes(loc) || cDist.includes(loc)
+    );
+  }
+
+  // Direct normalized name check
+  const normQ = normalizeSearchString(rawTrim);
   const normName = normalizeSearchString(college.name || "");
   if (normName.length > 0 && normQ.length > 0) {
     if (normName.includes(normQ) || normQ.includes(normName)) return true;

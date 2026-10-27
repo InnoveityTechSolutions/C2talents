@@ -7,6 +7,7 @@ import {
   generateSearchVariants,
   extractCleanTokens,
   matchesCollegeSearch,
+  buildPrismaCollegeSearchConditions,
 } from "@/lib/search/searchNormalizer";
 
 export const dynamic = "force-dynamic";
@@ -93,75 +94,12 @@ export async function GET(req: Request) {
 
     const andConditions: any[] = [];
 
-    // KEYWORD SEARCH FILTER (College Name, ShortName, Slug, City, Location, Affiliation)
+    // KEYWORD SEARCH FILTER (College Name, ShortName, Slug, City, Location)
     if (searchInput) {
-      const variants = generateSearchVariants(searchInput);
-      const { allTokens, distinctiveTokens } = extractCleanTokens(searchInput);
-      const keywordOrList: any[] = [];
-
-      for (const v of variants) {
-        if (v.length >= 2) {
-          keywordOrList.push(
-            { name: { contains: v } },
-            { shortName: { contains: v } },
-            { slug: { contains: v } },
-            { slug: { contains: v.replace(/\s+/g, "-") } },
-            { city: { contains: v } },
-            { location: { contains: v } },
-            { district: { contains: v } },
-            { address: { contains: v } },
-            { state: { contains: v } },
-            { email: { contains: v } },
-            { website: { contains: v } },
-            { category: { contains: v } },
-            { categories: { contains: v } },
-            { affiliatedUniversity: { contains: v } },
-            { courses: { some: { title: { contains: v }, isDeleted: false } } }
-          );
-        }
+      const searchConditions = buildPrismaCollegeSearchConditions(searchInput);
+      if (searchConditions.length > 0) {
+        andConditions.push(...searchConditions);
       }
-
-      // Add token matches if search has multiple words
-      const tokensToMatch = distinctiveTokens.length > 0 ? distinctiveTokens : allTokens;
-      if (tokensToMatch.length > 1) {
-        const cleanNoBrackets = searchInput.replace(/\([^)]*\)/g, " ");
-        const { distinctiveTokens: noBracketTokens } = extractCleanTokens(cleanNoBrackets);
-
-        const tokenGroups = [tokensToMatch];
-        if (noBracketTokens.length > 1 && noBracketTokens.length < tokensToMatch.length) {
-          tokenGroups.push(noBracketTokens);
-        }
-
-        for (const tGroup of tokenGroups) {
-          keywordOrList.push({
-            AND: tGroup.map((tok) => {
-              const tokVariants = [tok];
-              if (tok === "chevalier") tokVariants.push("chevaliar");
-              if (tok === "chevaliar") tokVariants.push("chevalier");
-
-              return {
-                OR: tokVariants.flatMap((tv) => [
-                  { name: { contains: tv } },
-                  { shortName: { contains: tv } },
-                  { city: { contains: tv } },
-                  { location: { contains: tv } },
-                  { district: { contains: tv } },
-                  { address: { contains: tv } },
-                  { state: { contains: tv } },
-                  { email: { contains: tv } },
-                  { website: { contains: tv } },
-                  { category: { contains: tv } },
-                  { categories: { contains: tv } },
-                  { affiliatedUniversity: { contains: tv } },
-                  { courses: { some: { title: { contains: tv }, isDeleted: false } } },
-                ]),
-              };
-            }),
-          });
-        }
-      }
-
-      andConditions.push({ OR: keywordOrList });
     }
 
     // COMPARISON INTENT SEARCH ("VIT vs SSN")
@@ -176,31 +114,17 @@ export async function GET(req: Request) {
       andConditions.push({ OR: compareOrFilters });
     }
 
-    // HARD LOCATION FILTER (Only when location is specified and not comparing)
-    if (location && parsedIntent.intent !== "COMPARE") {
-      const locTrim = location.trim();
-      // If searchInput directly matches a college name, location shouldn't block it; allow location or name match
-      if (searchInput && searchTokens.length > 0) {
-        andConditions.push({
-          OR: [
-            { city: { contains: locTrim } },
-            { location: { contains: locTrim } },
-            { district: { contains: locTrim } },
-            { address: { contains: locTrim } },
-            { name: { contains: searchInput } },
-            { shortName: { contains: searchInput } },
-          ],
-        });
-      } else {
-        andConditions.push({
-          OR: [
-            { city: { contains: locTrim } },
-            { location: { contains: locTrim } },
-            { district: { contains: locTrim } },
-            { address: { contains: locTrim } },
-          ],
-        });
-      }
+    // EXPLICIT LOCATION FILTER (Only when location is specified explicitly, or when searchInput is not already handling location)
+    const effectiveLocation = explicitLocation || (!searchInput ? location : null);
+    if (effectiveLocation && parsedIntent.intent !== "COMPARE") {
+      const locTrim = effectiveLocation.trim();
+      andConditions.push({
+        OR: [
+          { city: { contains: locTrim } },
+          { location: { contains: locTrim } },
+          { district: { contains: locTrim } },
+        ],
+      });
     }
 
     // STRICT COURSE FILTERING (Prisma Relational Course Check)
@@ -379,21 +303,6 @@ export async function GET(req: Request) {
       orderBy: { updatedAt: "desc" },
     });
 
-    if (searchInput && dbColleges.length === 0) {
-      const candidateColleges = await db.collegeProfile.findMany({
-        where: {
-          status: { not: "DRAFT" },
-          isDeleted: false,
-        },
-        include: {
-          courses: { where: { isDeleted: false } },
-          reviews: { take: 5, orderBy: { createdAt: "desc" } },
-        },
-        orderBy: { updatedAt: "desc" },
-      });
-      dbColleges = candidateColleges.filter((c: any) => matchesCollegeSearch(c, searchInput));
-    }
-
     // 3. HARD COURSE, LOCATION & DOMAIN RELEVANCE CHECK BEFORE DISPLAY
     const filteredColleges = dbColleges.filter((c) => {
       const nameL = (c.name || "").toLowerCase();
@@ -404,13 +313,9 @@ export async function GET(req: Request) {
       const addrL = (c.address || "").toLowerCase();
       const queryLower = (searchInput || "").toLowerCase().trim();
 
-      // Direct name match safeguard: If college matches search query, NEVER filter it out
-      const isDirectNameMatch = Boolean(
-        searchInput && matchesCollegeSearch(c, searchInput)
-      );
-
-      if (isDirectNameMatch) {
-        return true;
+      // Search Query Validation: college MUST match search query if provided
+      if (searchInput && !matchesCollegeSearch(c, searchInput)) {
+        return false;
       }
 
       // ZERO-TOLERANCE COURSE VALIDATION

@@ -46,6 +46,7 @@ export default function AdminAllCollegesPage() {
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: string; name: string }>({ open: false, id: "", name: "" });
   const [deleting, setDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [error, setError] = useState<string | null>(null);
   const pageSize = 50;
 
   useEffect(() => {
@@ -66,14 +67,18 @@ export default function AdminAllCollegesPage() {
 
   async function fetchColleges() {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/admin/colleges", { cache: "no-store" });
       const data = await res.json();
-      if (data.colleges) {
+      if (data.success && Array.isArray(data.colleges)) {
         setColleges(data.colleges);
+      } else {
+        setError(data.error || "Failed to load colleges");
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error("Colleges fetch error:", err);
+      setError(err?.message || "Failed to connect to database");
     } finally {
       setLoading(false);
     }
@@ -210,7 +215,13 @@ export default function AdminAllCollegesPage() {
               <div>
                 <div className="text-xs font-semibold text-white/90 tracking-tight">{card.title}</div>
                 <div className="text-3xl font-extrabold text-white mt-1 tracking-tight">
-                  {loading ? <span className="animate-pulse">...</span> : card.count}
+                  {loading ? (
+                    <span className="animate-pulse">...</span>
+                  ) : error ? (
+                    <span className="text-xl font-bold opacity-75">--</span>
+                  ) : (
+                    card.count
+                  )}
                 </div>
               </div>
               {card.icon}
@@ -221,7 +232,7 @@ export default function AdminAllCollegesPage() {
             <div className="flex items-center justify-between text-[11px] text-white/90 font-medium">
               <span>{card.sublabel}</span>
               <span className="font-bold text-white bg-white/20 px-2 py-0.5 rounded-md">
-                {loading ? "..." : card.count}
+                {loading ? "..." : error ? "--" : card.count}
               </span>
             </div>
           </div>
@@ -298,8 +309,12 @@ export default function AdminAllCollegesPage() {
         ) : filteredColleges.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <Building2 className="w-10 h-10 text-stone-300 mx-auto" />
-            <p className="text-base font-extrabold text-[#1f0c3d]">No Colleges Found</p>
-            <p className="text-xs text-stone-500">Try adjusting your search query or add a new college profile.</p>
+            <p className="text-base font-extrabold text-[#1f0c3d]">
+              {searchQuery ? "College not found in database." : "No Colleges Found"}
+            </p>
+            <p className="text-xs text-stone-500">
+              {searchQuery ? `No colleges matching "${searchQuery}" exist in the database.` : "Try adjusting your search query or add a new college profile."}
+            </p>
             <Link
               href="/manager/colleges/new"
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#3b2075] text-amber-300 font-extrabold rounded-xl text-xs shadow-sm hover:bg-[#4c1d95]"

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendEmail, generateCollegePublishedEmailHtml } from "@/lib/email";
+import { upsertCollegeCourses } from "@/lib/courses/courseDeduplication";
 
 export const dynamic = "force-dynamic";
 
@@ -107,16 +108,16 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
           ugcApproved: Boolean(payload.ugcApproved ?? true),
           naacGrade: payload.naacGrade || "A",
           nirfRank: safeInt(payload.nirfRank),
-          feesPerYear: safeFloat(payload.feesPerYear, 60000) ?? 60000,
+          feesPerYear: safeFloat(payload.feesPerYear, 0) ?? 0,
           courseWiseFees: payload.courseWiseFees || "",
           hostelFees: safeFloat(payload.hostelFees),
           transportFees: safeFloat(payload.transportFees),
           scholarshipDetails: payload.scholarshipDetails || "",
           educationLoanDetails: payload.educationLoanDetails || "",
           facilities: Array.isArray(payload.facilities) ? payload.facilities.join(", ") : payload.facilities || "",
-          avgPackage: safeFloat(payload.avgPackage, 5.0) ?? 5.0,
-          highestPackage: safeFloat(payload.highestPackage, 12.0) ?? 12.0,
-          placementPercentage: safeFloat(payload.placementPercentage, 85.0),
+          avgPackage: safeFloat(payload.avgPackage, 0) ?? 0,
+          highestPackage: safeFloat(payload.highestPackage, 0) ?? 0,
+          placementPercentage: safeFloat(payload.placementPercentage),
           internshipDetails: payload.internshipDetails || "",
           topRecruiters: payload.topRecruiters || "",
           admissionEligibility: payload.admissionEligibility || "",
@@ -192,16 +193,16 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
           ugcApproved: Boolean(payload.ugcApproved ?? true),
           naacGrade: payload.naacGrade || "A",
           nirfRank: safeInt(payload.nirfRank),
-          feesPerYear: safeFloat(payload.feesPerYear, 60000) ?? 60000,
+          feesPerYear: safeFloat(payload.feesPerYear, 0) ?? 0,
           courseWiseFees: payload.courseWiseFees || "",
           hostelFees: safeFloat(payload.hostelFees),
           transportFees: safeFloat(payload.transportFees),
           scholarshipDetails: payload.scholarshipDetails || "",
           educationLoanDetails: payload.educationLoanDetails || "",
           facilities: Array.isArray(payload.facilities) ? payload.facilities.join(", ") : payload.facilities || "",
-          avgPackage: safeFloat(payload.avgPackage, 5.0) ?? 5.0,
-          highestPackage: safeFloat(payload.highestPackage, 12.0) ?? 12.0,
-          placementPercentage: safeFloat(payload.placementPercentage, 85.0),
+          avgPackage: safeFloat(payload.avgPackage, 0) ?? 0,
+          highestPackage: safeFloat(payload.highestPackage, 0) ?? 0,
+          placementPercentage: safeFloat(payload.placementPercentage),
           internshipDetails: payload.internshipDetails || "",
           topRecruiters: payload.topRecruiters || "",
           admissionEligibility: payload.admissionEligibility || "",
@@ -226,60 +227,102 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
           status: "PUBLISHED",
           featured: Boolean(payload.featured ?? true),
           trending: Boolean(payload.trending ?? true),
-          courses: {
-            create: Array.isArray(payload.courses) && payload.courses.length > 0
-              ? payload.courses.map((c: any) => ({
-                  title: c.title || "Undergraduate Course",
-                  duration: c.duration || "4 Years",
-                  feesPerYear: safeFloat(c.feesPerYear, 60000) ?? 60000,
-                  eligibility: c.eligibility || "10+2 Pass",
-                  seats: safeInt(c.seats, 60) ?? 60,
-                  entranceExam: c.entranceExam || "Merit Based",
-                }))
-              : [
-                  {
-                    title: "B.E. Computer Science and Engineering",
-                    duration: "4 Years",
-                    feesPerYear: safeFloat(payload.feesPerYear, 65000) ?? 65000,
-                    eligibility: "10+2 with 50% in PCM",
-                    seats: 120,
-                    entranceExam: "TNEA / Merit",
-                  },
-                ],
-          },
-          galleryImages: {
-            create: Array.isArray(payload.galleryImages) && payload.galleryImages.length > 0
-              ? payload.galleryImages.map((g: any) => ({
-                  url: typeof g === "string" ? g : g?.url || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80",
-                  altText: typeof g === "object" && g?.altText ? String(g.altText) : `${collegeName} Campus`,
-                  caption: typeof g === "object" && g?.caption ? String(g.caption) : "Campus Infrastructure",
-                  tags: typeof g === "object" && g?.tags ? String(g.tags) : "campus",
-                }))
-              : [],
-          },
-          content: payload.content || payload.overview || payload.about ? {
-            create: {
-              overview: payload.content?.overview || payload.overview || null,
-              about: payload.content?.about || payload.about || null,
-              history: payload.content?.history || null,
-              highlights: payload.content?.highlights || null,
-              whyChoose: payload.content?.whyChoose || null,
-              campusLife: payload.content?.campusLife || null,
-              facilitiesDescription: payload.content?.facilitiesDescription || null,
-              placementOverview: payload.content?.placementOverview || null,
-              topRecruiters: payload.content?.topRecruiters || null,
-              admissionGuide: payload.content?.admissionGuide || null,
-              eligibility: payload.content?.eligibility || null,
-              hostelLife: payload.content?.hostelLife || null,
-              scholarships: payload.content?.scholarships || null,
-              research: payload.content?.research || null,
-              studentActivities: payload.content?.studentActivities || null,
-              faq: payload.content?.faq || null,
-              seoArticle: payload.content?.seoArticle || null,
-              contentStatus: "PUBLISHED",
-            }
-          } : undefined,
         },
+      });
+    }
+
+    // 1. Upsert Courses (Section 4)
+    if (Array.isArray(payload.courses) && payload.courses.length > 0) {
+      await upsertCollegeCourses(publishedCollege.id, payload.courses);
+    }
+
+    // 2. Upsert Gallery Images (Section 12)
+    if (Array.isArray(payload.galleryImages) && payload.galleryImages.length > 0) {
+      await db.galleryImage.deleteMany({ where: { collegeId: publishedCollege.id } });
+      await db.galleryImage.createMany({
+        data: payload.galleryImages
+          .map((g: any) => ({
+            collegeId: publishedCollege.id,
+            url: typeof g === "string" ? safeUrl(g) : safeUrl(g?.url),
+            altText: typeof g === "object" && g?.altText ? String(g.altText) : `${collegeName} Campus`,
+            caption: typeof g === "object" && g?.caption ? String(g.caption) : "Campus Infrastructure",
+            tags: typeof g === "object" && g?.tags ? String(g.tags) : "campus",
+          }))
+          .filter((img: any) => Boolean(img.url)),
+      });
+    }
+
+    // 3. Upsert College Content (Section 13)
+    const contentPayload = payload.collegeContent || payload.content || {};
+    const hasContent = Boolean(
+      contentPayload.overview ||
+      contentPayload.about ||
+      contentPayload.history ||
+      contentPayload.highlights ||
+      payload.overview ||
+      payload.about
+    );
+
+    if (hasContent) {
+      const contentData = {
+        overview: contentPayload.overview || payload.overview || null,
+        about: contentPayload.about || payload.about || null,
+        history: contentPayload.history || null,
+        highlights: contentPayload.highlights || null,
+        whyChoose: contentPayload.whyChoose || null,
+        campusLife: contentPayload.campusLife || null,
+        facilitiesDescription: contentPayload.facilitiesDescription || null,
+        placementOverview: contentPayload.placementOverview || null,
+        topRecruiters: contentPayload.topRecruiters || null,
+        admissionGuide: contentPayload.admissionGuide || null,
+        eligibility: contentPayload.eligibility || null,
+        hostelLife: contentPayload.hostelLife || null,
+        scholarships: contentPayload.scholarships || null,
+        research: contentPayload.research || null,
+        studentActivities: contentPayload.studentActivities || null,
+        faq: contentPayload.faq || null,
+        seoArticle: contentPayload.seoArticle || null,
+        contentStatus: "PUBLISHED",
+      };
+
+      await db.collegeContent.upsert({
+        where: { collegeId: publishedCollege.id },
+        create: {
+          collegeId: publishedCollege.id,
+          ...contentData,
+        },
+        update: contentData,
+      });
+    }
+
+    // 4. Upsert Student Reviews (Section 14)
+    const reviewsList = Array.isArray(payload.reviews) && payload.reviews.length > 0
+      ? payload.reviews
+      : Array.isArray(payload.studentReviews) && payload.studentReviews.length > 0
+      ? payload.studentReviews
+      : [];
+
+    if (reviewsList.length > 0) {
+      await db.review.deleteMany({ where: { collegeId: publishedCollege.id } });
+      await db.review.createMany({
+        data: reviewsList.map((r: any) => ({
+          collegeId: publishedCollege.id,
+          studentName: r.studentName || r.reviewerName || "Verified Student",
+          course: r.course || "Undergraduate / Postgraduate",
+          batchYear: safeInt(r.batchYear) || new Date().getFullYear(),
+          title: r.title || "Academic & Campus Experience",
+          rating: safeFloat(r.rating, 4.2) ?? 4.2,
+          academicRating: safeFloat(r.academicRating, 4.5) ?? 4.5,
+          infrastructureRating: safeFloat(r.infrastructureRating, 4.0) ?? 4.0,
+          placementRating: safeFloat(r.placementRating, 4.2) ?? 4.2,
+          campusRating: safeFloat(r.campusRating, 4.0) ?? 4.0,
+          valueForMoneyRating: safeFloat(r.valueForMoneyRating, 4.5) ?? 4.5,
+          likes: r.likes || r.pros || "",
+          dislikes: r.dislikes || r.cons || "",
+          content: r.content || r.review || r.likes || "Feedback based on academic curriculum and college facilities.",
+          helpfulCount: safeInt(r.helpfulCount) || 12,
+          isVerified: Boolean(r.isVerified ?? true),
+        })),
       });
     }
 

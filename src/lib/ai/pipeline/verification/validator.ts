@@ -25,6 +25,8 @@ export function stripHtmlTags(str: string | null): string | null {
   return str.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
 }
 
+import { getCourseDeduplicationKey } from "@/lib/courses/courseDeduplication";
+
 export function validateCourses(courses: any[]) {
   if (!Array.isArray(courses)) return [];
   
@@ -49,12 +51,14 @@ export function validateCourses(courses: any[]) {
     }
     if (isDenied) continue;
     
-    if (!uniqueCourses.has(normalizedTitle)) {
-      uniqueCourses.set(normalizedTitle, {
+    const dedupKey = getCourseDeduplicationKey(name);
+    if (!uniqueCourses.has(dedupKey)) {
+      uniqueCourses.set(dedupKey, {
         title: name,
         duration: c.duration || null,
         feesPerYear: typeof c.feesPerYear === 'number' ? c.feesPerYear : null,
         eligibility: c.eligibility || null,
+        minGpa: typeof c.minGpa === 'number' ? c.minGpa : null,
         seats: typeof c.seats === 'number' ? c.seats : null,
         entranceExam: c.entranceExam || null,
       });

@@ -25,7 +25,9 @@ import {
   UserCheck,
   SearchCheck,
   X,
+  Layers,
 } from "lucide-react";
+import { useAdminNotifications } from "@/components/admin/AdminNotificationProvider";
 
 interface AdminSidebarProps {
   mobileOpen?: boolean;
@@ -54,6 +56,7 @@ const navItems = [
 
 export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { pendingReviewCount, setShowBulkModal } = useAdminNotifications();
 
   async function handleLogout() {
     try {
@@ -109,8 +112,22 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
 
       {/* Main Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        <div className="px-2 pb-2 text-[10px] font-extrabold uppercase tracking-wider text-purple-300/60">
-          Management CMS
+        <div className="px-2 pb-2 flex items-center justify-between">
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-300/60">
+            Management CMS
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setShowBulkModal(true);
+              onCloseMobile?.();
+            }}
+            className="flex items-center gap-1 text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+            title="Start Bulk Research for up to 50 colleges"
+          >
+            <Layers className="w-3 h-3" />
+            <span>Bulk AI</span>
+          </button>
         </div>
 
         {navItems.map((item) => {
@@ -136,11 +153,16 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
                   : "text-purple-200/80 hover:text-white hover:bg-[#3b2075]/40"
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <Icon className={`w-4 h-4 ${isActive ? "text-amber-300" : item.highlight ? "text-stone-950" : "text-purple-300/70"}`} />
-                <span>{item.name}</span>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-amber-300" : item.highlight ? "text-stone-950" : "text-purple-300/70"}`} />
+                <span className="truncate">{item.name}</span>
+                {item.name === "Submitted Colleges" && pendingReviewCount > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-stone-950 font-black text-[9.5px] shrink-0">
+                    {pendingReviewCount > 99 ? "99+" : pendingReviewCount}
+                  </span>
+                )}
               </div>
-              {isActive && <ChevronRight className="w-3.5 h-3.5 text-amber-300" />}
+              {isActive && <ChevronRight className="w-3.5 h-3.5 text-amber-300 shrink-0" />}
             </Link>
           );
         })}

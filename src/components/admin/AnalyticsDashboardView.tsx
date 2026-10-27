@@ -65,22 +65,22 @@ export function AnalyticsDashboardView() {
   }, []);
 
   const summary = data?.summary || {
-    totalColleges: 258,
-    publishedColleges: 258,
+    totalColleges: 0,
+    publishedColleges: 0,
     draftColleges: 0,
-    featuredColleges: 20,
-    totalCourses: 782,
-    totalCategories: 7,
-    totalScholarships: 42,
-    totalUsers: 261,
-    totalLeads: 1,
+    featuredColleges: 0,
+    totalCourses: 0,
+    totalCategories: 0,
+    totalScholarships: 0,
+    totalUsers: 0,
+    totalLeads: 0,
     admissionLeadsCount: 0,
     studyAbroadLeadsCount: 0,
-    enquiryLeadsCount: 1,
-    highestCtc: "110.0",
-    avgCtc: "6.8",
-    totalReviews: 253,
-    avgOverallRating: 4.5,
+    enquiryLeadsCount: 0,
+    highestCtc: "0.0",
+    avgCtc: "0.0",
+    totalReviews: 0,
+    avgOverallRating: 0.0,
   };
 
   const monthlyTrends = data?.monthlyTrends || [];
@@ -135,10 +135,10 @@ export function AnalyticsDashboardView() {
           </div>
           <div className="space-y-1">
             <div className="text-3xl font-extrabold text-stone-900 tracking-tight">
-              {summary.totalColleges}
+              {loading ? <span className="animate-pulse">...</span> : summary.totalColleges}
             </div>
             <div className="text-xs text-emerald-600 font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> {summary.publishedColleges} Published on Live Site
+              <CheckCircle2 className="w-3.5 h-3.5" /> {loading ? "..." : summary.publishedColleges} Published on Live Site
             </div>
           </div>
           <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">

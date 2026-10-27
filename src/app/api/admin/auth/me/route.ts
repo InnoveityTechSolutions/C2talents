@@ -10,7 +10,7 @@ const ALLOWED_ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "CONTENT_MANAGER"];
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get("admin_token")?.value;
+    const token = cookieStore.get("admin_token")?.value || cookieStore.get("token")?.value;
 
     if (!token) {
       return NextResponse.json(

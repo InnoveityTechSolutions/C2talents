@@ -4,8 +4,8 @@ import type { NextRequest } from "next/server";
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // STRICT SECURITY RULE: Only admin_token grants access to Admin Manager routes
-  const adminToken = req.cookies.get("admin_token")?.value;
+  // STRICT SECURITY RULE: Only admin_token (or token) grants access to Admin Manager routes
+  const adminToken = req.cookies.get("admin_token")?.value || req.cookies.get("token")?.value;
 
   const isSuperAdminRoute = pathname.startsWith("/superadmin") || pathname.startsWith("/super-admin");
   const isManagerRoute = pathname.startsWith("/manager") || pathname.startsWith("/admin") || isSuperAdminRoute;

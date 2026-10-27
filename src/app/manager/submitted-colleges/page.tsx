@@ -22,12 +22,16 @@ import {
   FileText,
   Clock,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
 
-// Helper function to sanitize any malformed or duplicated title text in stored DB records
-function sanitizeCollegeName(rawName: string = ""): string {
+function sanitizeCollegeName(rawName: any = ""): string {
   if (!rawName) return "College Profile";
-  return rawName
+  const str = typeof rawName === "string"
+    ? rawName
+    : (rawName?.value || rawName?.name || String(rawName || "College Profile"));
+  return String(str || "College Profile")
+    .replace(/^\s*(?:\[?\d+\]?[\.\)\:\-]\s*|[-*•]\s*)/, "")
     .replace(/PSG COLLEGE OF COLLEGE OF TECHNOLOGYNYNOLOGY/gi, "PSG College of Technology")
     .replace(/PSG COLLEGE OF TECHNOLOGYNYNOLOGY/gi, "PSG College of Technology")
     .replace(/PSG College of TECHNOLOGYNOLOGY/gi, "PSG College of Technology")
@@ -62,12 +66,16 @@ export default function AdminSubmittedCollegesPage() {
     title: string;
     message: string;
     confirmText?: string;
+    confirmButtonColor?: "amber" | "rose";
+    noticeText?: string;
     onConfirm: (() => void) | null;
   }>({
     isOpen: false,
     title: "",
     message: "",
     confirmText: "Publish Live",
+    confirmButtonColor: "amber",
+    noticeText: "",
     onConfirm: null,
   });
 
@@ -95,7 +103,25 @@ export default function AdminSubmittedCollegesPage() {
       const res = await fetch(`/api/admin/submitted-colleges?status=${activeTab}`);
       const data = await res.json();
       if (data.success) {
-        setColleges(data.colleges || []);
+        const fetched = data.colleges || [];
+        setColleges(fetched);
+
+        // Auto-open review modal if navigated with a specific reviewId or id
+        if (typeof window !== "undefined") {
+          const urlParams = new URLSearchParams(window.location.search);
+          const reviewId = urlParams.get("reviewId") || urlParams.get("id");
+          if (reviewId) {
+            const target = fetched.find((c: any) => c.id === reviewId);
+            if (target) {
+              setReviewModal({
+                isOpen: true,
+                item: target,
+                mode: "EDIT",
+                adminNotes: target.adminNotes || "",
+              });
+            }
+          }
+        }
       }
     } catch (err) {
       console.error("Failed to fetch submitted colleges:", err);
@@ -158,8 +184,58 @@ export default function AdminSubmittedCollegesPage() {
       title: "Approve & Publish Live",
       message: `Are you sure you want to approve and publish "${cleanName}" live onto the C2Talents platform?`,
       confirmText: "Approve & Publish Live",
+      confirmButtonColor: "amber",
+      noticeText: "Publishing will create the live college record in MySQL and make it immediately visible to students on C2Talents.",
       onConfirm: () => executePublish(id),
     });
+  }
+
+  function triggerDeleteConfirmation(id: string, collegeName?: string) {
+    const cleanName = sanitizeCollegeName(collegeName);
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete College Submission",
+      message: `Are you sure you want to permanently delete the submission for "${cleanName}"? This action cannot be undone.`,
+      confirmText: "Delete Submission",
+      confirmButtonColor: "rose",
+      noticeText: "Deleting this submission will permanently remove it from the database. It will no longer be available for review or publishing.",
+      onConfirm: () => executeDelete(id),
+    });
+  }
+
+  async function executeDelete(id: string) {
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/submitted-colleges/${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setColleges((prev) => prev.filter((c) => c.id !== id));
+        setNotificationModal({
+          isOpen: true,
+          title: "Submission Deleted",
+          message: "The submitted college profile has been permanently removed.",
+          type: "success",
+        });
+      } else {
+        setNotificationModal({
+          isOpen: true,
+          title: "Delete Failed",
+          message: data.error || "Failed to delete submission.",
+          type: "error",
+        });
+      }
+    } catch (err: any) {
+      setNotificationModal({
+        isOpen: true,
+        title: "Delete Error",
+        message: err.message || "An unexpected error occurred while deleting.",
+        type: "error",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function executePublish(id: string) {
@@ -317,6 +393,28 @@ export default function AdminSubmittedCollegesPage() {
                 })
               : "N/A";
 
+            const locationStr = typeof data.location === "string"
+              ? data.location
+              : (typeof item.location === "string" ? item.location : (data.location?.value || "Tamil Nadu"));
+            const typeStr = typeof data.type === "string" ? data.type : (data.type?.value || "Autonomous");
+            const categoryStr = typeof data.category === "string" ? data.category : (data.category?.value || "Engineering");
+
+            const rawFees = typeof data.feesPerYear === "string" || typeof data.feesPerYear === "number"
+              ? String(data.feesPerYear).trim()
+              : (data.feesPerYear?.value ? String(data.feesPerYear.value).trim() : "");
+            const feesNum = Number(rawFees);
+            const feesStr = rawFees && !isNaN(feesNum) && feesNum > 0
+              ? `₹${feesNum.toLocaleString()}`
+              : "N/A";
+
+            const rawAvg = typeof data.avgPackage === "string" || typeof data.avgPackage === "number"
+              ? String(data.avgPackage).trim()
+              : (data.avgPackage?.value ? String(data.avgPackage.value).trim() : "");
+            const avgPackageNum = Number(rawAvg);
+            const avgPackageStr = rawAvg && !isNaN(avgPackageNum) && avgPackageNum > 0
+              ? `${avgPackageNum}`
+              : "N/A";
+
             return (
               <div
                 key={item.id}
@@ -331,7 +429,7 @@ export default function AdminSubmittedCollegesPage() {
                       </h3>
                       <div className="text-xs text-stone-500 flex items-center gap-1.5 font-medium">
                         <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        <span className="truncate">{data.location || item.location || "Location N/A"}</span>
+                        <span className="truncate">{locationStr}</span>
                       </div>
                       <div className="text-[11px] text-[#3b2075] flex items-center gap-1.5 font-bold pt-0.5">
                         <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
@@ -339,8 +437,8 @@ export default function AdminSubmittedCollegesPage() {
                       </div>
                     </div>
 
-                    {/* STATUS BADGE */}
-                    <div className="shrink-0 pt-0.5">
+                    {/* STATUS BADGE & SMALL DELETE BUTTON */}
+                    <div className="shrink-0 pt-0.5 flex items-center gap-2">
                       {item.status === "DATA_SUBMITTED" && (
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200 text-[10px] font-black uppercase tracking-wider whitespace-nowrap shadow-2xs">
                           <FileText className="w-3 h-3 text-indigo-600" /> SUBMITTED
@@ -356,6 +454,17 @@ export default function AdminSubmittedCollegesPage() {
                           <ShieldCheck className="w-3 h-3 text-[#3b2075]" /> LIVE PUBLISHED
                         </span>
                       )}
+
+                      <button
+                        type="button"
+                        onClick={() => triggerDeleteConfirmation(item.id, collegeName)}
+                        disabled={submitting}
+                        className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 disabled:opacity-50"
+                        title="Delete College Submission"
+                        aria-label="Delete College Submission"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
 
@@ -371,13 +480,13 @@ export default function AdminSubmittedCollegesPage() {
                     <div className="flex justify-between items-center text-[11px] gap-2">
                       <span className="text-stone-500 shrink-0">Type & Category:</span>
                       <span className="font-bold text-stone-900 truncate text-right">
-                        {data.type || "Autonomous"} • {data.category || "Engineering"}
+                        {typeStr} • {categoryStr}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-[11px] gap-2">
                       <span className="text-stone-500 shrink-0">Annual Fees:</span>
                       <span className="font-extrabold text-[#3b2075]">
-                        ₹{data.feesPerYear && !isNaN(Number(data.feesPerYear)) ? Number(data.feesPerYear).toLocaleString() : "N/A"}
+                        {feesStr}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-[11px] gap-2">
@@ -389,7 +498,7 @@ export default function AdminSubmittedCollegesPage() {
                     <div className="flex justify-between items-center text-[11px] gap-2">
                       <span className="text-stone-500 shrink-0">Avg Package:</span>
                       <span className="font-extrabold text-emerald-700">
-                        {data.avgPackage ? `${data.avgPackage} LPA` : "N/A"}
+                        {avgPackageStr !== "N/A" ? `${avgPackageStr} LPA` : "N/A"}
                       </span>
                     </div>
                   </div>
@@ -503,12 +612,28 @@ export default function AdminSubmittedCollegesPage() {
                   {/* Render the full 12-section CollegeForm */}
                   <div className="bg-[#16082d] border border-purple-800/40 rounded-3xl p-4 md:p-6 shadow-xl">
                     <CollegeForm
-                      initialData={reviewModal.item.submittedDataParsed || {
-                        name: sanitizeCollegeName(reviewModal.item.collegeName),
-                        location: reviewModal.item.location,
-                        email: reviewModal.item.email,
-                        mobile: reviewModal.item.mobile,
-                        website: reviewModal.item.website,
+                      key={reviewModal.item.id}
+                      initialData={{
+                        ...(reviewModal.item.submittedDataParsed || {}),
+                        name: sanitizeCollegeName(
+                          reviewModal.item.submittedDataParsed?.name || reviewModal.item.collegeName
+                        ),
+                        location:
+                          reviewModal.item.submittedDataParsed?.location ||
+                          reviewModal.item.location ||
+                          "Tamil Nadu",
+                        email:
+                          reviewModal.item.submittedDataParsed?.email ||
+                          reviewModal.item.email ||
+                          "",
+                        mobile:
+                          reviewModal.item.submittedDataParsed?.mobile ||
+                          reviewModal.item.mobile ||
+                          "",
+                        website:
+                          reviewModal.item.submittedDataParsed?.website ||
+                          reviewModal.item.website ||
+                          "",
                       }}
                       isCollegePortal={true}
                       onSubmitPortal={handleAdminSaveSubmittedData}
@@ -569,8 +694,16 @@ export default function AdminSubmittedCollegesPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto shadow-md">
-              <Building2 className="w-7 h-7" />
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto shadow-md ${
+              confirmModal.confirmButtonColor === "rose"
+                ? "bg-rose-500/10 border border-rose-500/30 text-rose-400"
+                : "bg-amber-500/10 border border-amber-500/30 text-amber-400"
+            }`}>
+              {confirmModal.confirmButtonColor === "rose" ? (
+                <Trash2 className="w-7 h-7 text-rose-400" />
+              ) : (
+                <Building2 className="w-7 h-7" />
+              )}
             </div>
 
             <div className="space-y-2">
@@ -586,7 +719,8 @@ export default function AdminSubmittedCollegesPage() {
                 <span>Action Notice</span>
               </div>
               <p className="text-[11px] text-purple-300/80">
-                Publishing will create the live college record in MySQL and make it immediately visible to students on C2Talents.
+                {confirmModal.noticeText ||
+                  "Publishing will create the live college record in MySQL and make it immediately visible to students on C2Talents."}
               </p>
             </div>
 
@@ -605,7 +739,11 @@ export default function AdminSubmittedCollegesPage() {
                   if (confirmModal.onConfirm) confirmModal.onConfirm();
                   setConfirmModal({ isOpen: false, title: "", message: "", onConfirm: null });
                 }}
-                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer text-center"
+                className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer text-center ${
+                  confirmModal.confirmButtonColor === "rose"
+                    ? "bg-rose-600 hover:bg-rose-500 text-white"
+                    : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950"
+                }`}
               >
                 {confirmModal.confirmText || "Publish Live"}
               </button>

@@ -94,9 +94,11 @@ export async function POST(req: Request) {
         },
       });
 
+      const host = req.headers.get("host") || "";
+      const isLocalhost = host.includes("localhost") || host.includes("127.0.0.1") || host.includes("::1");
       const cookieOptions = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: process.env.NODE_ENV === "production" && !isLocalhost,
         sameSite: "lax" as const,
         maxAge: 7 * 24 * 60 * 60,
         path: "/",
@@ -184,9 +186,11 @@ export async function POST(req: Request) {
       },
     });
 
+    const host = req.headers.get("host") || "";
+    const isLocalhost = host.includes("localhost") || host.includes("127.0.0.1") || host.includes("::1");
     const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production" && !isLocalhost,
       sameSite: "lax" as const,
       maxAge: 7 * 24 * 60 * 60,
       path: "/",

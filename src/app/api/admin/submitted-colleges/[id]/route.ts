@@ -48,3 +48,37 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     );
   }
 }
+
+// DELETE handler to allow Admin to remove a submitted college profile
+export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await context.params;
+
+    if (!id) {
+      return NextResponse.json({ error: "Request ID is required." }, { status: 400 });
+    }
+
+    const existingRequest = await db.collegeRegistrationRequest.findUnique({
+      where: { id },
+    });
+
+    if (!existingRequest) {
+      return NextResponse.json({ error: "Submitted college record not found." }, { status: 404 });
+    }
+
+    await db.collegeRegistrationRequest.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Submitted college profile deleted successfully.",
+    });
+  } catch (err: any) {
+    console.error("[DELETE /api/admin/submitted-colleges/[id] Error]:", err);
+    return NextResponse.json(
+      { error: "Failed to delete submitted college profile: " + (err.message || "Unknown error") },
+      { status: 500 }
+    );
+  }
+}

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+import { upsertCollegeCourses } from "@/lib/courses/courseDeduplication";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -121,9 +122,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           location: body.location || "Tamil Nadu",
           type: body.type || "Private",
           status: "PUBLISHED",
-          feesPerYear: body.feesPerYear ?? 60000,
-          avgPackage: body.avgPackage ?? 5.0,
-          highestPackage: body.highestPackage ?? 12.0,
+          feesPerYear: safeFloat(body.feesPerYear, 0) ?? 0,
+          avgPackage: safeFloat(body.avgPackage, 5.0) ?? 5.0,
+          highestPackage: safeFloat(body.highestPackage, 12.0) ?? 12.0,
           image: body.image || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80",
         },
       });
@@ -211,13 +212,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const categoriesStr = Array.isArray(categories) ? categories.join(", ") : categories || "";
     const facilitiesStr = Array.isArray(facilities) ? facilities.join(", ") : facilities || "";
 
-    // Delete existing courses, gallery, placements, and reviews to re-create clean state
+    // Delete existing gallery, placements, and reviews to re-create clean state (courses are safely upserted without destructive deletion)
     await db.$transaction([
-      db.course.deleteMany({ where: { collegeId: targetId } }),
       db.galleryImage.deleteMany({ where: { collegeId: targetId } }),
       db.placementOutcome.deleteMany({ where: { collegeId: targetId } }),
       db.review.deleteMany({ where: { collegeId: targetId } }),
     ]);
+
+    // Safely upsert courses using stable identity (collegeId + normalized title)
+    // Preserves existing course IDs, applications, and leads while preventing duplicate inserts
+    if (Array.isArray(courses)) {
+      await upsertCollegeCourses(targetId, courses);
+    }
 
     const updatedCollege = await db.collegeProfile.update({
       where: { id: targetId },
@@ -256,7 +262,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         ugcApproved: Boolean(ugcApproved),
         naacGrade,
         nirfRank: safeInt(nirfRank),
-        feesPerYear: safeFloat(feesPerYear, 50000) ?? 50000,
+        feesPerYear: safeFloat(feesPerYear, 0) ?? 0,
         courseWiseFees,
         hostelFees: safeFloat(hostelFees),
         transportFees: safeFloat(transportFees),
@@ -293,20 +299,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         status: status || "PUBLISHED",
         featured: Boolean(featured),
         trending: Boolean(trending),
-        courses: {
-          create: Array.isArray(courses)
-            ? courses.map((c: any) => ({
-                title: c.title || "Course",
-                duration: c.duration || "3 Years",
-                feesPerYear: safeFloat(c.feesPerYear, 50000) ?? 50000,
-                eligibility: c.eligibility || "Standard 10+2",
-                seats: safeInt(c.seats, 60) ?? 60,
-                entranceExam: c.entranceExam || "Merit",
-                careerPath: c.careerPath || "Career Track",
-                demand: c.demand || "High",
-              }))
-            : [],
-        },
         galleryImages: {
           create: Array.isArray(galleryImages)
             ? galleryImages

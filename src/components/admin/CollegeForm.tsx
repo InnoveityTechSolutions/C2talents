@@ -156,8 +156,14 @@ function normalizeFacilities(rawList: unknown): string[] {
     ? rawList.map(String)
     : typeof rawList === "string"
     ? rawList.split(/[,;\n]+/).map((s) => s.trim())
-    : (rawList && typeof rawList === "object" && "value" in rawList && Array.isArray((rawList as any).value))
-    ? (rawList as any).value.map(String)
+    : (rawList && typeof rawList === "object" && "value" in rawList)
+    ? (Array.isArray((rawList as any).value)
+        ? (rawList as any).value.map(String)
+        : typeof (rawList as any).value === "string"
+        ? (rawList as any).value.split(/[,;\n]+/).map((s: string) => s.trim())
+        : [])
+    : (rawList && typeof rawList === "object")
+    ? Object.keys(rawList).filter((k) => (rawList as any)[k] === true)
     : [];
 
   const matched = new Set<string>();
@@ -189,6 +195,7 @@ function normalizeFacilities(rawList: unknown): string[] {
     else if (/bank/i.test(lower)) matched.add("Bank");
     else if (/research|r&d/i.test(lower)) matched.add("Research Centre");
     else if (/innovation|incubat|startup/i.test(lower)) matched.add("Innovation Hub");
+    else matched.add(trimmed);
   }
   return Array.from(matched);
 }
@@ -199,8 +206,14 @@ function normalizeCategories(rawCat: unknown): string[] {
     ? rawCat.map(String)
     : typeof rawCat === "string"
     ? rawCat.split(/[,;\n]+/).map((s) => s.trim())
-    : (rawCat && typeof rawCat === "object" && "value" in rawCat && Array.isArray((rawCat as any).value))
-    ? (rawCat as any).value.map(String)
+    : (rawCat && typeof rawCat === "object" && "value" in rawCat)
+    ? (Array.isArray((rawCat as any).value)
+        ? (rawCat as any).value.map(String)
+        : typeof (rawCat as any).value === "string"
+        ? (rawCat as any).value.split(/[,;\n]+/).map((s: string) => s.trim())
+        : [])
+    : (rawCat && typeof rawCat === "object")
+    ? Object.keys(rawCat).filter((k) => (rawCat as any)[k] === true)
     : [];
 
   const matched = new Set<string>();
@@ -231,15 +244,18 @@ function normalizeCategories(rawCat: unknown): string[] {
     else if (/co-?ed/i.test(lower)) matched.add("Co-Ed");
     else if (/research/i.test(lower)) matched.add("Research");
     else if (/distance/i.test(lower)) matched.add("Distance Education");
+    else matched.add(trimmed);
   }
   return Array.from(matched);
 }
 
 interface CourseItem {
+  id?: string;
   title: string;
   duration: string;
   feesPerYear: string | number;
   eligibility: string;
+  minGpa?: number | string | null;
   seats: string | number;
   entranceExam: string;
 }
@@ -271,6 +287,7 @@ export function CollegeForm({
 
   // JSON File Import State
   const [selectedJsonFile, setSelectedJsonFile] = useState<File | null>(null);
+  const [pastedJsonText, setPastedJsonText] = useState<string>("");
   const [importingJson, setImportingJson] = useState<boolean>(false);
   const [jsonImportStatus, setJsonImportStatus] = useState<{ type: "success" | "error" | null; message: string }>({ type: null, message: "" });
   const [showImportJsonModal, setShowImportJsonModal] = useState(false);
@@ -508,9 +525,15 @@ export function CollegeForm({
   const [estYear, setEstYear] = useState(initialData?.estYear || "");
   const [ownership, setOwnership] = useState(initialData?.ownership || "Private");
   const [type, setType] = useState(initialData?.type || "Private");
-  const [category, setCategory] = useState(initialData?.category || "Engineering");
+  const [category, setCategory] = useState(
+    typeof initialData?.category === "string"
+      ? initialData.category
+      : (initialData?.category?.value && typeof initialData.category.value === "string"
+          ? initialData.category.value
+          : "Engineering")
+  );
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    initialData?.categories ? initialData.categories.split(",").map((s: string) => s.trim()) : []
+    normalizeCategories(initialData?.categories)
   );
   const [affiliatedUniversity, setAffiliatedUniversity] = useState(initialData?.affiliatedUniversity || "");
   const [isAutonomous, setIsAutonomous] = useState(initialData?.isAutonomous ?? false);
@@ -547,10 +570,12 @@ export function CollegeForm({
   const [courses, setCourses] = useState<CourseItem[]>(
     initialData?.courses?.length
       ? initialData.courses.map((c: any) => ({
+          id: c.id,
           title: c.title || "",
           duration: c.duration || "4 Years",
-          feesPerYear: c.feesPerYear || "",
+          feesPerYear: c.feesPerYear ?? "",
           eligibility: c.eligibility || "",
+          minGpa: c.minGpa !== undefined && c.minGpa !== null ? c.minGpa : "",
           seats: c.seats || "",
           entranceExam: c.entranceExam || "",
         }))
@@ -567,9 +592,7 @@ export function CollegeForm({
 
   // Section 6: Facilities Checkboxes (Default empty)
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>(
-    initialData?.facilities
-      ? initialData.facilities.split(",").map((s: string) => s.trim())
-      : []
+    normalizeFacilities(initialData?.facilities)
   );
 
   // Section 7: Placement
@@ -602,24 +625,31 @@ export function CollegeForm({
   const [newGalleryUrl, setNewGalleryUrl] = useState("");
 
   // Section 14: Student Reviews State
+  const rawInitialReviews =
+    (Array.isArray(initialData?.reviews) && initialData.reviews) ||
+    (Array.isArray(initialData?.studentReviews) && initialData.studentReviews) ||
+    (Array.isArray(initialData?.student_reviews) && initialData.student_reviews) ||
+    (Array.isArray(initialData?.testimonials) && initialData.testimonials) ||
+    [];
+
   const [reviews, setReviews] = useState<ReviewItem[]>(
-    initialData?.reviews?.length
-      ? initialData.reviews.map((r: any) => ({
+    rawInitialReviews.length
+      ? rawInitialReviews.map((r: any, idx: number) => ({
           id: r.id,
-          studentName: r.studentName || "Verified Student",
-          course: r.course || "B.E. Computer Science and Engineering",
-          batchYear: r.batchYear || 2024,
-          title: r.title || "Overall Excellent Campus Experience",
-          rating: r.rating || 4.5,
-          academicRating: r.academicRating || 4.5,
-          infrastructureRating: r.infrastructureRating || 4.2,
-          placementRating: r.placementRating || 4.5,
-          campusRating: r.campusRating || 4.3,
-          valueForMoneyRating: r.valueForMoneyRating || 4.4,
-          likes: r.likes || "Top class faculty, modern digital library, well-equipped labs, and active student clubs.",
-          dislikes: r.dislikes || "Hostel mess food menu options can be improved.",
-          content: r.content || "Overall a fantastic college for students seeking great placement and quality education.",
-          isVerified: r.isVerified ?? true,
+          studentName: r.studentName || r.name || `Verified Student ${idx + 1}`,
+          course: r.course || r.program || "Undergraduate Degree",
+          batchYear: Number(r.batchYear || r.batch || 2024),
+          title: r.title || r.reviewTitle || "Overall Excellent Campus Experience",
+          rating: Number(r.rating) || 4.5,
+          academicRating: Number(r.academicRating) || 4.5,
+          infrastructureRating: Number(r.infrastructureRating) || 4.2,
+          placementRating: Number(r.placementRating) || 4.5,
+          campusRating: Number(r.campusRating) || 4.3,
+          valueForMoneyRating: Number(r.valueForMoneyRating) || 4.4,
+          likes: r.likes || r.pros || "Top class faculty, modern digital library, well-equipped labs, and active student clubs.",
+          dislikes: r.dislikes || r.cons || "Hostel mess food menu options can be improved.",
+          content: r.content || r.review || "Overall a fantastic college for students seeking great placement and quality education.",
+          isVerified: r.isVerified ?? false,
         }))
       : []
   );
@@ -646,24 +676,25 @@ export function CollegeForm({
   const [collegeAbout, setCollegeAbout] = useState(initialData?.description || "");
 
   // Section 13: College Content Module State (Additive CMS Extension)
-  const [overview, setOverview] = useState("");
-  const [about, setAbout] = useState("");
-  const [history, setHistory] = useState("");
-  const [highlights, setHighlights] = useState("");
-  const [whyChoose, setWhyChoose] = useState("");
-  const [campusLife, setCampusLife] = useState("");
-  const [facilitiesDescription, setFacilitiesDescription] = useState("");
-  const [placementOverview, setPlacementOverview] = useState("");
-  const [contentTopRecruiters, setContentTopRecruiters] = useState("");
-  const [admissionGuide, setAdmissionGuide] = useState("");
-  const [eligibility, setEligibility] = useState("");
-  const [hostelLife, setHostelLife] = useState("");
-  const [scholarships, setScholarships] = useState("");
-  const [research, setResearch] = useState("");
-  const [studentActivities, setStudentActivities] = useState("");
-  const [faq, setFaq] = useState("");
-  const [seoArticle, setSeoArticle] = useState("");
-  const [contentStatus, setContentStatus] = useState("DRAFT");
+  const ccInit = initialData?.collegeContent || initialData?.content || {};
+  const [overview, setOverview] = useState(ccInit.overview || initialData?.overview || "");
+  const [about, setAbout] = useState(ccInit.about || initialData?.about || "");
+  const [history, setHistory] = useState(ccInit.history || initialData?.history || "");
+  const [highlights, setHighlights] = useState(ccInit.highlights || initialData?.highlights || "");
+  const [whyChoose, setWhyChoose] = useState(ccInit.whyChoose || initialData?.whyChoose || "");
+  const [campusLife, setCampusLife] = useState(ccInit.campusLife || initialData?.campusLife || "");
+  const [facilitiesDescription, setFacilitiesDescription] = useState(ccInit.facilitiesDescription || initialData?.facilitiesDescription || "");
+  const [placementOverview, setPlacementOverview] = useState(ccInit.placementOverview || initialData?.placementOverview || "");
+  const [contentTopRecruiters, setContentTopRecruiters] = useState(ccInit.topRecruiters || initialData?.contentTopRecruiters || "");
+  const [admissionGuide, setAdmissionGuide] = useState(ccInit.admissionGuide || initialData?.admissionGuide || "");
+  const [eligibility, setEligibility] = useState(ccInit.eligibility || initialData?.eligibility || "");
+  const [hostelLife, setHostelLife] = useState(ccInit.hostelLife || initialData?.hostelLife || "");
+  const [scholarships, setScholarships] = useState(ccInit.scholarships || initialData?.scholarships || "");
+  const [research, setResearch] = useState(ccInit.research || initialData?.research || "");
+  const [studentActivities, setStudentActivities] = useState(ccInit.studentActivities || initialData?.studentActivities || "");
+  const [faq, setFaq] = useState(ccInit.faq || initialData?.faq || "");
+  const [seoArticle, setSeoArticle] = useState(ccInit.seoArticle || initialData?.seoArticle || "");
+  const [contentStatus, setContentStatus] = useState(ccInit.contentStatus || initialData?.contentStatus || "DRAFT");
   const [contentSaving, setContentSaving] = useState(false);
 
   // Quality Report Modal State
@@ -706,8 +737,28 @@ export function CollegeForm({
           }
         })
         .catch((err) => console.error("Error loading college content:", err));
+    } else if (initialData?.collegeContent || initialData?.content) {
+      const cc = initialData.collegeContent || initialData.content;
+      if (cc.overview) setOverview(cc.overview);
+      if (cc.about) setAbout(cc.about);
+      if (cc.history) setHistory(cc.history);
+      if (cc.highlights) setHighlights(cc.highlights);
+      if (cc.whyChoose) setWhyChoose(cc.whyChoose);
+      if (cc.campusLife) setCampusLife(cc.campusLife);
+      if (cc.facilitiesDescription) setFacilitiesDescription(cc.facilitiesDescription);
+      if (cc.placementOverview) setPlacementOverview(cc.placementOverview);
+      if (cc.topRecruiters) setContentTopRecruiters(cc.topRecruiters);
+      if (cc.admissionGuide) setAdmissionGuide(cc.admissionGuide);
+      if (cc.eligibility) setEligibility(cc.eligibility);
+      if (cc.hostelLife) setHostelLife(cc.hostelLife);
+      if (cc.scholarships) setScholarships(cc.scholarships);
+      if (cc.research) setResearch(cc.research);
+      if (cc.studentActivities) setStudentActivities(cc.studentActivities);
+      if (cc.faq) setFaq(cc.faq);
+      if (cc.seoArticle) setSeoArticle(cc.seoArticle);
+      if (cc.contentStatus) setContentStatus(cc.contentStatus);
     }
-  }, [collegeId]);
+  }, [collegeId, initialData]);
 
   async function saveCollegeContentOnly() {
     if (!collegeId) {
@@ -1311,15 +1362,41 @@ export function CollegeForm({
     let parsedCourses: CourseItem[] = [];
     if (Array.isArray(coursesList) && coursesList.length > 0) {
       parsedCourses = coursesList
-        .map((c: any) => ({
-          title: cleanString(c.title || c.name || c.courseName || c.course_name || c.course || c.programName || c.program || ""),
-          duration: cleanString(c.duration) || "4 Years",
-          feesPerYear: cleanNumber(c.feesPerYear || c.fees || c.annualFee || c.fees_per_year || c.fee || c.tuitionFee),
-          eligibility: cleanString(c.eligibility || c.eligibilityCriteria || c.criteria) || "50% in 10+2",
-          seats: cleanNumber(c.seats || c.intake || c.seatsAvailable || c.capacity),
-          entranceExam: cleanString(c.entranceExam || c.entrance_exam || c.exam || c.entranceExams || c.acceptedExams),
-        }))
+        .map((c: any) => {
+          const rawEligibility = cleanString(c.eligibility || c.eligibilityCriteria || c.criteria);
+          let rawMinGpa = c.minGpa !== undefined && c.minGpa !== null && c.minGpa !== "" ? Number(cleanNumber(c.minGpa)) : null;
+          if (rawMinGpa === null || isNaN(rawMinGpa) || rawMinGpa <= 0) {
+            const match = rawEligibility.match(/(\d+(?:\.\d+)?)\s*%/);
+            if (match) {
+              rawMinGpa = parseFloat(match[1]);
+            } else {
+              rawMinGpa = null;
+            }
+          }
+
+          return {
+            title: cleanString(c.title || c.name || c.courseName || c.course_name || c.course || c.programName || c.program || ""),
+            duration: cleanString(c.duration) || "4 Years",
+            feesPerYear: cleanNumber(c.feesPerYear || c.fees || c.annualFee || c.fees_per_year || c.fee || c.tuitionFee),
+            eligibility: rawEligibility || (rawMinGpa ? `Minimum ${rawMinGpa}% in 10+2` : "Eligibility not specified"),
+            minGpa: rawMinGpa,
+            seats: cleanNumber(c.seats || c.intake || c.seatsAvailable || c.capacity),
+            entranceExam: cleanString(c.entranceExam || c.entrance_exam || c.exam || c.entranceExams || c.acceptedExams),
+          };
+        })
         .filter((c) => Boolean(c.title));
+
+      // In-memory deduplication of incoming courses
+      const seenCourseKeys = new Set<string>();
+      const deduplicatedCourses: CourseItem[] = [];
+      for (const course of parsedCourses) {
+        const key = course.title.trim().toLowerCase().replace(/\s+/g, " ");
+        if (!seenCourseKeys.has(key)) {
+          seenCourseKeys.add(key);
+          deduplicatedCourses.push(course);
+        }
+      }
+      parsedCourses = deduplicatedCourses;
 
       if (parsedCourses.length > 0) {
         setCourses(parsedCourses);
@@ -2520,6 +2597,7 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
     }
 
     setSelectedJsonFile(file);
+    setPastedJsonText(""); // Clear pasted text when a file is chosen to keep source predictable
     setJsonImportStatus({ type: null, message: "" });
   }
 
@@ -2528,23 +2606,56 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
     setJsonImportStatus({ type: null, message: "" });
   }
 
-  async function handleImportJson() {
-    if (!selectedJsonFile) {
-      setJsonImportStatus({ type: "error", message: "Please select a .json file first." });
-      return;
+  async function handleImportJson(): Promise<boolean> {
+    const hasFile = Boolean(selectedJsonFile);
+    const hasPasted = Boolean(pastedJsonText && pastedJsonText.trim());
+
+    if (!hasFile && !hasPasted) {
+      setJsonImportStatus({
+        type: "error",
+        message: "Please select a .json file or paste JSON content before importing.",
+      });
+      return false;
     }
 
     setImportingJson(true);
     setJsonImportStatus({ type: null, message: "" });
 
     try {
-      const formData = new FormData();
-      formData.append("file", selectedJsonFile);
+      let res: Response;
 
-      const res = await fetch("/api/admin/college/import-json", {
-        method: "POST",
-        body: formData,
-      });
+      if (hasPasted) {
+        let cleanJson = pastedJsonText.trim();
+        if (cleanJson.startsWith("```")) {
+          cleanJson = cleanJson.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+        }
+
+        // Quick client-side syntax pre-check for friendly immediate feedback
+        try {
+          JSON.parse(cleanJson);
+        } catch (parseErr: any) {
+          setJsonImportStatus({
+            type: "error",
+            message: `Invalid JSON syntax: ${parseErr.message}. Please check your pasted JSON formatting.`,
+          });
+          setImportingJson(false);
+          return false;
+        }
+
+        res = await fetch("/api/admin/college/import-json", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jsonString: cleanJson, filename: "pasted-content.json" }),
+        });
+      } else {
+        const formData = new FormData();
+        formData.append("file", selectedJsonFile!);
+
+        res = await fetch("/api/admin/college/import-json", {
+          method: "POST",
+          body: formData,
+        });
+      }
 
       const result = await res.json();
 
@@ -2553,30 +2664,34 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
           type: "error",
           message: result.error || result.message || "Failed to import and validate JSON.",
         });
+        return false;
       } else {
         const parsedData = result.data?.data || result.data;
         populateFormFromAI(parsedData);
 
         const fieldsCount = result.fieldsCount || Object.keys(parsedData || {}).length;
+        const sourceLabel = hasPasted ? "Pasted AI JSON" : selectedJsonFile?.name;
         setJsonImportStatus({
           type: "success",
-          message: result.message || `Successfully imported JSON! Form auto-populated with data. Please review fields below and click "Update College" to save.`,
+          message: result.message || `Successfully imported JSON! Form auto-populated with data. Please review fields below and click "${collegeId ? "Update College" : "Save College"}" to save.`,
         });
 
         showPopup(
           `✅ JSON Successfully Imported!\n\n` +
-          `• File Name        : ${selectedJsonFile.name}\n` +
-          `• Status           : Validated & Mapped\n` +
-          `• Action Required  : Review form fields below and manually click "Update College" to save to database.`,
+          `• Source           : ${sourceLabel}\n` +
+          `• Status           : Validated & Mapped (${fieldsCount} fields)\n` +
+          `• Action Required  : Review form fields below and manually click "${collegeId ? "Update College" : "Save College"}" to save to database.`,
           "success",
           "JSON Import Successful"
         );
+        return true;
       }
     } catch (err: any) {
       setJsonImportStatus({
         type: "error",
         message: "Network or parsing error occurred: " + (err.message || "Unknown error"),
       });
+      return false;
     } finally {
       setImportingJson(false);
     }
@@ -2768,7 +2883,7 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 pb-20 font-sans">
+    <form onSubmit={handleSubmit} className="space-y-6 pb-10 font-sans">
       {/* Top Header & Save Action */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3.5 bg-white p-4 md:p-5 rounded-2xl border border-slate-200/90 shadow-xs relative overflow-hidden">
         <div className="min-w-0">
@@ -2910,7 +3025,7 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
       {/* Import AI JSON Modal */}
       {showImportJsonModal && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4 border border-slate-200">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4 border border-slate-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 📄 Import AI JSON
@@ -2925,7 +3040,7 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Upload a JSON file generated by AI (e.g., Gemini or ChatGPT) containing college data structured like our CMS schema. This will automatically populate all 14 form sections without auto-saving.
+              Upload a JSON file or paste JSON content generated by AI (e.g., Gemini or ChatGPT) containing college data structured like our CMS schema. This will automatically populate all 14 form sections without auto-saving.
             </p>
 
             <div className="flex items-center justify-between p-3 rounded-xl bg-purple-50 border border-purple-200">
@@ -2943,6 +3058,7 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
               </button>
             </div>
 
+            {/* File Upload Section */}
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
               <label className="cursor-pointer bg-white hover:bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm w-full">
                 <Upload className="w-4 h-4 text-emerald-600" />
@@ -2971,6 +3087,54 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
               )}
             </div>
 
+            {/* Divider */}
+            <div className="relative flex items-center justify-center py-0.5">
+              <div className="border-t border-slate-200 w-full"></div>
+              <span className="bg-white px-3 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider absolute">
+                OR
+              </span>
+            </div>
+
+            {/* Paste JSON Content Section */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Paste JSON Content</span>
+                </label>
+                {pastedJsonText && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPastedJsonText("");
+                      setJsonImportStatus({ type: null, message: "" });
+                    }}
+                    className="text-[11px] text-slate-400 hover:text-rose-600 font-semibold transition-colors"
+                  >
+                    Clear Text
+                  </button>
+                )}
+              </div>
+              <textarea
+                value={pastedJsonText}
+                onChange={(e) => {
+                  setPastedJsonText(e.target.value);
+                  if (e.target.value.trim() && selectedJsonFile) {
+                    setSelectedJsonFile(null); // Clear selected file to ensure predictable source
+                  }
+                  if (jsonImportStatus.type === "error") {
+                    setJsonImportStatus({ type: null, message: "" });
+                  }
+                }}
+                rows={5}
+                placeholder='Paste JSON copied from Gemini or ChatGPT here, e.g. { "name": "...", ... }'
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all resize-y"
+              />
+              <p className="text-[10px] text-slate-400 font-medium">
+                Supports raw JSON or markdown code blocks (```json ... ```) copied directly from AI responses.
+              </p>
+            </div>
+
             {jsonImportStatus.message && (
               <div className={`p-3 rounded-xl border text-xs font-medium flex items-start gap-2 ${
                 jsonImportStatus.type === "error" 
@@ -2994,12 +3158,16 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
               <button
                 type="button"
                 onClick={async () => {
-                  await handleImportJson();
-                  if (jsonImportStatus.type !== "error" && selectedJsonFile) {
-                    setTimeout(() => setShowImportJsonModal(false), 1500);
+                  const success = await handleImportJson();
+                  if (success) {
+                    setTimeout(() => {
+                      setShowImportJsonModal(false);
+                      setPastedJsonText("");
+                      setSelectedJsonFile(null);
+                    }, 1200);
                   }
                 }}
-                disabled={!selectedJsonFile || importingJson}
+                disabled={(!selectedJsonFile && !pastedJsonText.trim()) || importingJson}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold shadow-md transition-all disabled:opacity-50"
               >
                 {importingJson ? (
@@ -3236,6 +3404,17 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
               placeholder="https://domain.com/logo.png"
               className="w-full bg-slate-50/60 px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-medium"
             />
+            {logo && (
+              <div className="mt-2 flex items-center gap-2.5 p-2 bg-slate-50 rounded-xl border border-slate-200 w-fit">
+                <img
+                  src={logo}
+                  alt="Logo Preview"
+                  className="w-10 h-10 object-contain rounded-lg bg-white border border-slate-200"
+                  onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                />
+                <span className="text-[11px] text-slate-600 font-bold">Logo Preview</span>
+              </div>
+            )}
           </div>
 
           <div>
@@ -3247,6 +3426,17 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
               placeholder="https://images.unsplash.com/photo-..."
               className="w-full bg-slate-50/60 px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-medium"
             />
+            {banner && (
+              <div className="mt-2 flex items-center gap-2.5 p-2 bg-slate-50 rounded-xl border border-slate-200 w-fit">
+                <img
+                  src={banner}
+                  alt="Banner Preview"
+                  className="h-10 w-24 object-cover rounded-lg bg-white border border-slate-200"
+                  onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                />
+                <span className="text-[11px] text-slate-600 font-bold">Banner Preview</span>
+              </div>
+            )}
           </div>
 
 
@@ -3726,7 +3916,7 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
                       type="number"
                       value={course.feesPerYear}
                       onChange={(e) => updateCourse(idx, "feesPerYear", e.target.value)}
-                      placeholder="60000"
+                      placeholder="e.g. 85000"
                       className="w-full bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-slate-900"
                     />
                   </div>
@@ -3737,7 +3927,7 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
                       type="text"
                       value={course.eligibility}
                       onChange={(e) => updateCourse(idx, "eligibility", e.target.value)}
-                      placeholder="10+2 with 50%"
+                      placeholder="e.g. 10+2 with 50%"
                       className="w-full bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-slate-900"
                     />
                   </div>
@@ -4724,8 +4914,8 @@ Instructions: Write comprehensive, clear paragraphs for each numbered heading be
         )}
       </section>
 
-      {/* Bottom Sticky Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-3 pb-2 border-t border-slate-200 bg-white/95 backdrop-blur-md sticky bottom-2 z-20 px-3.5 py-2.5 rounded-2xl shadow-md border border-slate-200">
+      {/* Bottom Action Bar (Static at bottom of form, not floating) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-slate-200/90 shadow-xs mt-6">
         {/* Status Dropdown Setting ("scroll down option") */}
         <div className="flex items-center gap-2.5">
           <label htmlFor="bottomStatus" className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5 whitespace-nowrap">

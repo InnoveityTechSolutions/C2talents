@@ -57,7 +57,10 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
     const college = await db.collegeProfile.findUnique({
       where: { id: target.id },
       include: {
-        courses: true,
+        courses: {
+          where: { isDeleted: false },
+          orderBy: { title: "asc" },
+        },
         placements: {
           orderBy: { year: "desc" },
         },

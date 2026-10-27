@@ -38,6 +38,7 @@ export async function GET(
         duration: true,
         feesPerYear: true,
         eligibility: true,
+        minGpa: true,
         seats: true,
         entranceExam: true,
       },

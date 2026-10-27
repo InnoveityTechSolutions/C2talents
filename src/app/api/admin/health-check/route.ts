@@ -4,7 +4,7 @@ import { listBackups } from '@/lib/backup';
 
 export async function GET() {
   try {
-    const totalColleges = await db.collegeProfile.count({ where: { isDeleted: false } });
+    const totalColleges = await db.collegeProfile.count({ where: { isDeleted: false, status: { not: "DELETED" } } });
     const totalCourses = await db.course.count({ where: { isDeleted: false } });
     const totalUsers = await db.user.count();
 

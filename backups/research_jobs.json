@@ -1,0 +1,361 @@
+{
+  "job_1793081224931_zytsz": {
+    "jobId": "job_1793081224931_zytsz",
+    "totalCount": 2,
+    "completedCount": 2,
+    "failedCount": 0,
+    "status": "COMPLETED",
+    "createdAt": "2026-10-27T06:07:04.931Z",
+    "updatedAt": "2026-10-27T06:07:07.238Z",
+    "items": [
+      {
+        "id": "item_1793081224933_0_cgjy",
+        "collegeName": "Test Institute of Science Alpha 1793081224885",
+        "url": "https://example-alpha.edu.in",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T06:07:04.931Z",
+        "draftId": "ea7ec1fd-72d1-40f6-a3d7-4628e838b642",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=ea7ec1fd-72d1-40f6-a3d7-4628e838b642",
+        "completedAt": "2026-10-27T06:07:06.632Z"
+      },
+      {
+        "id": "item_1793081224933_1_60yn",
+        "collegeName": "Test College of Engineering Beta 1793081224885",
+        "url": "https://example-beta.edu.in",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T06:07:04.931Z",
+        "draftId": "42563dcb-6c81-4454-ba97-6982c807a9bb",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=42563dcb-6c81-4454-ba97-6982c807a9bb",
+        "completedAt": "2026-10-27T06:07:07.238Z"
+      }
+    ]
+  },
+  "job_1793081228033_6585f": {
+    "jobId": "job_1793081228033_6585f",
+    "totalCount": 1,
+    "completedCount": 1,
+    "failedCount": 0,
+    "status": "COMPLETED",
+    "createdAt": "2026-10-27T06:07:08.033Z",
+    "updatedAt": "2026-10-27T06:07:08.426Z",
+    "items": [
+      {
+        "id": "item_1793081228033_0_ebfx",
+        "collegeName": "Test Institute of Science Alpha 1793081224885",
+        "url": "https://example-alpha.edu.in",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T06:07:08.033Z",
+        "draftId": "ea7ec1fd-72d1-40f6-a3d7-4628e838b642",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=ea7ec1fd-72d1-40f6-a3d7-4628e838b642",
+        "completedAt": "2026-10-27T06:07:08.426Z"
+      }
+    ]
+  },
+  "job_1793081279439_nxkeb": {
+    "jobId": "job_1793081279439_nxkeb",
+    "totalCount": 2,
+    "completedCount": 2,
+    "failedCount": 0,
+    "status": "COMPLETED",
+    "createdAt": "2026-10-27T06:07:59.439Z",
+    "updatedAt": "2026-10-27T06:08:00.183Z",
+    "items": [
+      {
+        "id": "item_1793081279441_0_y3tq",
+        "collegeName": "Test Institute of Science Alpha 1793081279401",
+        "url": "https://example-alpha.edu.in",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T06:07:59.439Z",
+        "draftId": "a0453e9c-3747-498b-9124-c59e947c870b",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=a0453e9c-3747-498b-9124-c59e947c870b",
+        "completedAt": "2026-10-27T06:07:59.923Z"
+      },
+      {
+        "id": "item_1793081279441_1_t6zv",
+        "collegeName": "Test College of Engineering Beta 1793081279401",
+        "url": "https://example-beta.edu.in",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T06:07:59.439Z",
+        "draftId": "89eb1ce4-a590-4da0-abd8-ea5703a068a0",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=89eb1ce4-a590-4da0-abd8-ea5703a068a0",
+        "completedAt": "2026-10-27T06:08:00.183Z"
+      }
+    ]
+  },
+  "job_1793081280533_tmka0": {
+    "jobId": "job_1793081280533_tmka0",
+    "totalCount": 1,
+    "completedCount": 1,
+    "failedCount": 0,
+    "status": "COMPLETED",
+    "createdAt": "2026-10-27T06:08:00.533Z",
+    "updatedAt": "2026-10-27T06:08:00.771Z",
+    "items": [
+      {
+        "id": "item_1793081280533_0_356t",
+        "collegeName": "Test Institute of Science Alpha 1793081279401",
+        "url": "https://example-alpha.edu.in",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T06:08:00.533Z",
+        "draftId": "a0453e9c-3747-498b-9124-c59e947c870b",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=a0453e9c-3747-498b-9124-c59e947c870b",
+        "completedAt": "2026-10-27T06:08:00.771Z"
+      }
+    ]
+  },
+  "job_1793083980867_b4w83": {
+    "jobId": "job_1793083980867_b4w83",
+    "totalCount": 6,
+    "completedCount": 6,
+    "failedCount": 0,
+    "status": "COMPLETED",
+    "createdAt": "2026-10-27T06:53:00.867Z",
+    "updatedAt": "2026-10-27T06:53:01.180Z",
+    "items": [
+      {
+        "id": "item_1793083980867_0_zt2l",
+        "collegeName": "1. AMET Deemed-to-be University",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T06:53:00.867Z",
+        "draftId": "8c4f60f8-7a7e-4524-b601-011af15f7669",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=8c4f60f8-7a7e-4524-b601-011af15f7669",
+        "completedAt": "2026-10-27T06:53:00.935Z"
+      },
+      {
+        "id": "item_1793083980867_1_9c0y",
+        "collegeName": "Official Website: https://www.ametuniv.ac.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T06:53:00.867Z",
+        "draftId": "0c277510-e6be-465e-9b47-8bc68ab472ab",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=0c277510-e6be-465e-9b47-8bc68ab472ab",
+        "completedAt": "2026-10-27T06:53:01.015Z"
+      },
+      {
+        "id": "item_1793083980867_2_oc7e",
+        "collegeName": "2. Bharathi Women's College, Chennai",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T06:53:00.867Z",
+        "draftId": "d3d3b3fb-3b2d-4fe1-b471-3d97a79a241f",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=d3d3b3fb-3b2d-4fe1-b471-3d97a79a241f",
+        "completedAt": "2026-10-27T06:53:01.092Z"
+      },
+      {
+        "id": "item_1793083980867_3_jjc6",
+        "collegeName": "Official Website: https://bwc.edu.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T06:53:00.867Z",
+        "draftId": "6b4e5e7a-f1b4-4792-9687-b98d26e94c61",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=6b4e5e7a-f1b4-4792-9687-b98d26e94c61",
+        "completedAt": "2026-10-27T06:53:01.122Z"
+      },
+      {
+        "id": "item_1793083980868_4_1lnw",
+        "collegeName": "3. Misrimal Navajee Munoth Jain Engineering College, Chennai",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T06:53:00.867Z",
+        "draftId": "e8031d93-a7fe-4521-b4b9-7cf1b8b91ce2",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=e8031d93-a7fe-4521-b4b9-7cf1b8b91ce2",
+        "completedAt": "2026-10-27T06:53:01.151Z"
+      },
+      {
+        "id": "item_1793083980868_5_tjzg",
+        "collegeName": "Official Website: https://www.mnmjec.ac.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T06:53:00.867Z",
+        "draftId": "397c7a8b-07e4-440b-9e32-d9325774de54",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=397c7a8b-07e4-440b-9e32-d9325774de54",
+        "completedAt": "2026-10-27T06:53:01.179Z"
+      }
+    ]
+  },
+  "job_1793090374777_vv5u0": {
+    "jobId": "job_1793090374777_vv5u0",
+    "totalCount": 6,
+    "completedCount": 6,
+    "failedCount": 0,
+    "status": "COMPLETED",
+    "createdAt": "2026-10-27T08:39:34.777Z",
+    "updatedAt": "2026-10-27T08:39:34.989Z",
+    "items": [
+      {
+        "id": "item_1793090374777_0_yzc0",
+        "collegeName": "1. AMET Deemed-to-be University",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T08:39:34.777Z",
+        "draftId": "cf9501c6-c151-4f6a-8cfc-ea477e4afd61",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=cf9501c6-c151-4f6a-8cfc-ea477e4afd61",
+        "completedAt": "2026-10-27T08:39:34.848Z"
+      },
+      {
+        "id": "item_1793090374777_1_x4tt",
+        "collegeName": "Official Website: https://www.ametuniv.ac.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T08:39:34.777Z",
+        "draftId": "af58996a-d87b-4bf4-aeb5-a833c42debc9",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=af58996a-d87b-4bf4-aeb5-a833c42debc9",
+        "completedAt": "2026-10-27T08:39:34.894Z"
+      },
+      {
+        "id": "item_1793090374778_2_q86k",
+        "collegeName": "2. Bharathi Women's College, Chennai",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T08:39:34.777Z",
+        "draftId": "5bffe0ec-5045-4f01-ba1e-a63a30458dae",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=5bffe0ec-5045-4f01-ba1e-a63a30458dae",
+        "completedAt": "2026-10-27T08:39:34.920Z"
+      },
+      {
+        "id": "item_1793090374778_3_46tr",
+        "collegeName": "Official Website: https://bwc.edu.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T08:39:34.777Z",
+        "draftId": "84bb034d-2176-4d3b-a660-1161f32b222e",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=84bb034d-2176-4d3b-a660-1161f32b222e",
+        "completedAt": "2026-10-27T08:39:34.943Z"
+      },
+      {
+        "id": "item_1793090374778_4_lcfe",
+        "collegeName": "3. Misrimal Navajee Munoth Jain Engineering College, Chennai",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T08:39:34.777Z",
+        "draftId": "20f10420-140c-4aff-8b0f-cdadd9cef4e0",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=20f10420-140c-4aff-8b0f-cdadd9cef4e0",
+        "completedAt": "2026-10-27T08:39:34.962Z"
+      },
+      {
+        "id": "item_1793090374778_5_r6op",
+        "collegeName": "Official Website: https://www.mnmjec.ac.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T08:39:34.777Z",
+        "draftId": "757a43b1-2a79-43f9-919f-f998da236444",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=757a43b1-2a79-43f9-919f-f998da236444",
+        "completedAt": "2026-10-27T08:39:34.988Z"
+      }
+    ]
+  },
+  "job_1793091554474_9t5aj": {
+    "jobId": "job_1793091554474_9t5aj",
+    "totalCount": 3,
+    "completedCount": 2,
+    "failedCount": 0,
+    "status": "IN_PROGRESS",
+    "createdAt": "2026-10-27T08:59:14.474Z",
+    "updatedAt": "2026-10-27T09:08:18.201Z",
+    "items": [
+      {
+        "id": "item_1793091554477_0_dtg6",
+        "collegeName": "AMET Deemed-to-be University",
+        "url": "https://www.ametuniv.ac.in/",
+        "status": "PROCESSING",
+        "notified": false,
+        "createdAt": "2026-10-27T08:59:14.474Z"
+      },
+      {
+        "id": "item_1793091554477_1_pib0",
+        "collegeName": "Bharathi Women's College, Chennai",
+        "url": "https://bwc.edu.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T08:59:14.474Z",
+        "draftId": "c46d765a-73a5-41ab-854c-e033d78811c2",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=c46d765a-73a5-41ab-854c-e033d78811c2",
+        "completedAt": "2026-10-27T09:08:15.650Z"
+      },
+      {
+        "id": "item_1793091554477_2_kodd",
+        "collegeName": "Misrimal Navajee Munoth Jain Engineering College, Chennai",
+        "url": "https://www.mnmjec.ac.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T08:59:14.474Z",
+        "draftId": "3c80f4cc-ac15-49ac-8b2b-d04f24fa475a",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=3c80f4cc-ac15-49ac-8b2b-d04f24fa475a",
+        "completedAt": "2026-10-27T09:08:18.201Z"
+      }
+    ]
+  },
+  "job_1793092086083_tp647": {
+    "jobId": "job_1793092086083_tp647",
+    "totalCount": 1,
+    "completedCount": 1,
+    "failedCount": 0,
+    "status": "COMPLETED",
+    "createdAt": "2026-10-27T09:08:06.083Z",
+    "updatedAt": "2026-10-27T09:08:19.024Z",
+    "items": [
+      {
+        "id": "item_1793092086084_0_2x6b",
+        "collegeName": "AMET Deemed-to-be University",
+        "url": "https://www.ametuniv.ac.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T09:08:06.083Z",
+        "draftId": "b9098a09-8af4-4669-b655-77e5ec3d3401",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=b9098a09-8af4-4669-b655-77e5ec3d3401",
+        "completedAt": "2026-10-27T09:08:19.023Z"
+      }
+    ]
+  },
+  "job_1793094376553_vq88n": {
+    "jobId": "job_1793094376553_vq88n",
+    "totalCount": 3,
+    "completedCount": 3,
+    "failedCount": 0,
+    "status": "COMPLETED",
+    "createdAt": "2026-10-27T09:46:16.553Z",
+    "updatedAt": "2026-10-27T09:46:30.687Z",
+    "items": [
+      {
+        "id": "item_1793094376553_0_otqk",
+        "collegeName": "Ethiraj College for Women",
+        "url": "https://www.ethirajcollege.edu.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T09:46:16.553Z",
+        "draftId": "65dbf0ef-6ab8-499d-89c8-2cba67afa8b8",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=65dbf0ef-6ab8-499d-89c8-2cba67afa8b8",
+        "completedAt": "2026-10-27T09:46:18.229Z"
+      },
+      {
+        "id": "item_1793094376553_1_1dl6",
+        "collegeName": "Stella Maris College",
+        "url": "https://stellamariscollege.edu.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T09:46:16.553Z",
+        "draftId": "eb85f823-e7f1-4933-b1df-3adb4b31cf1a",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=eb85f823-e7f1-4933-b1df-3adb4b31cf1a",
+        "completedAt": "2026-10-27T09:46:24.157Z"
+      },
+      {
+        "id": "item_1793094376556_2_5xcl",
+        "collegeName": "Loyola College",
+        "url": "https://www.loyolacollege.edu/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-27T09:46:16.553Z",
+        "draftId": "164fef4a-02cb-42e0-92ba-a8b24e682f3a",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=164fef4a-02cb-42e0-92ba-a8b24e682f3a",
+        "completedAt": "2026-10-27T09:46:30.687Z"
+      }
+    ]
+  }
+}

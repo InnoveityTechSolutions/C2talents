@@ -3,6 +3,19 @@ import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+function unwrapVerificationData(obj: any): any {
+  if (!obj || typeof obj !== "object") return obj;
+  if (Array.isArray(obj)) return obj.map(unwrapVerificationData);
+  if ("value" in obj && typeof obj.value !== "undefined" && ("confidenceScore" in obj || "verificationStatus" in obj || "sourceUrl" in obj || "confidence" in obj)) {
+    return unwrapVerificationData(obj.value);
+  }
+  const res: any = {};
+  for (const [k, v] of Object.entries(obj)) {
+    res[k] = unwrapVerificationData(v);
+  }
+  return res;
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -25,7 +38,7 @@ export async function GET(req: Request) {
       let data = null;
       if (reqItem.submittedData) {
         try {
-          data = JSON.parse(reqItem.submittedData);
+          data = unwrapVerificationData(JSON.parse(reqItem.submittedData));
         } catch (e) {}
       }
       return {

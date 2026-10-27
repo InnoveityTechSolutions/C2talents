@@ -6,6 +6,7 @@ import StandaloneLoginPage from "@/app/manager/login/page";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AppLoader } from "@/components/AppLoader";
+import { AdminNotificationProvider } from "@/components/admin/AdminNotificationProvider";
 
 export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -80,17 +81,19 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
   // Authenticated User: Render Full Enterprise Admin Layout
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#FAF9F5] font-sans antialiased text-stone-900 relative">
-      <AdminSidebar
-        mobileOpen={mobileSidebarOpen}
-        onCloseMobile={() => setMobileSidebarOpen(false)}
-      />
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        <AdminHeader onOpenMobileSidebar={() => setMobileSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto w-full p-3 sm:p-5 md:p-8">
-          {children}
-        </main>
+    <AdminNotificationProvider>
+      <div className="flex h-screen w-screen overflow-hidden bg-[#FAF9F5] font-sans antialiased text-stone-900 relative">
+        <AdminSidebar
+          mobileOpen={mobileSidebarOpen}
+          onCloseMobile={() => setMobileSidebarOpen(false)}
+        />
+        <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+          <AdminHeader onOpenMobileSidebar={() => setMobileSidebarOpen(true)} />
+          <main className="flex-1 overflow-y-auto w-full p-3 sm:p-5 md:p-8">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </AdminNotificationProvider>
   );
 }

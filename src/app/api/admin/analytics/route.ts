@@ -21,7 +21,7 @@ export async function GET() {
       categoriesList,
     ] = await Promise.all([
       db.collegeProfile.findMany({
-        where: { isDeleted: false },
+        where: { isDeleted: false, status: { not: "DELETED" } },
         select: {
           id: true,
           name: true,

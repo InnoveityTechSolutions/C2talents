@@ -249,13 +249,19 @@ function CollegesContent() {
                   type="text"
                   id="college-search"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setLoading(true);
+                  }}
                   placeholder="Natural search e.g. best government colleges in Chennai, NAAC A++, 150 km near me..."
                   className="w-full pl-10 pr-10 py-2.5 border border-stone-200 rounded-xl text-xs font-bold text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#2e266f] bg-stone-50 focus:bg-white transition-all shadow-2xs"
                 />
                 {search && (
                   <button
-                    onClick={() => setSearch("")}
+                    onClick={() => {
+                      setSearch("");
+                      setLoading(true);
+                    }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-700"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -473,7 +479,7 @@ function CollegesContent() {
                   404
                 </p>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
-                  Sorry, no colleges found
+                  College not found in database.
                   {locationFilter ? (
                     <span className="block text-orange-400 text-xl sm:text-2xl font-bold mt-1">
                       in &quot;{locationFilter}&quot;

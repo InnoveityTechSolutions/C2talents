@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { collegesData } from "@/data/colleges";
 import { checkForDuplicateCollege } from "@/lib/duplicateChecker";
 import {
   generateSearchVariants,
   extractCleanTokens,
   matchesCollegeSearch,
+  buildPrismaCollegeSearchConditions,
 } from "@/lib/search/searchNormalizer";
+import { upsertCollegeCourses } from "@/lib/courses/courseDeduplication";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -36,61 +37,54 @@ function safeUrl(rawUrl: any, defaultFallback: string | null = null, maxLen = 19
   return trimmed;
 }
 
-function getStaticFallbackAdminColleges(query: string, category: string, status: string) {
-  return collegesData
-    .filter((c) => {
-      if (query) {
-        const q = query.toLowerCase();
-        if (!c.name.toLowerCase().includes(q) && !c.location.toLowerCase().includes(q)) return false;
-      }
-      if (category) {
-        const cat = category.toLowerCase();
-        if (!c.stream.toLowerCase().includes(cat)) return false;
-      }
-      return true;
-    })
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      shortName: c.name
-        .split(" ")
-        .filter((w) => w.length > 2)
-        .map((w) => w[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 6),
-      slug: c.id,
-      location: c.location,
-      city: c.location.split(",")[0]?.trim() || "Chennai",
-      state: c.state || "Tamil Nadu",
-      rating: c.rating,
-      type: c.type,
-      naacGrade: c.naacGrade,
-      nirfRank: c.nirfRank,
-      feesPerYear: c.feesPerYear,
-      avgPackage: c.avgPackage,
-      highestPackage: c.highestPackage,
-      image: c.image,
-      logo: c.image,
-      status: "PUBLISHED",
-      featured: true,
-      category:
-        c.stream === "btech"
-          ? "Engineering"
-          : c.stream === "mbbs"
-          ? "Medical"
-          : c.stream === "mba"
-          ? "Management"
-          : c.stream === "arts"
-          ? "Arts & Science"
-          : c.stream === "law"
-          ? "Law"
-          : "Commerce",
-      courses: [],
-      placements: [],
-      galleryImages: [],
-    }));
-}
+const adminCollegeSelectFields = {
+  id: true,
+  name: true,
+  shortName: true,
+  slug: true,
+  description: true,
+  location: true,
+  address: true,
+  landmark: true,
+  area: true,
+  city: true,
+  district: true,
+  state: true,
+  pincode: true,
+  latitude: true,
+  longitude: true,
+  phone: true,
+  mobile: true,
+  email: true,
+  website: true,
+  rating: true,
+  type: true,
+  ownership: true,
+  category: true,
+  categories: true,
+  affiliatedUniversity: true,
+  isAutonomous: true,
+  accreditation: true,
+  approval: true,
+  naacGrade: true,
+  nirfRank: true,
+  feesPerYear: true,
+  avgPackage: true,
+  highestPackage: true,
+  placementPercentage: true,
+  image: true,
+  logo: true,
+  status: true,
+  featured: true,
+  trending: true,
+  createdAt: true,
+  updatedAt: true,
+  courses: {
+    select: { id: true, title: true },
+    where: { isDeleted: false },
+  },
+};
+
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -111,73 +105,10 @@ export async function GET(req: Request) {
     ];
 
     if (query) {
-      const variants = generateSearchVariants(query);
-      const { allTokens, distinctiveTokens } = extractCleanTokens(query);
-      const orConditions: any[] = [];
-
-      // Add conditions for all search variants (spelling, bracket-stripped, acronyms)
-      for (const v of variants) {
-        if (v.length >= 2) {
-          orConditions.push(
-            { name: { contains: v } },
-            { shortName: { contains: v } },
-            { slug: { contains: v } },
-            { slug: { contains: v.replace(/\s+/g, "-") } },
-            { city: { contains: v } },
-            { district: { contains: v } },
-            { location: { contains: v } },
-            { address: { contains: v } },
-            { state: { contains: v } },
-            { email: { contains: v } },
-            { website: { contains: v } },
-            { affiliatedUniversity: { contains: v } },
-            { courses: { some: { title: { contains: v }, isDeleted: false } } }
-          );
-        }
+      const searchConditions = buildPrismaCollegeSearchConditions(query);
+      if (searchConditions.length > 0) {
+        andConditions.push(...searchConditions);
       }
-
-      // Multi-word token search (handling stopwords, punctuation, and variants per token)
-      const tokensToMatch = distinctiveTokens.length > 0 ? distinctiveTokens : allTokens;
-      if (tokensToMatch.length > 1) {
-        // Also check if any tokens were inside brackets, e.g. "(CTTEC)"
-        const cleanNoBrackets = query.replace(/\([^)]*\)/g, " ");
-        const { distinctiveTokens: noBracketTokens } = extractCleanTokens(cleanNoBrackets);
-
-        const tokenGroups = [tokensToMatch];
-        if (noBracketTokens.length > 1 && noBracketTokens.length < tokensToMatch.length) {
-          tokenGroups.push(noBracketTokens);
-        }
-
-        for (const tGroup of tokenGroups) {
-          orConditions.push({
-            AND: tGroup.map((tok) => {
-              const tokVariants = [tok];
-              if (tok === "chevalier") tokVariants.push("chevaliar");
-              if (tok === "chevaliar") tokVariants.push("chevalier");
-
-              return {
-                OR: tokVariants.flatMap((tv) => [
-                  { name: { contains: tv } },
-                  { shortName: { contains: tv } },
-                  { city: { contains: tv } },
-                  { district: { contains: tv } },
-                  { location: { contains: tv } },
-                  { address: { contains: tv } },
-                  { state: { contains: tv } },
-                  { email: { contains: tv } },
-                  { website: { contains: tv } },
-                  { category: { contains: tv } },
-                  { categories: { contains: tv } },
-                  { affiliatedUniversity: { contains: tv } },
-                  { courses: { some: { title: { contains: tv }, isDeleted: false } } },
-                ]),
-              };
-            }),
-          });
-        }
-      }
-
-      andConditions.push({ OR: orConditions });
     }
 
     if (category) {
@@ -195,114 +126,76 @@ export async function GET(req: Request) {
 
     where.AND = andConditions;
 
-    const dbPromise = Promise.all([
-      db.collegeProfile.findMany({
-        where,
-        include: {
-          courses: { where: { isDeleted: false } },
-          placements: true,
-          galleryImages: true,
-        },
-        orderBy: { updatedAt: "desc" },
-      }),
-      db.collegeProfile.count({ where: { isDeleted: false, status: { not: "DELETED" } } }),
-      db.collegeProfile.count({ where: { status: "DRAFT", isDeleted: false } }),
-      db.collegeProfile.count({ where: { status: "PUBLISHED", isDeleted: false } }),
-      db.collegeProfile.count({ where: { featured: true, isDeleted: false, status: { not: "DELETED" } } }),
-      db.user.count(),
-      db.course.count({ where: { isDeleted: false } }),
-    ]);
+    const [colleges, totalCount, draftCount, publishedCount, featuredCount, usersCount, coursesCount] =
+      await Promise.all([
+        db.collegeProfile.findMany({
+          where,
+          select: adminCollegeSelectFields,
+          orderBy: { updatedAt: "desc" },
+        }),
+        db.collegeProfile.count({ where: { isDeleted: false, status: { not: "DELETED" } } }),
+        db.collegeProfile.count({ where: { status: "DRAFT", isDeleted: false } }),
+        db.collegeProfile.count({ where: { status: "PUBLISHED", isDeleted: false } }),
+        db.collegeProfile.count({ where: { featured: true, isDeleted: false, status: { not: "DELETED" } } }),
+        db.user.count(),
+        db.course.count({ where: { isDeleted: false } }),
+      ]);
 
-    const timeoutPromise = new Promise<any[]>((resolve) =>
-      setTimeout(() => resolve([[], 0, 0, 0, 0, 0, 0]), 10000)
-    );
-
-    let [colleges, totalCount, draftCount, publishedCount, featuredCount, usersCount, coursesCount] =
-      await Promise.race([dbPromise, timeoutPromise]);
-
-    // If query was specified and SQL search returned 0 records, fallback to evaluation with dynamic acronyms & spelling variants
-    if (query && Array.isArray(colleges) && colleges.length === 0) {
-      const allActive = await db.collegeProfile.findMany({
-        where: {
-          isDeleted: false,
-          status: status ? status : { not: "DELETED" },
-        },
-        include: {
-          courses: { where: { isDeleted: false } },
-          placements: true,
-          galleryImages: true,
-        },
-        orderBy: { updatedAt: "desc" },
-      });
-      colleges = allActive.filter((c: any) => matchesCollegeSearch(c, query));
+    // Strict in-memory safeguard
+    let finalColleges = colleges;
+    if (query && Array.isArray(colleges)) {
+      finalColleges = colleges.filter((c: any) => matchesCollegeSearch(c, query));
     }
 
-    if (Array.isArray(colleges)) {
-      const categoriesSet = new Set<string>();
-      colleges.forEach((c: any) => {
-        if (c.categories) {
+    const categoriesSet = new Set<string>();
+    finalColleges.forEach((c: any) => {
+      if (c.categories) {
+        if (typeof c.categories === "string") {
           c.categories.split(",").forEach((cat: string) => {
             const trimmed = cat.trim();
             if (trimmed) categoriesSet.add(trimmed);
           });
+        } else if (Array.isArray(c.categories)) {
+          c.categories.forEach((cat: any) => {
+            const trimmed = String(cat).trim();
+            if (trimmed) categoriesSet.add(trimmed);
+          });
         }
-      });
-
-      return NextResponse.json(
-        {
-          success: true,
-          stats: {
-            totalColleges: totalCount,
-            pendingColleges: draftCount,
-            publishedColleges: publishedCount,
-            featuredColleges: featuredCount,
-            categoriesCount: categoriesSet.size || 7,
-            coursesCount: coursesCount,
-            usersCount: usersCount,
-            newsCount: 15,
-          },
-          colleges,
-          categoriesList: Array.from(categoriesSet),
-        },
-        { headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" } }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      stats: {
-        totalColleges: 0,
-        pendingColleges: 0,
-        publishedColleges: 0,
-        featuredColleges: 0,
-        categoriesCount: 0,
-        coursesCount: 0,
-        usersCount: 0,
-        newsCount: 0,
-      },
-      colleges: [],
-      categoriesList: [],
+      }
     });
+
+    return NextResponse.json(
+      {
+        success: true,
+        stats: {
+          totalColleges: totalCount,
+          pendingColleges: draftCount,
+          publishedColleges: publishedCount,
+          featuredColleges: featuredCount,
+          categoriesCount: categoriesSet.size || 7,
+          coursesCount: coursesCount,
+          usersCount: usersCount,
+          newsCount: 15,
+        },
+        colleges: finalColleges,
+        categoriesList: Array.from(categoriesSet),
+      },
+      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" } }
+    );
   } catch (err: any) {
-    console.error("[BACKEND DEBUG] GET /api/admin/colleges error:", err?.message || err);
+    console.error("[BACKEND ERROR] GET /api/admin/colleges error:", err?.message || err);
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to fetch colleges",
+        error: "Failed to fetch colleges from database: " + (err?.message || "Unknown error"),
         colleges: [],
-        stats: {
-          totalColleges: 0,
-          pendingColleges: 0,
-          publishedColleges: 0,
-          featuredColleges: 0,
-          categoriesCount: 0,
-          coursesCount: 0,
-          usersCount: 0,
-          newsCount: 0,
-        },
+        stats: null,
         categoriesList: [],
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" },
+      }
     );
   }
 }
@@ -455,7 +348,7 @@ export async function POST(req: Request) {
     const categoriesStr = Array.isArray(categories) ? categories.join(", ") : categories || "";
     const facilitiesStr = Array.isArray(facilities) ? facilities.join(", ") : facilities || "";
 
-    const parsedFeesPerYear = safeFloat(feesPerYear, 60000) ?? 60000;
+    const parsedFeesPerYear = safeFloat(feesPerYear, 0) ?? 0;
     const parsedAvgPackage = safeFloat(avgPackage, 5.0) ?? 5.0;
     const parsedHighestPackage = safeFloat(highestPackage, 12.0) ?? 12.0;
 
@@ -534,20 +427,6 @@ export async function POST(req: Request) {
         status: status || "PUBLISHED",
         featured: Boolean(featured),
         trending: Boolean(trending),
-        courses: {
-          create: Array.isArray(courses) && courses.length > 0
-            ? courses.map((c: any) => ({
-                title: c.title || "Undergraduate Course",
-                duration: c.duration || "4 Years",
-                feesPerYear: safeFloat(c.feesPerYear, 60000) ?? 60000,
-                eligibility: c.eligibility || "10+2 Pass",
-                seats: safeInt(c.seats, 60) ?? 60,
-                entranceExam: c.entranceExam || "Merit Based",
-                careerPath: c.careerPath || "Graduate Specialist",
-                demand: c.demand || "High",
-              }))
-            : [],
-        },
         galleryImages: {
           create: Array.isArray(galleryImages) && galleryImages.length > 0
             ? galleryImages
@@ -625,14 +504,27 @@ export async function POST(req: Request) {
         },
       },
       include: {
-        courses: true,
         galleryImages: true,
         placements: true,
         content: true,
       },
     });
 
-    return NextResponse.json({ success: true, college: newCollege }, { status: 201 });
+    if (Array.isArray(courses) && courses.length > 0) {
+      await upsertCollegeCourses(newCollege.id, courses);
+    }
+
+    const fullCollege = await db.collegeProfile.findUnique({
+      where: { id: newCollege.id },
+      include: {
+        courses: { where: { isDeleted: false }, orderBy: { title: "asc" } },
+        galleryImages: true,
+        placements: true,
+        content: true,
+      },
+    });
+
+    return NextResponse.json({ success: true, college: fullCollege || newCollege }, { status: 201 });
   } catch (err: any) {
     console.error("❌ POST /api/admin/colleges Exception:", err);
     return NextResponse.json(

@@ -21,10 +21,32 @@ interface Props {
 
 const TABS = ["Overview", "Courses & Fees", "Placements", "Reviews", "Apply"];
 
-function formatINR(amount: number) {
-  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-  if (amount >= 1000) return `₹${Math.round(amount / 1000)}K`;
-  return `₹${amount}`;
+function formatINR(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined || isNaN(Number(amount)) || Number(amount) <= 0) {
+    return "Not Available";
+  }
+  const num = Number(amount);
+  if (num >= 100000) return `₹${(num / 100000).toFixed(1)}L`;
+  if (num >= 1000) return `₹${Math.round(num / 1000)}K`;
+  return `₹${num.toLocaleString("en-IN")}`;
+}
+
+function formatCourseEligibility(c: { minGpa?: number | null | string; eligibility?: string | null }) {
+  const minGpaNum = c.minGpa !== null && c.minGpa !== undefined && c.minGpa !== "" ? Number(c.minGpa) : NaN;
+  if (!isNaN(minGpaNum) && minGpaNum > 0) {
+    return `Minimum ${minGpaNum}% in 12th`;
+  }
+  if (c.eligibility && typeof c.eligibility === "string") {
+    const trimmed = c.eligibility.trim();
+    if (trimmed) {
+      const match = trimmed.match(/(\d+(?:\.\d+)?)\s*%/);
+      if (match) {
+        return `Minimum ${match[1]}% in 12th`;
+      }
+      return trimmed;
+    }
+  }
+  return "Eligibility not specified";
 }
 
 function getYouTubeEmbedUrl(url: string | null | undefined): string | null {
@@ -593,7 +615,7 @@ export function CollegeDetailClient({ college }: Props) {
                         <div className="text-right shrink-0">
                           <div className="text-[11px] text-stone-400 font-semibold uppercase">Annual Fee</div>
                           <div className="text-lg font-extrabold text-stone-900">{formatINR(c.feesPerYear)}</div>
-                          <div className="text-[11px] text-stone-500 mt-0.5">Min: {c.minGpa}% in 12th</div>
+                          <div className="text-[11px] text-stone-500 mt-0.5">{formatCourseEligibility(c)}</div>
                         </div>
                       </div>
                     </div>

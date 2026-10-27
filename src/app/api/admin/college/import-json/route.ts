@@ -49,17 +49,23 @@ export async function POST(req: Request) {
 
     if (!jsonString || !jsonString.trim()) {
       return NextResponse.json(
-        { success: false, error: "The uploaded JSON file is empty." },
+        { success: false, error: "JSON content is empty. Please select a .json file or paste valid JSON." },
         { status: 400 }
       );
     }
 
+    // Clean potential markdown code blocks (e.g. ```json ... ``` from Gemini/ChatGPT)
+    let cleanedString = jsonString.trim();
+    if (cleanedString.startsWith("```")) {
+      cleanedString = cleanedString.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+    }
+
     let parsedData: any;
     try {
-      parsedData = JSON.parse(jsonString);
+      parsedData = JSON.parse(cleanedString);
     } catch (err: any) {
       return NextResponse.json(
-        { success: false, error: `Invalid JSON syntax: ${err.message}. Please check your JSON file formatting.` },
+        { success: false, error: `Invalid JSON syntax: ${err.message}. Please check your JSON formatting.` },
         { status: 400 }
       );
     }

@@ -1,4 +1,5 @@
 import { PipelineData } from "../collection/types";
+import { getCourseDeduplicationKey, parseCourseFee } from "@/lib/courses/courseDeduplication";
 
 // Case-sensitive for short 2-3 letter degree codes to prevent matching English words like "be", "ba", "ma"
 const DEGREE_SHORT_REGEX = /\b(B\.?Tech|M\.?Tech|B\.?E\.?|M\.?E\.?|B\.?Arch|BBA|MBA|PGDM|BA\s+LLB|BBA\s+LLB|LLM|B\.?Sc|BCA|B\.?Com|B\.?A|M\.?A|M\.?Sc|MCA|M\.?Com|Ph\.?D|Diploma|D\.?Pharm|B\.?Pharm|MBBS|BDS|GNM|B\.?Litt|M\.?Phil|BPT|MPT|B\.?HM|M\.?HM|B\.?Ed|M\.?Ed)\b/g;
@@ -28,13 +29,15 @@ export function extractCourses(data: PipelineData) {
 
     const norm = clean.toLowerCase();
     if (DENY_COURSE_WORDS.some(w => norm.includes(w))) return;
-    if (foundCoursesMap.has(norm)) return;
+    const dedupKey = getCourseDeduplicationKey(clean);
+    if (foundCoursesMap.has(dedupKey)) return;
 
     let duration = rawDuration ? rawDuration.trim() : inferDuration(clean);
-    let fees = rawFees ? parseFloat(rawFees.replace(/[^0-9.]/g, "")) || null : null;
+    let parsedFee = rawFees ? parseCourseFee(rawFees) : null;
+    let fees = parsedFee !== null && parsedFee > 0 ? parsedFee : null;
     let seats = rawSeats ? parseInt(rawSeats.trim(), 10) || null : null;
 
-    foundCoursesMap.set(norm, {
+    foundCoursesMap.set(dedupKey, {
       title: clean,
       duration,
       feesPerYear: fees,
@@ -141,12 +144,12 @@ function inferDuration(title: string): string {
 
 function inferEligibility(title: string): string {
   if (/MBA|MCA|M\.?Sc|M\.?Tech|M\.?E|M\.?A|M\.?Com|LLM|M\.?Phil|Master/i.test(title)) {
-    return "Graduation with minimum 50% marks";
+    return "Graduation in relevant discipline";
   }
   if (/Ph\.?D|Doctor/i.test(title)) {
-    return "Master's Degree in relevant discipline with minimum 55%";
+    return "Master's Degree in relevant discipline";
   }
-  return "10+2 Pass with minimum 50% aggregate marks";
+  return "10+2 or equivalent examination";
 }
 
 function inferEntranceExam(title: string): string {

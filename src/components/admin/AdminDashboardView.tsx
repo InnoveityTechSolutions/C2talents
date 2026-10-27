@@ -21,28 +21,41 @@ import {
   MessageSquare,
   ShieldCheck,
   Check,
+  Bell,
+  BellRing,
 } from "lucide-react";
+import { useAdminNotifications } from "@/components/admin/AdminNotificationProvider";
 
 export function AdminDashboardView() {
+  const { permission, requestPermission } = useAdminNotifications();
   const [metrics, setMetrics] = useState<any>(null);
   const [activities, setActivities] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   async function fetchDashboardData() {
     setLoading(true);
+    setError(null);
     try {
       const [mRes, aRes] = await Promise.all([
-        fetch("/api/admin/dashboard/metrics"),
-        fetch("/api/admin/dashboard/recent-activity"),
+        fetch("/api/admin/dashboard/metrics", { cache: "no-store" }),
+        fetch("/api/admin/dashboard/recent-activity", { cache: "no-store" }),
       ]);
 
       const mData = await mRes.json();
       const aData = await aRes.json();
 
-      if (mData.metrics) setMetrics(mData.metrics);
+      if (mData.success && mData.metrics) {
+        setMetrics(mData.metrics);
+      } else {
+        setError(mData.error || "Failed to load database metrics");
+        setMetrics(null);
+      }
       if (aData.activities) setActivities(aData.activities);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Dashboard fetch error:", err);
+      setError(err?.message || "Failed to connect to database");
+      setMetrics(null);
     } finally {
       setLoading(false);
     }
@@ -136,6 +149,29 @@ export function AdminDashboardView() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {permission !== "granted" ? (
+            <button
+              type="button"
+              id="dashboard-enable-notifications-btn"
+              onClick={async () => {
+                await requestPermission();
+              }}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-extrabold transition-all border border-amber-500/40 shadow-2xs cursor-pointer hover:scale-[1.01]"
+              title="Enable browser desktop notifications for college reviews"
+            >
+              <BellRing className="w-3.5 h-3.5 text-amber-300 animate-bounce" />
+              <span>Enable Notifications</span>
+            </button>
+          ) : (
+            <div
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30"
+              title="Desktop notifications are enabled"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Desktop Alerts Active</span>
+            </div>
+          )}
+
           <button
             onClick={fetchDashboardData}
             className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 sm:px-3.5 py-2 rounded-xl bg-[#3b2075]/70 hover:bg-[#3b2075] text-purple-100 text-xs font-bold transition-all border border-purple-400/30 shadow-2xs cursor-pointer"
@@ -169,7 +205,13 @@ export function AdminDashboardView() {
                   {card.title}
                 </div>
                 <div className="text-3xl font-extrabold text-white mt-1 tracking-tight">
-                  {loading ? <span className="animate-pulse">...</span> : card.count}
+                  {loading ? (
+                    <span className="animate-pulse">...</span>
+                  ) : error && !metrics ? (
+                    <span className="text-xl font-bold opacity-75">--</span>
+                  ) : (
+                    card.count
+                  )}
                 </div>
               </div>
               <div className="group-hover:scale-110 transition-transform">
@@ -182,7 +224,7 @@ export function AdminDashboardView() {
             <div className="flex items-center justify-between text-[11px] text-white/90 font-medium">
               <span>{card.sublabel}</span>
               <span className="font-bold text-white bg-white/20 group-hover:bg-white/30 px-2 py-0.5 rounded-md transition-colors flex items-center gap-1">
-                {loading ? "..." : card.count}
+                {loading ? "..." : error && !metrics ? "--" : card.count}
                 <span className="text-[10px] opacity-70 group-hover:translate-x-0.5 transition-transform">→</span>
               </span>
             </div>

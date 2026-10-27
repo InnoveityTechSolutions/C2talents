@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { conductGeminiCollegeResearch } from "@/lib/ai/geminiResearchEngine";
+import { isGeminiConfigured } from "@/lib/ai/geminiClient";
 import { executeMultiAgentExtraction } from "../../../../../lib/ai/pipeline/verification/orchestrator";
 import { downloadOfficialMedia } from "@/lib/ai/media-downloader";
 
@@ -41,12 +43,10 @@ export function makeUnverifiedField<T>(warningMsg = "⚠ Please Enter Manually")
   };
 }
 
-import { callGrokAI } from "@/lib/ai/grok";
-
 export async function POST(req: Request) {
   const startTime = Date.now();
   console.log("\n====================================================");
-  console.log("🌐 Production AI College Website Analysis Engine Triggered");
+  console.log("🌐 Gemini College Website Analysis Engine Triggered");
   console.log("====================================================");
 
   try {
@@ -57,7 +57,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Please enter a valid official college website URL." }, { status: 400 });
     }
 
-    // Step 1: Execute Multi-Agent Extraction Pipeline
+    // PRIMARY ENGINE: Gemini Generative AI Research Engine
+    if (isGeminiConfigured()) {
+      try {
+        console.log(`[ANALYSIS ENGINE] Running Gemini primary research on: ${rawUrl}`);
+        const geminiResult = await conductGeminiCollegeResearch({
+          officialWebsiteUrl: rawUrl,
+        });
+
+        const totalExecutionTimeMs = Date.now() - startTime;
+        geminiResult.qualityReport.processingTimeMs = totalExecutionTimeMs;
+
+        console.log(`[ANALYSIS ENGINE] ✅ Gemini research succeeded in ${totalExecutionTimeMs}ms.`);
+        return NextResponse.json({
+          success: true,
+          data: geminiResult.data,
+          qualityReport: geminiResult.qualityReport,
+          logs: geminiResult.logs,
+        });
+      } catch (geminiErr: any) {
+        console.warn(`[ANALYSIS ENGINE] Gemini research error (${geminiErr.message}). Falling back to secondary pipeline...`);
+      }
+    }
+
+    // SECONDARY FALLBACK: Multi-Agent Extraction Pipeline
     let pipelineResult;
     try {
       pipelineResult = await executeMultiAgentExtraction(rawUrl);
@@ -68,8 +91,7 @@ export async function POST(req: Request) {
     const { pipelineData, extractedData } = pipelineResult;
     const { targetUrl, discoveredImages, discoveredPdfs, visitedPages, logs } = pipelineData;
 
-
-    // Step 5: Section 10 Local Media Downloader Engine (Never Hotlink!)
+    // Section 10 Local Media Downloader Engine
     const collegeSlug = extractedData.slug?.value || targetUrl.replace(/^https?:\/\/(www\.)?/i, "").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
 
     // Download Logo
@@ -134,7 +156,6 @@ export async function POST(req: Request) {
     const totalFields = trackedKeys.length;
     const confidenceScore = Math.round((verifiedCount / totalFields) * 100);
 
-    // Step 6: Missing Information Detection
     const missingInformation: string[] = [];
     if (!extractedData.hostelFees?.value && !extractedData.hostelFeePerYear?.value) missingInformation.push("Hostel Fee Missing");
     if (!extractedData.highestPackage?.value && !extractedData.avgPackage?.value) missingInformation.push("Placement Statistics Missing");
@@ -162,9 +183,6 @@ export async function POST(req: Request) {
       courseValidationReport: extractedData.courseValidationReport,
     };
 
-    console.log(`[ANALYSIS ENGINE] ✅ Quality Report: ${confidenceScore}% Confidence (${verifiedCount}/${totalFields} Verified). Processed in ${totalExecutionTimeMs}ms.`);
-    console.log("====================================================\n");
-
     return NextResponse.json({
       success: true,
       data: extractedData,
@@ -179,4 +197,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
