@@ -114,7 +114,11 @@ function AnimatedPasswordInput({
   );
 }
 
-export default function StandaloneManagerLoginPage() {
+interface StandaloneManagerLoginPageProps {
+  onLoginSuccess?: (user?: any) => void;
+}
+
+export default function StandaloneManagerLoginPage({ onLoginSuccess }: StandaloneManagerLoginPageProps = {}) {
   const router = useRouter();
   const [email, setEmail] = useState("superadmin@c2talents.com");
   const [password, setPassword] = useState("Admin@123");
@@ -138,7 +142,23 @@ export default function StandaloneManagerLoginPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        window.location.href = "/manager/dashboard";
+        if (typeof window !== "undefined" && data.token) {
+          localStorage.setItem("admin_token", data.token);
+          localStorage.setItem("token", data.token);
+        }
+
+        if (onLoginSuccess) {
+          onLoginSuccess(data.user);
+          return;
+        }
+
+        if (typeof window !== "undefined") {
+          if (window.location.pathname.startsWith("/manager/") && window.location.pathname !== "/manager/login") {
+            window.location.reload();
+          } else {
+            window.location.href = "/manager/dashboard";
+          }
+        }
       } else {
         setError(data.error || "Invalid login credentials.");
       }

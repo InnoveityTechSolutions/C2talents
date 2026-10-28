@@ -24,12 +24,23 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
     let isMounted = true;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     async function checkAuthStatus() {
       try {
+        const token =
+          typeof window !== "undefined"
+            ? localStorage.getItem("admin_token") || localStorage.getItem("token")
+            : null;
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
         const res = await fetch("/api/admin/auth/me", {
           cache: "no-store",
+          credentials: "include",
+          headers,
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
@@ -66,7 +77,14 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
   // If visiting login page explicitly, render ONLY the standalone login page
   if (isLoginPage) {
-    return <StandaloneLoginPage />;
+    return (
+      <StandaloneLoginPage
+        onLoginSuccess={(loggedInUser) => {
+          if (loggedInUser) setUser(loggedInUser);
+          setIsAuthenticated(true);
+        }}
+      />
+    );
   }
 
   // Loading state while checking authentication token
@@ -76,7 +94,14 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
   // If user is NOT authenticated: RENDER ONLY THE LOGIN PAGE!
   if (!isAuthenticated) {
-    return <StandaloneLoginPage />;
+    return (
+      <StandaloneLoginPage
+        onLoginSuccess={(loggedInUser) => {
+          if (loggedInUser) setUser(loggedInUser);
+          setIsAuthenticated(true);
+        }}
+      />
+    );
   }
 
   // Authenticated User: Render Full Enterprise Admin Layout

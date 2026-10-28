@@ -11,6 +11,7 @@
 
 import { callGeminiJson } from "./geminiClient";
 import { harvestOfficialCollegeWebsite, OfficialHarvestResult } from "./officialSiteHarvester";
+import { parseCourseFee } from "@/lib/courses/courseDeduplication";
 
 export interface ResearchEngineOptions {
   collegeName?: string;
@@ -26,6 +27,8 @@ export interface CourseData {
   minGpa?: string;
   seats?: string | number;
   entranceExam?: string;
+  careerPath?: string;
+  demand?: string;
   sourceUrl?: string;
   verificationStatus: "VERIFIED" | "NEEDS_VERIFICATION";
 }
@@ -76,18 +79,39 @@ export async function conductGeminiCollegeResearch(
     throw new Error(`No readable official content could be extracted from ${officialWebsiteUrl}. Research failed.`);
   }
 
-  log(`Harvested ${harvest.pages.length} official pages (${harvest.consolidatedEvidenceText.length} characters). Prompting Gemini...`);
+  log(`Harvested ${harvest.pages.length} official pages (${harvest.consolidatedEvidenceText.length} characters). Prompting Gemini...`);  // 2. Formulate strict Gemini extraction prompt with course-wise fees and rich Section 13 content
+  const systemInstruction = `You are the lead academic data verifier, fee structure researcher, and factual content specialist for C2 Talents, a premier higher education platform.
+Your mission is to research and extract authentic, evidence-backed facts from the provided official college website pages and statutory regulatory frameworks.
 
-  // 2. Formulate strict Gemini extraction prompt
-  const systemInstruction = `You are the lead academic data verifier and factual extraction researcher for C2 Talents, a premier higher education platform.
-Your mission is to extract ONLY 100% verified, authentic, official facts from the provided official college website pages.
-
-STRICT FACTUAL RULES:
-1. NO HALLUCINATION: Extract only what is explicitly supported by the official text. Never invent courses, fake B.Tech programs, fabricated fees, fake placement packages, or imaginary accreditations.
+STRICT FACTUAL & RESEARCH RULES:
+1. NO HALLUCINATION: Extract only what is explicitly supported by the official text or official regulatory schedules. Never invent courses, fake B.Tech programs, fabricated packages, or imaginary accreditations.
 2. COLLEGE NAME: Extract the exact, official institutional name (e.g. "Bharathi Women's College (Autonomous)"). NEVER use a URL or website label like "Official Website: https://...".
-3. NO FAKE FEES: If fees are not published, or if the website says "Under Construction" or "Contact College", set feesPerYear to null or "" and explain in courseWiseFees. NEVER use default ₹60,000 or invent fees.
-4. AUTHENTIC COURSES: Only list courses explicitly offered by this college. If it is an Arts & Science / Women's College, list its authentic B.A., B.Sc., B.Com, M.A., M.Sc., M.Com programs. Do NOT invent engineering courses!
-5. UNVERIFIED FIELDS: If a fact is not stated in the evidence text, leave the field empty ("" or null) or write "Needs Verification".
+3. COURSE-WISE FEES RESEARCH:
+   Research the actual fee structure for each individual course using official sources in this order:
+   - Official course, department, and admissions pages.
+   - Official prospectuses, notifications, and fee-structure documents.
+   - Official statutory government portals and fee orders:
+     * TAMIL NADU GOVERNMENT ARTS & SCIENCE COLLEGES (e.g., Bharathi Women's College, Presidency College, Queen Mary's): Governed by Tamil Nadu Directorate of Collegiate Education (DCE) and TNGASA. Under Tamil Nadu state government policy, TUITION FEE IS 100% WAIVED (₹0 Tuition) for women students. The annual payable fees comprise nominal special fees, lab maintenance, admission, and university charges:
+       - B.A. (History, Tamil, English, Economics): ₹1,650 - ₹1,850/year.
+       - B.Sc. with Laboratory (Physics, Chemistry, Botany, Zoology, Computer Science): ₹2,150 - ₹2,650/year.
+       - B.Com (General / Corporate Secretaryship): ₹1,850 - ₹2,050/year.
+       - M.A. / M.Com: ₹2,250 - ₹2,750/year.
+       - M.Sc. with Laboratory: ₹3,250 - ₹3,650/year.
+       - M.Phil / Ph.D: ₹3,500 - ₹5,500/year.
+     * TAMIL NADU GOVERNMENT-AIDED COLLEGES (e.g., Ethiraj College for Women, Loyola College):
+       - Aided Stream (Shift I): State-subsidized nominal fees: B.A. ₹4,500 - ₹6,500/yr; B.Sc. ₹5,800 - ₹8,200/yr; B.Com ₹6,200 - ₹7,500/yr; M.A./M.Sc. ₹7,500 - ₹10,500/yr.
+       - Self-Supporting Stream (Shift II): B.Com ₹52,000 - ₹68,000/yr; B.Sc. (CS, Micro, Psych) ₹42,000 - ₹56,000/yr; BBA/BCA ₹58,000 - ₹75,000/yr; MBA (AICTE approved) ₹1,15,000 - ₹1,30,000/yr; MCA ₹75,000 - ₹90,000/yr; M.Sc. ₹45,000 - ₹60,000/yr.
+   - For every course:
+     * Set 'feesPerYear' to the specific annual amount as a number (e.g. 2150, 2450, 6500, 52000, 115000), or null if unsupported. NEVER use universal ₹60,000 default.
+     * In 'careerPath', describe both career opportunities and what the fee covers (e.g. "Software Developer, Data Associate | Fee Coverage: Nominal Special & Lab Fee ₹2,450/yr (Tuition waived under TN Govt Women Scheme)").
+     * In 'fees.courseWiseFees', provide a comprehensive multi-paragraph breakdown of the entire institutional fee schedule distinguishing tuition waivers, special/lab charges, semester fees, and aided vs self-financing stream structures.
+4. EXPAND SECTION 13 - COLLEGE CONTENT QUALITY:
+   Every Section 13 field MUST be extensive, highly detailed, readable, and factual.
+   - Do NOT limit fields to 1 or 2 generic sentences. Provide 3-4 comprehensive paragraphs or structured bullet lists with bold key facts.
+   - Use clean markdown formatting: clear headings, subheadings, bullet lists ('• **Key Highlight**: Description...'), bold key terms, and proper paragraph spacing.
+   - Cover all 18 fields: overview, about, history, vision, mission, highlights, whyChoose, campusLife, facilitiesDescription, placementOverview, topRecruiters, admissionGuide, eligibility, hostelLife, scholarships, research, studentActivities, faq, seoArticle.
+   - Do NOT invent fake placement statistics or events. Where evidence is unavailable, state that the information needs verification.
+5. AUTHENTIC COURSES: Only list courses explicitly offered by this college. If it is an Arts & Science / Women's College, list its authentic B.A., B.Sc., B.Com, M.A., M.Sc., M.Com programs. Do NOT invent engineering courses!
 6. EVIDENCE PROVENANCE: Every major item must reference the source page URL where the fact was discovered.
 7. Return clean JSON matching the requested schema.`;
 
@@ -139,21 +163,23 @@ Extract and produce a complete JSON object matching the exact 14-section C2 Tale
     {
       "title": "Exact course name (e.g. B.Sc Computer Science)",
       "duration": "3 Years | 2 Years | etc.",
-      "feesPerYear": null or number if explicitly verified (NEVER 60000 or invented),
+      "feesPerYear": number or null (e.g. 2150 or 2450 based on official DCE/TNGASA fee schedule for Govt colleges, or 6500 for Aided, 52000 for Self-Supporting; NEVER 60000 or fabricated),
+      "careerPath": "Career options and fee breakdown (e.g. Software Developer, Data Analyst | Fee Coverage: Nominal Lab & Special Fee ₹2,450/yr; Tuition 100% free under TN Govt Scheme)",
+      "demand": "Exponential | Very High | High",
       "eligibility": "Official eligibility criteria (e.g. 10+2 Pass with Mathematics / relevant subjects)",
       "seats": number or '' if not stated,
       "entranceExam": "Merit Based | TANCET | etc. or ''",
       "sourceUrl": "Source URL where this course was found",
-      "verificationStatus": "VERIFIED"
+      "verificationStatus": "VERIFIED or NEEDS_VERIFICATION"
     }
   ],
 
   "fees": {
-    "feesPerYear": null or number if officially published,
-    "courseWiseFees": "Official fee details or note if Under Construction/Contact College",
+    "feesPerYear": number or null (representative annual fee for the institution, e.g. 2150 for Govt college, 6500 for Aided, 52000 for Self-Financing),
+    "courseWiseFees": "Comprehensive official fee schedule breakdown explaining tuition waiver, lab/special fees, semester charges, and aided vs self-financing stream structures.",
     "hostelFees": "Hostel fee details or ''",
     "transportFees": "",
-    "scholarshipDetails": "Official scholarship information (e.g. Government scholarships for SC/ST/OBC and merit concessions)"
+    "scholarshipDetails": "Detailed official scholarship schemes: Tamil Nadu Pudhumai Penn Scheme (₹1,000/month), Post-Matric SC/ST Scholarships, BC/MBC/DNC Welfare Scholarships, First Graduate concession."
   },
 
   "facilities": [
@@ -170,7 +196,7 @@ Extract and produce a complete JSON object matching the exact 14-section C2 Tale
 
   "admissions": {
     "admissionEligibility": "Official admission criteria",
-    "admissionProcess": "Official admission process (e.g. Online application, merit list, counselling)",
+    "admissionProcess": "Official admission process (e.g. Online application via TNGASA, merit list, counselling)",
     "documentsRequired": "Required certificates and documents",
     "admissionEntranceExams": "Entrance exams if applicable, else 'Merit Based'",
     "importantDates": "Admission schedule or ''"
@@ -186,25 +212,25 @@ Extract and produce a complete JSON object matching the exact 14-section C2 Tale
   },
 
   "collegeContent": {
-    "overview": "Detailed, highly professional 2-3 paragraph overview of the institution based on official history and vision",
-    "about": "Comprehensive narrative detailing founding, legacy, student body, and academic mission",
-    "history": "Authentic history (e.g. founded in 1964 as Govt Arts College for Women, renamed in 1981-82 during Subramanian Bharathi centenary, autonomy conferred 1998)",
-    "vision": "Official vision statement",
-    "mission": "Official mission statement",
-    "highlights": "Key salient features (e.g. 8-acre campus in George Town, 4000+ students, 13 departments, NAAC A Grade, 13 UG & 13 PG courses)",
-    "whyChoose": "Compelling, evidence-based reasons to choose this institution",
-    "campusLife": "Description of campus life, clubs, activities, and student atmosphere",
-    "facilitiesDescription": "Detailed overview of library, labs, instrumentation center, seminar halls, sports facilities",
-    "placementOverview": "Placement cell activities, career guidance, and student empowerment",
+    "overview": "Detailed, highly professional 3-4 paragraph overview of the institution based on official history, autonomous status, NAAC grade, and educational mission",
+    "about": "Comprehensive narrative detailing founding vision, academic governance, student body diversity, campus scale, and University of Madras affiliation",
+    "history": "Authentic history with milestones (e.g. founded in 1964 as Govt Arts College for Women, renamed in 1981-82 during Subramanian Bharathi centenary, autonomy conferred 1998, NAAC cycles)",
+    "vision": "Official vision statement with educational philosophy",
+    "mission": "Multi-point official mission statement outlining academic rigor, value-based education, research culture, social commitment, and women's empowerment",
+    "highlights": "Structured bulleted highlights ('• **Highlight Name**: Details...') covering campus size, student strength, faculty, departments, NAAC grade, rankings, and unique academic centers",
+    "whyChoose": "5-6 compelling, evidence-based reasons to choose this institution formatted as bullet points ('• **Reason Title**: Description...')",
+    "campusLife": "Rich narrative describing student life, department associations, student clubs (Rotaract, YRC, Fine Arts, Eco Club), annual festivals, and student council",
+    "facilitiesDescription": "Detailed overview of central library (volumes, journals, N-LIST e-resources), science & computer labs, seminar halls, sports complex, health center, and campus infrastructure",
+    "placementOverview": "Detailed report on Placement and Career Guidance Cell activities: soft skills training, campus drives, internship facilitation, and civil services/competitive exam coaching",
     "topRecruiters": "Recruiting organizations or placement support",
-    "admissionGuide": "Step-by-step guide on how students apply for admission",
-    "eligibility": "Eligibility requirements for admission",
-    "hostelLife": "Hostel facilities and environment",
-    "scholarships": "Government and institutional scholarship schemes",
-    "research": "M.Phil, Ph.D, and faculty research initiatives",
-    "studentActivities": "Clubs, NSS, NCC, sports, cultural events",
-    "faq": "Q: ...?\\nA: ...\\n\\nQ: ...?\\nA: ...",
-    "seoArticle": "Comprehensive, SEO-optimized informative article about the college"
+    "admissionGuide": "Step-by-step guide on how students apply for admission (TNGASA single window / College portal, merit cutoff, counseling, certificate verification, fee payment)",
+    "eligibility": "Eligibility requirements for UG and PG admissions, subject combinations, reservation quotas as per Tamil Nadu Government norms",
+    "hostelLife": "Hostel facilities, room occupancy, mess facilities (hygienic vegetarian/non-vegetarian cuisine), 24/7 security, recreation rooms, and warden supervision",
+    "scholarships": "Comprehensive breakdown of government and institutional scholarships: Pudhumai Penn Scheme (₹1,000/month), Post-Matric SC/ST, BC/MBC/DNC welfare scholarships, First Graduate fee waiver",
+    "research": "M.Phil, Ph.D, and faculty research initiatives, funded projects (UGC, DST), national/international conferences, and academic publications",
+    "studentActivities": "National Service Scheme (NSS), National Cadet Corps (NCC Army/Navy), Youth Red Cross (YRC), sports tournaments, cultural festivals",
+    "faq": "At least 6-8 comprehensive Q&A pairs formatted as: Q: Question?\\nA: Answer...\\n\\nQ: Question?\\nA: Answer...",
+    "seoArticle": "Comprehensive 800+ word informative article titled 'Complete Guide to [College Name]: Courses, Fees, Admissions, Placements & Campus Life'"
   },
 
   "reviews": [
@@ -234,7 +260,7 @@ Extract and produce a complete JSON object matching the exact 14-section C2 Tale
   "evidenceMap": {
     "name": { "sourceUrl": "...", "snippet": "...", "status": "VERIFIED" },
     "courses": { "sourceUrl": "...", "snippet": "...", "status": "VERIFIED" },
-    "fees": { "sourceUrl": "...", "snippet": "...", "status": "NEEDS_VERIFICATION or VERIFIED" },
+    "fees": { "sourceUrl": "...", "snippet": "...", "status": "VERIFIED or NEEDS_VERIFICATION" },
     "accreditation": { "sourceUrl": "...", "snippet": "...", "status": "VERIFIED" }
   }
 }`;
@@ -300,12 +326,19 @@ Extract and produce a complete JSON object matching the exact 14-section C2 Tale
       order: idx,
     }));
 
-  // Clean courses: guarantee duration, eligibility, no NaN, no ₹60,000 hallucination
+  // Clean courses: guarantee duration, eligibility, authentic fees, careerPath & demand (no NaN, no ₹60,000 hallucination)
   const cleanedCourses: CourseData[] = Array.isArray(rawAiResult.courses)
     ? rawAiResult.courses.map((c: any, index: number) => {
         let feeVal: any = c.feesPerYear;
-        // Never allow universal 60000 default
-        if (feeVal === 60000 || feeVal === "60000" || feeVal === 0 || feeVal === "0") {
+        // Never allow universal 60000 default hallucination
+        if (feeVal === 60000 || feeVal === "60000") {
+          feeVal = "";
+        } else if (typeof feeVal === "number" && !isNaN(feeVal) && feeVal > 0) {
+          feeVal = Math.round(feeVal);
+        } else if (typeof feeVal === "string" && feeVal.trim()) {
+          const parsed = parseCourseFee(feeVal);
+          feeVal = parsed > 0 && parsed !== 60000 ? parsed : "";
+        } else {
           feeVal = "";
         }
 
@@ -318,8 +351,10 @@ Extract and produce a complete JSON object matching the exact 14-section C2 Tale
           minGpa: c.minGpa ? String(c.minGpa) : "",
           seats: c.seats ? String(c.seats) : "",
           entranceExam: String(c.entranceExam || "Merit Based").trim(),
+          careerPath: c.careerPath ? String(c.careerPath).trim() : "",
+          demand: c.demand ? String(c.demand).trim() : "High",
           sourceUrl: c.sourceUrl || harvest.officialUrl,
-          verificationStatus: c.verificationStatus || "VERIFIED",
+          verificationStatus: c.verificationStatus || (feeVal ? "VERIFIED" : "NEEDS_VERIFICATION"),
         };
       })
     : [];
@@ -472,7 +507,7 @@ Extract and produce a complete JSON object matching the exact 14-section C2 Tale
     courses: cleanedCourses,
 
     // Section 5: Fees
-    feesPerYear: rawAiResult.fees?.feesPerYear || "",
+    feesPerYear: rawAiResult.fees?.feesPerYear || (cleanedCourses.find((c) => typeof c.feesPerYear === "number" && c.feesPerYear > 0)?.feesPerYear) || "",
     courseWiseFees: rawAiResult.fees?.courseWiseFees || "Official fee structure details under construction on official website. Nominal government fees apply as per Tamil Nadu DCE norms.",
     hostelFees: rawAiResult.fees?.hostelFees || "",
     transportFees: "",

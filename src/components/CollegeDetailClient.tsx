@@ -22,12 +22,17 @@ interface Props {
 const TABS = ["Overview", "Courses & Fees", "Placements", "Reviews", "Apply"];
 
 function formatINR(amount: number | null | undefined): string {
-  if (amount === null || amount === undefined || isNaN(Number(amount)) || Number(amount) <= 0) {
+  if (amount === null || amount === undefined || isNaN(Number(amount))) {
     return "Not Available";
   }
   const num = Number(amount);
-  if (num >= 100000) return `₹${(num / 100000).toFixed(1)}L`;
-  if (num >= 1000) return `₹${Math.round(num / 1000)}K`;
+  if (num <= 0) {
+    return "Not Available";
+  }
+  if (num >= 100000) {
+    const inLakhs = num / 100000;
+    return `₹${inLakhs % 1 === 0 ? inLakhs.toFixed(0) : inLakhs.toFixed(2)}L`;
+  }
   return `₹${num.toLocaleString("en-IN")}`;
 }
 
@@ -1285,123 +1290,137 @@ function FormattedText({ text, dark = false }: { text?: string | null; dark?: bo
 
   const blocks = text.split(/\n\s*\n/).filter(Boolean);
 
+  const renderFormattedLine = (line: string, idx: number) => {
+    // 1. Markdown Heading (### or ## or #)
+    const isHeading = /^#{1,4}\s+(.+)/.test(line);
+    if (isHeading) {
+      const hMatch = line.match(/^#{1,4}\s+(.+)/);
+      const hTitle = hMatch ? hMatch[1].trim() : line;
+      return (
+        <h4
+          key={idx}
+          className={`text-sm font-bold tracking-tight mt-3 mb-1.5 flex items-center gap-1.5 ${
+            dark ? "text-amber-300 border-b border-stone-800 pb-1" : "text-stone-900 border-b border-stone-100 pb-1"
+          }`}
+        >
+          <span className={`w-1.5 h-3.5 rounded-full ${dark ? "bg-amber-400" : "bg-emerald-600"}`} />
+          <span>{hTitle}</span>
+        </h4>
+      );
+    }
+
+    // 2. Structured List Item (•, -, *, ✔, ►, or 1., 2.)
+    const isList = /^[\•\-\*\✔\►]|\d+\.\s+/.test(line);
+    if (isList) {
+      const isNum = /^\d+\./.test(line);
+      const numMatch = line.match(/^(\d+)\.\s*(.*)/);
+      const cleanLine = line.replace(/^[\•\-\*\✔\►\d+\.]\s*/, "").trim();
+      const parts = cleanLine.split(/(\*\*.*?\*\*|__.*?__)/g);
+
+      return (
+        <div
+          key={idx}
+          className={`flex items-start gap-3 p-3 rounded-xl border text-xs leading-relaxed transition-all my-1.5 ${
+            dark
+              ? "bg-stone-850/90 border-stone-700/80 text-stone-200"
+              : "bg-slate-50/90 border-slate-200/90 text-stone-800 hover:bg-slate-100/70"
+          }`}
+        >
+          {isNum && numMatch ? (
+            <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-extrabold text-[10px] shrink-0 mt-0.5 shadow-xs">
+              {numMatch[1]}
+            </span>
+          ) : (
+            <span
+              className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                dark ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-700"
+              }`}
+            >
+              <CheckCircle className="w-3.5 h-3.5" />
+            </span>
+          )}
+          <span className="flex-1 font-medium">
+            {parts.map((p, pIdx) => {
+              if ((p.startsWith("**") && p.endsWith("**")) || (p.startsWith("__") && p.endsWith("__"))) {
+                const boldVal = p.slice(2, -2);
+                return (
+                  <strong
+                    key={pIdx}
+                    className={`font-extrabold px-1.5 py-0.5 rounded text-[11px] mx-0.5 inline-block ${
+                      dark
+                        ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
+                        : "bg-emerald-100/90 text-emerald-950 border border-emerald-300/80"
+                    }`}
+                  >
+                    {boldVal}
+                  </strong>
+                );
+              }
+              return p;
+            })}
+          </span>
+        </div>
+      );
+    }
+
+    // 3. Key-Value Tag Line (e.g. Label: Value)
+    const isKeyValue = /^([A-Za-z0-9\s\&\/]+)\s*[:\-]\s*(.+)/.test(line) && !line.includes("http");
+    if (isKeyValue) {
+      const kvMatch = line.match(/^([A-Za-z0-9\s\&\/]+)\s*[:\-]\s*(.+)/);
+      if (kvMatch) {
+        return (
+          <div
+            key={idx}
+            className={`flex flex-wrap items-baseline gap-2 p-2.5 rounded-xl border text-xs my-1.5 ${
+              dark ? "bg-stone-850 border-stone-700 text-stone-200" : "bg-stone-50 border-stone-200/90 text-stone-800"
+            }`}
+          >
+            <span
+              className={`font-bold px-2 py-0.5 rounded text-[11px] uppercase tracking-wider ${
+                dark ? "bg-stone-800 text-amber-400" : "bg-stone-200/80 text-stone-900"
+              }`}
+            >
+              {kvMatch[1].trim()}:
+            </span>
+            <span className="font-semibold">{kvMatch[2].trim()}</span>
+          </div>
+        );
+      }
+    }
+
+    // 4. Standard Paragraph with Bold Highlights
+    const parts = line.split(/(\*\*.*?\*\*|__.*?__)/g);
+    return (
+      <p key={idx} className={`text-sm leading-relaxed font-normal my-1 ${dark ? "text-stone-300" : "text-stone-700"}`}>
+        {parts.map((p, pIdx) => {
+          if ((p.startsWith("**") && p.endsWith("**")) || (p.startsWith("__") && p.endsWith("__"))) {
+            const boldVal = p.slice(2, -2);
+            return (
+              <strong
+                key={pIdx}
+                className={`font-extrabold px-1.5 py-0.5 rounded mx-0.5 ${
+                  dark
+                    ? "bg-amber-400/20 text-amber-300 font-bold"
+                    : "bg-amber-100 text-stone-950 font-bold border-b border-amber-300"
+                }`}
+              >
+                {boldVal}
+              </strong>
+            );
+          }
+          return p;
+        })}
+      </p>
+    );
+  };
+
   return (
     <div className="space-y-3 font-sans">
       {blocks.map((block, bIdx) => {
         const lines = block.split(/\n/).map((l) => l.trim()).filter(Boolean);
-
-        const isList = lines.every((l) => /^[\•\-\*\✔\►\d+\.]/.test(l));
-
-        if (isList) {
-          return (
-            <div key={bIdx} className="grid grid-cols-1 gap-2 pt-1">
-              {lines.map((line, lIdx) => {
-                const isNum = /^\d+\./.test(line);
-                const numMatch = line.match(/^(\d+)\.\s*(.*)/);
-                const cleanLine = line.replace(/^[\•\-\*\✔\►\d+\.]\s*/, "").trim();
-
-                const parts = cleanLine.split(/(\*\*.*?\*\*|__.*?__)/g);
-
-                return (
-                  <div
-                    key={lIdx}
-                    className={`flex items-start gap-3 p-3 rounded-xl border text-xs leading-relaxed transition-all ${
-                      dark
-                        ? "bg-stone-850/90 border-stone-700/80 text-stone-200"
-                        : "bg-slate-50/90 border-slate-200/90 text-stone-800 hover:bg-slate-100/70"
-                    }`}
-                  >
-                    {isNum && numMatch ? (
-                      <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-extrabold text-[10px] shrink-0 mt-0.5 shadow-xs">
-                        {numMatch[1]}
-                      </span>
-                    ) : (
-                      <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${dark ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-700"}`}>
-                        <CheckCircle className="w-3.5 h-3.5" />
-                      </span>
-                    )}
-                    <span className="flex-1 font-medium">
-                      {parts.map((p, pIdx) => {
-                        if ((p.startsWith("**") && p.endsWith("**")) || (p.startsWith("__") && p.endsWith("__"))) {
-                          const boldVal = p.slice(2, -2);
-                          return (
-                            <strong
-                              key={pIdx}
-                              className={`font-extrabold px-1.5 py-0.5 rounded text-[11px] mx-0.5 inline-block ${
-                                dark
-                                  ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
-                                  : "bg-emerald-100/90 text-emerald-950 border border-emerald-300/80"
-                              }`}
-                            >
-                              {boldVal}
-                            </strong>
-                          );
-                        }
-                        return p;
-                      })}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        }
-
         return (
-          <div key={bIdx} className="space-y-1.5">
-            {lines.map((line, lIdx) => {
-              const parts = line.split(/(\*\*.*?\*\*|__.*?__)/g);
-              const isKeyValue = /^([A-Za-z0-9\s\&\/]+)\s*[:\-]\s*(.+)/.test(line) && !line.includes("http");
-
-              if (isKeyValue) {
-                const kvMatch = line.match(/^([A-Za-z0-9\s\&\/]+)\s*[:\-]\s*(.+)/);
-                if (kvMatch) {
-                  return (
-                    <div
-                      key={lIdx}
-                      className={`flex flex-wrap items-baseline gap-2 p-2.5 rounded-xl border text-xs my-1 ${
-                        dark
-                          ? "bg-stone-850 border-stone-700 text-stone-200"
-                          : "bg-stone-50 border-stone-200/90 text-stone-800"
-                      }`}
-                    >
-                      <span className={`font-bold px-2 py-0.5 rounded text-[11px] uppercase tracking-wider ${dark ? "bg-stone-800 text-amber-400" : "bg-stone-200/80 text-stone-900"}`}>
-                        {kvMatch[1].trim()}:
-                      </span>
-                      <span className="font-semibold">{kvMatch[2].trim()}</span>
-                    </div>
-                  );
-                }
-              }
-
-              return (
-                <p
-                  key={lIdx}
-                  className={`text-sm leading-relaxed font-normal ${
-                    dark ? "text-stone-300" : "text-stone-700"
-                  }`}
-                >
-                  {parts.map((p, pIdx) => {
-                    if ((p.startsWith("**") && p.endsWith("**")) || (p.startsWith("__") && p.endsWith("__"))) {
-                      const boldVal = p.slice(2, -2);
-                      return (
-                        <strong
-                          key={pIdx}
-                          className={`font-extrabold px-1.5 py-0.5 rounded mx-0.5 ${
-                            dark
-                              ? "bg-amber-400/20 text-amber-300 font-bold"
-                              : "bg-amber-100 text-stone-950 font-bold border-b border-amber-300"
-                          }`}
-                        >
-                          {boldVal}
-                        </strong>
-                      );
-                    }
-                    return p;
-                  })}
-                </p>
-              );
-            })}
+          <div key={bIdx} className="space-y-1">
+            {lines.map((line, lIdx) => renderFormattedLine(line, lIdx))}
           </div>
         );
       })}

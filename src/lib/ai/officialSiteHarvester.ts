@@ -372,9 +372,9 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
 
   // High-signal distribution
   aboutUrls.slice(0, 2).forEach(addIfNew);
-  courseUrls.slice(0, 2).forEach(addIfNew);
-  feeUrls.slice(0, 1).forEach(addIfNew);
-  admissionUrls.slice(0, 2).forEach(addIfNew);
+  courseUrls.slice(0, 3).forEach(addIfNew);
+  feeUrls.slice(0, 3).forEach(addIfNew);
+  admissionUrls.slice(0, 3).forEach(addIfNew);
   deptUrls.slice(0, 4).forEach(addIfNew);
   facilityUrls.slice(0, 2).forEach(addIfNew);
   placementUrls.slice(0, 1).forEach(addIfNew);

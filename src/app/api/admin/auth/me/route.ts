@@ -7,10 +7,23 @@ export const dynamic = "force-dynamic";
 const JWT_SECRET = process.env.JWT_SECRET || "c2talents-enterprise-jwt-secret-key-2026";
 const ALLOWED_ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "CONTENT_MANAGER"];
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("admin_token")?.value || cookieStore.get("token")?.value;
+    let token: string | undefined;
+
+    // 1. Check cookies
+    try {
+      const cookieStore = await cookies();
+      token = cookieStore.get("admin_token")?.value || cookieStore.get("token")?.value;
+    } catch (_) {}
+
+    // 2. Fallback to Authorization header
+    if (!token && req) {
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        token = authHeader.split(" ")[1];
+      }
+    }
 
     if (!token) {
       return NextResponse.json(

@@ -14,12 +14,9 @@ export function middleware(req: NextRequest) {
   // Allow static assets, public registration, college portal & auth API endpoints without interference
   if (
     pathname.startsWith("/_next") ||
+    pathname.startsWith("/api/") ||
     pathname.startsWith("/register-college") ||
     pathname.startsWith("/college-portal") ||
-    pathname.startsWith("/api/college-registration") ||
-    pathname.startsWith("/api/college-portal") ||
-    pathname.startsWith("/api/auth/") ||
-    pathname.startsWith("/api/admin/auth/login") ||
     pathname.includes(".")
   ) {
     return NextResponse.next();

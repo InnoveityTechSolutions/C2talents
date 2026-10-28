@@ -51,6 +51,43 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     }
 
     const collegeName = payload.name || registrationRequest.collegeName;
+
+    // 1. Resolve target CollegeProfile ID (check explicit link, email owner, or domain/name match)
+    let targetCollegeId = registrationRequest.publishedCollegeId;
+    const candidateEmail = (payload.email || registrationRequest.email || "").trim().toLowerCase();
+
+    if (!targetCollegeId && candidateEmail) {
+      const userMatch = await db.user.findUnique({
+        where: { email: candidateEmail },
+        include: { college: true },
+      });
+      if (userMatch?.college) {
+        targetCollegeId = userMatch.college.id;
+      }
+    }
+
+    if (!targetCollegeId) {
+      const websiteUrl = payload.website || registrationRequest.website;
+      let domain = "";
+      if (websiteUrl) {
+        try {
+          domain = new URL(websiteUrl.startsWith("http") ? websiteUrl : `https://${websiteUrl}`).hostname.replace(/^www\./, "");
+        } catch (e) {}
+      }
+
+      const match = await db.collegeProfile.findFirst({
+        where: {
+          OR: [
+            { name: collegeName.trim() },
+            ...(domain ? [{ website: { contains: domain } }] : []),
+          ],
+        },
+      });
+      if (match) {
+        targetCollegeId = match.id;
+      }
+    }
+
     let baseSlug = (payload.slug || collegeName).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     if (!baseSlug) baseSlug = `college-${Date.now()}`;
 
@@ -58,7 +95,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     let attempts = 0;
     while (attempts < 5) {
       const existing = await db.collegeProfile.findUnique({ where: { slug: finalSlug } });
-      if (!existing || (registrationRequest.publishedCollegeId && existing.id === registrationRequest.publishedCollegeId)) {
+      if (!existing || (targetCollegeId && existing.id === targetCollegeId) || (registrationRequest.publishedCollegeId && existing.id === registrationRequest.publishedCollegeId)) {
         break;
       }
       finalSlug = `${baseSlug}-${Math.floor(Math.random() * 9000 + 1000)}`;
@@ -67,11 +104,10 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
 
     let publishedCollege: any;
 
-    if (registrationRequest.publishedCollegeId) {
+    if (targetCollegeId) {
       // Update existing published CollegeProfile
-      const targetId = registrationRequest.publishedCollegeId;
       publishedCollege = await db.collegeProfile.update({
-        where: { id: targetId },
+        where: { id: targetCollegeId },
         data: {
           name: collegeName.trim(),
           shortName: payload.shortName || collegeName.slice(0, 5).toUpperCase(),
@@ -145,19 +181,37 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
         },
       });
     } else {
-      // Create fresh User account and CollegeProfile record
-      const newUser = await db.user.create({
-        data: {
-          email: registrationRequest.email || `college_${Date.now()}@c2talents.com`,
-          passwordHash: "saas_verified_college_hash",
-          role: "COLLEGE",
-          name: collegeName,
-        },
-      });
+      // Create fresh User account and CollegeProfile record safely without email constraint errors
+      let targetUserId: string;
+
+      const existingUser = candidateEmail
+        ? await db.user.findUnique({ where: { email: candidateEmail }, include: { college: true } })
+        : null;
+
+      if (existingUser && !existingUser.college) {
+        // Reuse this unlinked user account
+        targetUserId = existingUser.id;
+      } else {
+        let uniqueEmail = candidateEmail && !existingUser ? candidateEmail : null;
+        if (!uniqueEmail) {
+          const cleanSlug = finalSlug.replace(/[^a-z0-9]/g, "").slice(0, 15);
+          uniqueEmail = `college_${cleanSlug}_${Date.now()}@c2talents.com`;
+        }
+
+        const newUser = await db.user.create({
+          data: {
+            email: uniqueEmail,
+            passwordHash: "saas_verified_college_hash",
+            role: "COLLEGE",
+            name: collegeName,
+          },
+        });
+        targetUserId = newUser.id;
+      }
 
       publishedCollege = await db.collegeProfile.create({
         data: {
-          userId: newUser.id,
+          userId: targetUserId,
           name: collegeName.trim(),
           shortName: payload.shortName || collegeName.slice(0, 5).toUpperCase(),
           slug: finalSlug,
