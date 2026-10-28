@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendEmail, generateCollegePublishedEmailHtml } from "@/lib/email";
 import { upsertCollegeCourses } from "@/lib/courses/courseDeduplication";
+import { normalizeAndDeduplicateContactNumbers } from "@/lib/ai/contactNormalizer";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +105,11 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
 
     let publishedCollege: any;
 
+    const normalizedContacts = normalizeAndDeduplicateContactNumbers(
+      payload.phone,
+      payload.mobile || (registrationRequest.mobile !== "9999999999" ? registrationRequest.mobile : "")
+    );
+
     if (targetCollegeId) {
       // Update existing published CollegeProfile
       publishedCollege = await db.collegeProfile.update({
@@ -124,8 +130,8 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
           latitude: safeFloat(payload.latitude),
           longitude: safeFloat(payload.longitude),
           googleMapUrl: safeUrl(payload.googleMapUrl),
-          phone: payload.phone || "",
-          mobile: payload.mobile || registrationRequest.mobile,
+          phone: normalizedContacts.phone || payload.phone || "",
+          mobile: normalizedContacts.mobile || "",
           email: payload.email || registrationRequest.email,
           website: safeUrl(payload.website || registrationRequest.website),
           facebook: safeUrl(payload.facebook),
@@ -227,8 +233,8 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
           latitude: safeFloat(payload.latitude),
           longitude: safeFloat(payload.longitude),
           googleMapUrl: safeUrl(payload.googleMapUrl),
-          phone: payload.phone || "",
-          mobile: payload.mobile || registrationRequest.mobile,
+          phone: normalizedContacts.phone || payload.phone || "",
+          mobile: normalizedContacts.mobile || "",
           email: payload.email || registrationRequest.email,
           website: safeUrl(payload.website || registrationRequest.website),
           facebook: safeUrl(payload.facebook),

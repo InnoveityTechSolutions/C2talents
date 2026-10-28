@@ -8,6 +8,7 @@ import {
   isUrlOrWebsiteLabel,
   extractDomainFromUrl,
 } from "./bulkResearchParser";
+import { normalizeAndDeduplicateContactNumbers } from "./contactNormalizer";
 
 export { parseBulkResearchInput };
 
@@ -289,12 +290,18 @@ async function processResearchItem(job: ResearchJob, item: ResearchItem) {
 
     let draftId: string;
 
+    const contactRes = normalizeAndDeduplicateContactNumbers(
+      extractedData.phone || extractedData.contact?.phone,
+      extractedData.mobile || extractedData.contact?.mobile
+    );
+
     if (existingRequest) {
-      // Update existing draft in-place
+      // Update existing draft in-place, cleaning any legacy dummy mobile numbers
       const updated = await db.collegeRegistrationRequest.update({
         where: { id: existingRequest.id },
         data: {
           collegeName: finalCollegeName,
+          mobile: contactRes.mobile || (existingRequest.mobile !== "9999999999" ? existingRequest.mobile : ""),
           website: item.url || existingRequest.website,
           submittedData: JSON.stringify(extractedData),
           status: "DATA_SUBMITTED",
@@ -303,15 +310,15 @@ async function processResearchItem(job: ResearchJob, item: ResearchItem) {
       });
       draftId = updated.id;
     } else {
-      // Create fresh pending draft
+      // Create fresh pending draft with deduplicated genuine contact numbers
       const created = await db.collegeRegistrationRequest.create({
         data: {
           collegeName: finalCollegeName,
           contactPerson: "Gemini Research System",
-          email: extractedData.contact?.email || `research_${Date.now()}@c2talents.com`,
-          mobile: extractedData.contact?.mobile || extractedData.contact?.phone || "9999999999",
-          website: item.url || extractedData.contact?.website || null,
-          location: extractedData.location?.city || extractedData.location?.state || "Tamil Nadu",
+          email: extractedData.email || extractedData.contact?.email || `research_${Date.now()}@c2talents.com`,
+          mobile: contactRes.mobile || "",
+          website: item.url || extractedData.website || extractedData.contact?.website || null,
+          location: extractedData.location?.city || extractedData.city || extractedData.location?.state || "Tamil Nadu",
           status: "DATA_SUBMITTED",
           submittedData: JSON.stringify(extractedData),
           adminNotes: "Gemini official website research extraction complete. Ready for administrator inspection & approval.",

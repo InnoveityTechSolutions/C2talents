@@ -17,7 +17,7 @@ import https from "https";
 export interface HarvestedSubpage {
   url: string;
   title: string;
-  category: "Home" | "About" | "Courses" | "Admissions" | "Fees" | "Facilities" | "Placements" | "Contact" | "General";
+  category: "Home" | "About" | "Courses" | "Admissions" | "Fees" | "Facilities" | "Placements" | "Contact" | "Hostel" | "Transport" | "Reviews" | "General";
   cleanText: string;
 }
 
@@ -36,6 +36,13 @@ export interface OfficialHarvestResult {
   media: HarvestedMedia[];
   discoveredRecruiters: string[];
   pdfLinks: Array<{ url: string; title: string; sourceUrl: string }>;
+  discoveredSocialLinks: {
+    youtube?: string;
+    facebook?: string;
+    instagram?: string;
+    linkedin?: string;
+  };
+  discoveredVideos: string[];
   consolidatedEvidenceText: string;
   logs: string[];
 }
@@ -129,7 +136,10 @@ function classifyUrlCategory(url: string, title: string): HarvestedSubpage["cate
   if (/admission|eligib|prospectus|apply|application|rank/i.test(combined)) return "Admissions";
   if (/fee|tuition|dues|scholarship/i.test(combined)) return "Fees";
   if (/placement|recruit|career|internship|training/i.test(combined)) return "Placements";
-  if (/facilit|hostel|library|lab|sport|campus|wifi|infrastructure/i.test(combined)) return "Facilities";
+  if (/hostel|residential|accommodation|mess/i.test(combined)) return "Hostel";
+  if (/transport|bus|commute|route|conveyance/i.test(combined)) return "Transport";
+  if (/testimonial|alumni-speak|student-speak|feedback|review/i.test(combined)) return "Reviews";
+  if (/facilit|library|lab|sport|campus|wifi|infrastructure/i.test(combined)) return "Facilities";
   if (/contact|reach|address|location/i.test(combined)) return "Contact";
   return "General";
 }
@@ -196,6 +206,9 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
     cleanText: homeText.slice(0, 15000),
   });
 
+  const discoveredSocialLinks: OfficialHarvestResult["discoveredSocialLinks"] = {};
+  const discoveredVideos: string[] = [];
+
   // Extract internal links from homepage
   const discoveredUrls = new Set<string>();
   const linkMatches = homeHtml.matchAll(/href=["']([^"']+)["']/gi);
@@ -236,12 +249,40 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
       else if (/^https?:\/\//i.test(raw)) absUrl = raw;
       else absUrl = `${domainOrigin}/${raw}`;
 
+      // Capture official social links & YouTube channels/videos
+      if (/youtube\.com\/(?:@|c\/|channel\/|user\/)|youtu\.be\/|youtube\.com\/watch|youtube\.com\/embed/i.test(absUrl)) {
+        if (!discoveredSocialLinks.youtube) {
+          discoveredSocialLinks.youtube = absUrl;
+        }
+        if (/watch\?v=|youtu\.be\/|shorts\/|embed\//i.test(absUrl) && !discoveredVideos.includes(absUrl)) {
+          discoveredVideos.push(absUrl);
+        }
+      } else if (/facebook\.com\/(?!sharer)/i.test(absUrl) && !discoveredSocialLinks.facebook) {
+        discoveredSocialLinks.facebook = absUrl;
+      } else if (/instagram\.com\/(?!p\/)/i.test(absUrl) && !discoveredSocialLinks.instagram) {
+        discoveredSocialLinks.instagram = absUrl;
+      } else if (/linkedin\.com\/(?:school|company)/i.test(absUrl) && !discoveredSocialLinks.linkedin) {
+        discoveredSocialLinks.linkedin = absUrl;
+      }
+
       const u = new URL(absUrl);
       const h = u.hostname.replace(/^www\./i, "");
       if (h === domainHostname || h.endsWith(`.${domainHostname}`)) {
         discoveredUrls.add(absUrl);
       }
     } catch {}
+  }
+
+  // Scan homepage for embedded YouTube iframes
+  const homeIframes = homeHtml.matchAll(/<iframe[^>]+src=["']([^"']+)["']/gi);
+  for (const im of homeIframes) {
+    const ifSrc = (im[1] || "").trim();
+    if (/youtube\.com\/embed\/|youtube-nocookie\.com\/embed\//i.test(ifSrc)) {
+      let vUrl = ifSrc;
+      if (vUrl.startsWith("//")) vUrl = `https:${vUrl}`;
+      if (!discoveredVideos.includes(vUrl)) discoveredVideos.push(vUrl);
+      if (!discoveredSocialLinks.youtube) discoveredSocialLinks.youtube = vUrl;
+    }
   }
 
   // Extract images and recruiter partners across website
@@ -344,6 +385,9 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
   const deptUrls: string[] = [];
   const admissionUrls: string[] = [];
   const feeUrls: string[] = [];
+  const hostelUrls: string[] = [];
+  const transportUrls: string[] = [];
+  const reviewUrls: string[] = [];
   const facilityUrls: string[] = [];
   const placementUrls: string[] = [];
   const contactUrls: string[] = [];
@@ -351,21 +395,24 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
   for (const url of discoveredUrls) {
     if (url === effectiveUrl || url === `${domainOrigin}/`) continue;
 
-    if (/about|history|memoir|vision|mission/i.test(url)) aboutUrls.push(url);
+    if (/hostel|residential|accommodation|mess/i.test(url)) hostelUrls.push(url);
+    else if (/transport|bus|commute|route|conveyance/i.test(url)) transportUrls.push(url);
+    else if (/testimonial|alumni-speak|student-speak|feedback|review/i.test(url)) reviewUrls.push(url);
+    else if (/about|history|memoir|vision|mission/i.test(url)) aboutUrls.push(url);
     else if (/computer-science|commerce|mathematics|physics|chemistry|botany|zoology|economics|history-2|english-2|tamil-2|geography/i.test(url))
       deptUrls.push(url);
     else if (/courses-offered|course|curriculum|academic|syllab/i.test(url)) courseUrls.push(url);
     else if (/application-course-fees|fee|tuition/i.test(url)) feeUrls.push(url);
     else if (/admission|prospectus|eligib/i.test(url)) admissionUrls.push(url);
     else if (/placement|recruit|career/i.test(url)) placementUrls.push(url);
-    else if (/facilit|library|hostel|sport|lab|instrumentation/i.test(url)) facilityUrls.push(url);
+    else if (/facilit|library|sport|lab|instrumentation/i.test(url)) facilityUrls.push(url);
     else if (/contact/i.test(url)) contactUrls.push(url);
   }
 
   // Curate balanced subpages to harvest
   const targetedSubpages: string[] = [];
   const addIfNew = (u: string) => {
-    if (u && !targetedSubpages.includes(u) && targetedSubpages.length < 15) {
+    if (u && !targetedSubpages.includes(u) && targetedSubpages.length < 18) {
       targetedSubpages.push(u);
     }
   };
@@ -373,11 +420,14 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
   // High-signal distribution
   aboutUrls.slice(0, 2).forEach(addIfNew);
   courseUrls.slice(0, 3).forEach(addIfNew);
-  feeUrls.slice(0, 3).forEach(addIfNew);
-  admissionUrls.slice(0, 3).forEach(addIfNew);
-  deptUrls.slice(0, 4).forEach(addIfNew);
+  feeUrls.slice(0, 2).forEach(addIfNew);
+  hostelUrls.slice(0, 2).forEach(addIfNew);
+  transportUrls.slice(0, 2).forEach(addIfNew);
+  admissionUrls.slice(0, 2).forEach(addIfNew);
+  placementUrls.slice(0, 2).forEach(addIfNew);
+  reviewUrls.slice(0, 2).forEach(addIfNew);
   facilityUrls.slice(0, 2).forEach(addIfNew);
-  placementUrls.slice(0, 1).forEach(addIfNew);
+  deptUrls.slice(0, 3).forEach(addIfNew);
   contactUrls.slice(0, 1).forEach(addIfNew);
 
   log(`Discovered ${discoveredUrls.size} internal pages. Harvesting top ${targetedSubpages.length} prioritized subpages (including key departments)...`);
@@ -393,6 +443,18 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
           const subTitleM = subHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
           const subTitle = subTitleM ? subTitleM[1].replace(/\s+/g, " ").trim() : subUrl;
           const cleanText = cleanHtmlToText(subHtml);
+
+          // Check subpage for embedded YouTube iframes or videos
+          const subIframes = subHtml.matchAll(/<iframe[^>]+src=["']([^"']+)["']/gi);
+          for (const im of subIframes) {
+            const ifSrc = (im[1] || "").trim();
+            if (/youtube\.com\/embed\/|youtube-nocookie\.com\/embed\//i.test(ifSrc)) {
+              let vUrl = ifSrc;
+              if (vUrl.startsWith("//")) vUrl = `https:${vUrl}`;
+              if (!discoveredVideos.includes(vUrl)) discoveredVideos.push(vUrl);
+              if (!discoveredSocialLinks.youtube) discoveredSocialLinks.youtube = vUrl;
+            }
+          }
 
           if (cleanText.length > 50) {
             const pageCategory = classifyUrlCategory(subUrl, subTitle);
@@ -434,6 +496,8 @@ ${p.cleanText}`;
     media,
     discoveredRecruiters,
     pdfLinks,
+    discoveredSocialLinks,
+    discoveredVideos,
     consolidatedEvidenceText,
     logs,
   };

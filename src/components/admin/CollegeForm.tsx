@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PopupModal } from "@/components/ui/PopupModal";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
+import { normalizeAndDeduplicateContactNumbers } from "@/lib/ai/contactNormalizer";
 import {
   Sparkles,
   Globe,
@@ -556,9 +557,10 @@ export function CollegeForm({
   const [longitude, setLongitude] = useState(initialData?.longitude || "");
   const [googleMapUrl, setGoogleMapUrl] = useState(initialData?.googleMapUrl || "");
 
-  // Section 3: Contact
-  const [phone, setPhone] = useState(initialData?.phone || "");
-  const [mobile, setMobile] = useState(initialData?.mobile || "");
+  // Section 3: Contact (deduplicated & normalized)
+  const initialContacts = normalizeAndDeduplicateContactNumbers(initialData?.phone, initialData?.mobile);
+  const [phone, setPhone] = useState(initialContacts.phone || initialData?.phone || "");
+  const [mobile, setMobile] = useState(initialContacts.mobile || (initialData?.mobile && !["9999999999", "9600097807"].includes(initialData.mobile) ? initialData.mobile : ""));
   const [email, setEmail] = useState(initialData?.email || "");
   const [website, setWebsite] = useState(initialData?.website || "");
   const [facebook, setFacebook] = useState(initialData?.facebook || "");
@@ -1291,17 +1293,25 @@ export function CollegeForm({
 
     // ─── Section 3: Contact ───────────────────────────────────────────────
     const phVal = extractVal(data, "phone", ["telephone", "landline", "phone_number"], ["contact"]);
-    const cleanedPh = cleanString(phVal);
-    if (cleanedPh) {
-      setPhone(cleanedPh);
+    const mobVal = extractVal(data, "mobile", ["cell", "mobile_number", "contactNumber"], ["contact"]);
+    const normContacts = normalizeAndDeduplicateContactNumbers(phVal, mobVal);
+
+    if (normContacts.phone) {
+      setPhone(normContacts.phone);
       markPopulated();
+    } else {
+      const cleanedPh = cleanString(phVal);
+      if (cleanedPh) {
+        setPhone(cleanedPh);
+        markPopulated();
+      }
     }
 
-    const mobVal = extractVal(data, "mobile", ["cell", "mobile_number", "contactNumber"], ["contact"]);
-    const cleanedMob = cleanString(mobVal);
-    if (cleanedMob) {
-      setMobile(cleanedMob);
+    if (normContacts.mobile) {
+      setMobile(normContacts.mobile);
       markPopulated();
+    } else {
+      setMobile("");
     }
 
     const emVal = extractVal(data, "email", ["mail", "email_id", "emailId", "contactEmail"], ["contact"]);

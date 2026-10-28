@@ -210,24 +210,28 @@ export function CollegeDetailClient({ college }: Props) {
       {/* Top College Contact & NAAC Grade Header Bar (Top Left Aligned) */}
       <div className="w-full bg-[#FFFDF5] border-b border-amber-200/60 py-2 px-6 font-sans">
         <div className="flex flex-wrap items-center justify-start gap-6 md:gap-8 text-xs text-left">
-          {/* Phone */}
-          <div className="flex items-center gap-2 text-indigo-950">
-            <Phone className="w-3.5 h-3.5 text-[#F59E0B] fill-[#F59E0B] shrink-0" />
-            <span className="font-semibold text-[12px] text-indigo-950 tracking-tight">
-              {college.phone || college.mobile || "044 – 27454862 /4863/6708 / 8939691482"}
-            </span>
-          </div>
+          {/* Phone / Mobile */}
+          {(college.phone || college.mobile) && (
+            <div className="flex items-center gap-2 text-indigo-950">
+              <Phone className="w-3.5 h-3.5 text-[#F59E0B] fill-[#F59E0B] shrink-0" />
+              <span className="font-semibold text-[12px] text-indigo-950 tracking-tight">
+                {[college.phone, college.mobile].filter(Boolean).join(" / ")}
+              </span>
+            </div>
+          )}
 
           {/* Email */}
-          <div className="flex items-center gap-2 text-indigo-950">
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
-              <rect width="20" height="15" x="2" y="4.5" rx="3" fill="#F59E0B" />
-              <path d="M4 7.5l8 5.5 8-5.5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="font-semibold text-[12px] text-indigo-950">
-              {college.email || "srmartsandscience@srmasc.ac.in"}
-            </span>
-          </div>
+          {college.email && (
+            <div className="flex items-center gap-2 text-indigo-950">
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+                <rect width="20" height="15" x="2" y="4.5" rx="3" fill="#F59E0B" />
+                <path d="M4 7.5l8 5.5 8-5.5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="font-semibold text-[12px] text-indigo-950">
+                {college.email}
+              </span>
+            </div>
+          )}
 
           {/* NAAC Grade Badge */}
           {(college.naacGrade || "A+") && (

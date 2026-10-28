@@ -11,6 +11,8 @@ import {
   AlertCircle,
   Loader2,
   X,
+  Minus,
+  Maximize2,
   Play,
   ExternalLink,
   ShieldCheck,
@@ -30,6 +32,14 @@ export function BulkResearchModal({ isOpen, onClose }: BulkResearchModalProps) {
   const [activeJob, setActiveJob] = useState<any>(null);
   const [pollingJobId, setPollingJobId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
+
+  // Restore full view when reopened
+  useEffect(() => {
+    if (isOpen) {
+      setIsMinimized(false);
+    }
+  }, [isOpen]);
 
   // Poll active job status if one is currently being processed
   useEffect(() => {
@@ -101,6 +111,58 @@ export function BulkResearchModal({ isOpen, onClose }: BulkResearchModalProps) {
     "Thiagarajar College of Engineering Madurai",
   ].join("\n");
 
+  if (isMinimized) {
+    return (
+      <aside aria-label="Bulk College Research Engine Minimized" className="fixed bottom-5 right-5 z-50 bg-[#16082d] border border-purple-700/80 rounded-2xl shadow-2xl p-3 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 text-white">
+        <button
+          type="button"
+          onClick={() => setIsMinimized(false)}
+          className="w-9 h-9 rounded-xl bg-amber-400 text-stone-950 flex items-center justify-center font-extrabold shadow-sm shrink-0 cursor-pointer hover:scale-105 transition-transform"
+          title="Restore Bulk Research Engine"
+          aria-label="Restore Bulk Research Engine"
+        >
+          <Sparkles className="w-4 h-4 text-stone-950" />
+        </button>
+        <button
+          type="button"
+          className="cursor-pointer pr-1 text-left bg-transparent border-0 p-0 text-inherit"
+          onClick={() => setIsMinimized(false)}
+          title="Click to restore modal"
+        >
+          <div className="text-xs font-black text-white flex items-center gap-1.5">
+            <span>Bulk Research Engine</span>
+            {activeJob && (
+              <span className="text-[10px] bg-purple-900/60 text-amber-300 border border-purple-700/60 px-1.5 py-0.5 rounded-full font-bold">
+                {activeJob.completedCount}/{activeJob.totalCount}
+              </span>
+            )}
+          </div>
+          <p className="text-[10px] text-purple-200/70 font-medium">Click to restore</p>
+        </button>
+        <div className="flex items-center gap-1 ml-1">
+          <button
+            type="button"
+            onClick={() => setIsMinimized(false)}
+            className="p-1.5 rounded-lg text-purple-300 hover:text-white hover:bg-purple-900/50 transition-colors cursor-pointer"
+            title="Restore"
+            aria-label="Restore modal"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-purple-300 hover:text-white hover:bg-purple-900/50 transition-colors cursor-pointer"
+            title="Close"
+            aria-label="Close modal"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4">
       <div className="bg-[#120626] border border-purple-800/60 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl text-white animate-in fade-in zoom-in-95 my-auto">
@@ -122,13 +184,26 @@ export function BulkResearchModal({ isOpen, onClose }: BulkResearchModalProps) {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-xl text-purple-300 hover:text-white hover:bg-purple-900/50 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setIsMinimized(true)}
+              className="p-2 rounded-xl text-purple-300 hover:text-white hover:bg-purple-900/50 transition-colors cursor-pointer"
+              title="Minimize"
+              aria-label="Minimize"
+            >
+              <Minus className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-xl text-purple-300 hover:text-white hover:bg-purple-900/50 transition-colors cursor-pointer"
+              title="Close"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Content */}

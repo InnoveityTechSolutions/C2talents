@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { upsertCollegeCourses } from "@/lib/courses/courseDeduplication";
+import { normalizeAndDeduplicateContactNumbers } from "@/lib/ai/contactNormalizer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -123,8 +124,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           type: body.type || "Private",
           status: "PUBLISHED",
           feesPerYear: safeFloat(body.feesPerYear, 0) ?? 0,
-          avgPackage: safeFloat(body.avgPackage, 5.0) ?? 5.0,
-          highestPackage: safeFloat(body.highestPackage, 12.0) ?? 12.0,
+          avgPackage: safeFloat(body.avgPackage, 0) ?? 0,
+          highestPackage: safeFloat(body.highestPackage, 0) ?? 0,
           image: body.image || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80",
         },
       });
@@ -207,7 +208,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       courses,
       galleryImages,
       reviews,
+      placements: incomingPlacements,
     } = body;
+
+    const contactRes = normalizeAndDeduplicateContactNumbers(phone, mobile);
 
     const categoriesStr = Array.isArray(categories) ? categories.join(", ") : categories || "";
     const facilitiesStr = Array.isArray(facilities) ? facilities.join(", ") : facilities || "";
@@ -242,8 +246,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         pincode,
         latitude: safeFloat(latitude),
         longitude: safeFloat(longitude),
-        phone,
-        mobile,
+        phone: contactRes.phone || "",
+        mobile: contactRes.mobile || "",
         email,
         facebook,
         instagram,
@@ -269,9 +273,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         scholarshipDetails,
         educationLoanDetails,
         facilities: facilitiesStr,
-        avgPackage: safeFloat(avgPackage, 4.5) ?? 4.5,
-        highestPackage: safeFloat(highestPackage, 12.0) ?? 12.0,
-        placementPercentage: safeFloat(placementPercentage, 80.0),
+        avgPackage: safeFloat(avgPackage, 0) ?? 0,
+        highestPackage: safeFloat(highestPackage, 0) ?? 0,
+        placementPercentage: safeFloat(placementPercentage, null),
         internshipDetails,
         topRecruiters,
         admissionEligibility,
@@ -317,40 +321,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             : [],
         },
         placements: {
-          create: [
-            {
-              year: new Date().getFullYear() - 3,
-              eligibleStudents: 450,
-              placedStudents: Math.round(450 * ((safeFloat(placementPercentage, 85) ?? 85) / 100)),
-              highestCtc: Math.round(((safeFloat(highestPackage, 12.0) ?? 12.0) * 0.78) * 10) / 10,
-              averageCtc: Math.round(((safeFloat(avgPackage, 4.5) ?? 4.5) * 0.82) * 10) / 10,
-              topRecruiters: topRecruiters || "TCS, Infosys, Wipro, Accenture, Cognizant",
-            },
-            {
-              year: new Date().getFullYear() - 2,
-              eligibleStudents: 470,
-              placedStudents: Math.round(470 * ((safeFloat(placementPercentage, 85) ?? 85) / 100)),
-              highestCtc: Math.round(((safeFloat(highestPackage, 12.0) ?? 12.0) * 0.85) * 10) / 10,
-              averageCtc: Math.round(((safeFloat(avgPackage, 4.5) ?? 4.5) * 0.88) * 10) / 10,
-              topRecruiters: topRecruiters || "TCS, Infosys, Wipro, Accenture, Amazon",
-            },
-            {
-              year: new Date().getFullYear() - 1,
-              eligibleStudents: 490,
-              placedStudents: Math.round(490 * ((safeFloat(placementPercentage, 85) ?? 85) / 100)),
-              highestCtc: Math.round(((safeFloat(highestPackage, 12.0) ?? 12.0) * 0.92) * 10) / 10,
-              averageCtc: Math.round(((safeFloat(avgPackage, 4.5) ?? 4.5) * 0.94) * 10) / 10,
-              topRecruiters: topRecruiters || "TCS, Infosys, Wipro, Accenture, Microsoft",
-            },
-            {
-              year: new Date().getFullYear(),
-              eligibleStudents: 500,
-              placedStudents: Math.round(500 * ((safeFloat(placementPercentage, 85) ?? 85) / 100)),
-              highestCtc: safeFloat(highestPackage, 12.0) ?? 12.0,
-              averageCtc: safeFloat(avgPackage, 4.5) ?? 4.5,
-              topRecruiters: topRecruiters || "TCS, Infosys, Wipro, Accenture, Amazon, Microsoft",
-            },
-          ]
+          create: Array.isArray(incomingPlacements) && incomingPlacements.length > 0
+            ? incomingPlacements
+                .filter((p: any) => p && (p.year || p.placedStudents || p.highestCtc))
+                .map((p: any) => ({
+                  year: safeInt(p.year, new Date().getFullYear()) ?? new Date().getFullYear(),
+                  eligibleStudents: safeInt(p.eligibleStudents, 0) ?? 0,
+                  placedStudents: safeInt(p.placedStudents, 0) ?? 0,
+                  highestCtc: safeFloat(p.highestCtc, 0) ?? 0,
+                  averageCtc: safeFloat(p.averageCtc, 0) ?? 0,
+                  topRecruiters: p.topRecruiters || topRecruiters || "",
+                }))
+            : [],
         },
         reviews: {
           create: Array.isArray(reviews)

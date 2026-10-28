@@ -8,6 +8,7 @@ import {
   buildPrismaCollegeSearchConditions,
 } from "@/lib/search/searchNormalizer";
 import { upsertCollegeCourses } from "@/lib/courses/courseDeduplication";
+import { normalizeAndDeduplicateContactNumbers } from "@/lib/ai/contactNormalizer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -278,6 +279,8 @@ export async function POST(req: Request) {
       featured,
       courses,
       galleryImages,
+      reviews,
+      placements: incomingPlacements,
       collegeContent,
       overview,
       about,
@@ -349,8 +352,10 @@ export async function POST(req: Request) {
     const facilitiesStr = Array.isArray(facilities) ? facilities.join(", ") : facilities || "";
 
     const parsedFeesPerYear = safeFloat(feesPerYear, 0) ?? 0;
-    const parsedAvgPackage = safeFloat(avgPackage, 5.0) ?? 5.0;
-    const parsedHighestPackage = safeFloat(highestPackage, 12.0) ?? 12.0;
+    const parsedAvgPackage = safeFloat(avgPackage, 0) ?? 0;
+    const parsedHighestPackage = safeFloat(highestPackage, 0) ?? 0;
+    const parsedPlacementPercentage = safeFloat(placementPercentage, null);
+    const contactRes = normalizeAndDeduplicateContactNumbers(phone, mobile);
 
     // 5. Execute Prisma Create Query
     const newCollege = await db.collegeProfile.create({
@@ -371,8 +376,8 @@ export async function POST(req: Request) {
         latitude: safeFloat(latitude),
         longitude: safeFloat(longitude),
         googleMapUrl: safeUrl(googleMapUrl, null),
-        phone: phone || "",
-        mobile: mobile || "",
+        phone: contactRes.phone || "",
+        mobile: contactRes.mobile || "",
         email: email || "",
         website: safeUrl(website, null),
         facebook: safeUrl(facebook, null),
@@ -445,40 +450,38 @@ export async function POST(req: Request) {
             : [],
         },
         placements: {
-          create: [
-            {
-              year: new Date().getFullYear() - 3,
-              eligibleStudents: 450,
-              placedStudents: Math.round(450 * ((safeFloat(placementPercentage, 85) ?? 85) / 100)),
-              highestCtc: Math.round((parsedHighestPackage * 0.78) * 10) / 10,
-              averageCtc: Math.round((parsedAvgPackage * 0.82) * 10) / 10,
-              topRecruiters: topRecruiters || "TCS, Infosys, Wipro, Accenture, Cognizant",
-            },
-            {
-              year: new Date().getFullYear() - 2,
-              eligibleStudents: 470,
-              placedStudents: Math.round(470 * ((safeFloat(placementPercentage, 85) ?? 85) / 100)),
-              highestCtc: Math.round((parsedHighestPackage * 0.85) * 10) / 10,
-              averageCtc: Math.round((parsedAvgPackage * 0.88) * 10) / 10,
-              topRecruiters: topRecruiters || "TCS, Infosys, Wipro, Accenture, Amazon",
-            },
-            {
-              year: new Date().getFullYear() - 1,
-              eligibleStudents: 490,
-              placedStudents: Math.round(490 * ((safeFloat(placementPercentage, 85) ?? 85) / 100)),
-              highestCtc: Math.round((parsedHighestPackage * 0.92) * 10) / 10,
-              averageCtc: Math.round((parsedAvgPackage * 0.94) * 10) / 10,
-              topRecruiters: topRecruiters || "TCS, Infosys, Wipro, Accenture, Microsoft",
-            },
-            {
-              year: new Date().getFullYear(),
-              eligibleStudents: 500,
-              placedStudents: Math.round(500 * ((safeFloat(placementPercentage, 85) ?? 85) / 100)),
-              highestCtc: parsedHighestPackage,
-              averageCtc: parsedAvgPackage,
-              topRecruiters: topRecruiters || "TCS, Infosys, Wipro, Accenture, Amazon, Microsoft",
-            },
-          ]
+          create: Array.isArray(incomingPlacements) && incomingPlacements.length > 0
+            ? incomingPlacements
+                .filter((p: any) => p && (p.year || p.placedStudents || p.highestCtc))
+                .map((p: any) => ({
+                  year: safeInt(p.year, new Date().getFullYear()) ?? new Date().getFullYear(),
+                  eligibleStudents: safeInt(p.eligibleStudents, 0) ?? 0,
+                  placedStudents: safeInt(p.placedStudents, 0) ?? 0,
+                  highestCtc: safeFloat(p.highestCtc, 0) ?? 0,
+                  averageCtc: safeFloat(p.averageCtc, 0) ?? 0,
+                  topRecruiters: p.topRecruiters || topRecruiters || "",
+                }))
+            : [],
+        },
+        reviews: {
+          create: Array.isArray(reviews)
+            ? reviews.map((r: any) => ({
+                studentName: r.studentName || "Verified Student",
+                course: r.course || "Undergraduate Program",
+                batchYear: safeInt(r.batchYear, 2024) ?? 2024,
+                title: r.title || "Overall Excellent Campus Experience",
+                rating: safeFloat(r.rating, 4.5) ?? 4.5,
+                academicRating: safeFloat(r.academicRating, 4.5) ?? 4.5,
+                infrastructureRating: safeFloat(r.infrastructureRating, 4.2) ?? 4.2,
+                placementRating: safeFloat(r.placementRating, 4.4) ?? 4.4,
+                campusRating: safeFloat(r.campusRating, 4.3) ?? 4.3,
+                valueForMoneyRating: safeFloat(r.valueForMoneyRating, 4.5) ?? 4.5,
+                likes: r.likes || "Dedicated faculty, good lab facilities, and rich academic library collection.",
+                dislikes: r.dislikes || "Administrative processes can be improved.",
+                content: r.content || "Overall a wonderful institution with quality academic exposure.",
+                isVerified: Boolean(r.isVerified ?? false),
+              }))
+            : [],
         },
         content: {
           create: {
@@ -506,6 +509,7 @@ export async function POST(req: Request) {
       include: {
         galleryImages: true,
         placements: true,
+        reviews: true,
         content: true,
       },
     });
@@ -520,6 +524,7 @@ export async function POST(req: Request) {
         courses: { where: { isDeleted: false }, orderBy: { title: "asc" } },
         galleryImages: true,
         placements: true,
+        reviews: true,
         content: true,
       },
     });
