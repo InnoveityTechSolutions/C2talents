@@ -344,7 +344,7 @@ export default function AdminSubmittedCollegesPage() {
         {/* STATUS FILTER BUTTONS */}
         <div className="flex flex-wrap items-center gap-2 bg-[#16082d] p-2 rounded-2xl border border-[#3b2075]/50 text-xs font-bold shrink-0">
           <span className="text-purple-300 px-2 text-[11px] font-extrabold uppercase tracking-wider">Status Filter:</span>
-          {["ALL", "DATA_SUBMITTED", "NEEDS_REVISION", "PUBLISHED"].map((tab) => (
+          {["ALL", "DATA_SUBMITTED", "NEEDS_REVISION"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}

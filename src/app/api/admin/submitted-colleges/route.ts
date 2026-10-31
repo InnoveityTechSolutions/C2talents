@@ -22,10 +22,10 @@ export async function GET(req: Request) {
     const status = searchParams.get("status");
 
     const where: any = {
-      status: { in: ["DATA_SUBMITTED", "NEEDS_REVISION", "PUBLISHED"] },
+      status: { in: ["DATA_SUBMITTED", "NEEDS_REVISION"] },
     };
 
-    if (status && status !== "ALL") {
+    if (status === "DATA_SUBMITTED" || status === "NEEDS_REVISION") {
       where.status = status;
     }
 

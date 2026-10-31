@@ -27,6 +27,16 @@ export function getCourseDeduplicationKey(title: string): string {
 
   let norm = title.trim().toLowerCase().replace(/\s+/g, " ");
 
+  // Normalize shifts and streams while strictly preserving distinct shifts
+  norm = norm
+    .replace(/\bshift[\s\-_]*(?:1|i)\b/gi, "shift1")
+    .replace(/\bshift[\s\-_]*(?:2|ii)\b/gi, "shift2")
+    .replace(/\bself[\s\-_]*supporting\b/gi, "selffinancing")
+    .replace(/\bself[\s\-_]*financing\b/gi, "selffinancing")
+    .replace(/\baided\b/gi, "aided")
+    .replace(/\bday\b/gi, "day")
+    .replace(/\bevening\b/gi, "evening");
+
   // Normalize "&" to "and"
   norm = norm.replace(/\s*&\s*/g, " and ");
 
@@ -44,16 +54,23 @@ export function getCourseDeduplicationKey(title: string): string {
     .replace(/\bm\.?\s*b\.?\s*a\.?\b/g, "mba")
     .replace(/\bm\.?\s*c\.?\s*a\.?\b/g, "mca")
     .replace(/\bb\.?\s*c\.?\s*a\.?\b/g, "bca")
+    .replace(/\bb\.?\s*a\.?\b/g, "ba")
+    .replace(/\bm\.?\s*a\.?\b/g, "ma")
+    .replace(/\bb\.?\s*voc\.?\b/g, "bvoc")
+    .replace(/\bm\.?\s*voc\.?\b/g, "mvoc")
+    .replace(/\bb\.?\s*s\.?\s*w\.?\b/g, "bsw")
+    .replace(/\bm\.?\s*s\.?\s*w\.?\b/g, "msw")
+    .replace(/\bm\.?\s*phil\.?\b/g, "mphil")
+    .replace(/\bb\.?\s*m\.?\s*m\.?\b/g, "bmm")
     .replace(/\bph\.?\s*d\.?\b/g, "phd")
     .replace(/\bl\.?\s*l\.?\s*b\.?\b/g, "llb")
     .replace(/\bl\.?\s*l\.?\s*m\.?\b/g, "llm")
     .replace(/\bd\.?\s*pharm\.?\b/g, "dpharm")
     .replace(/\bb\.?\s*pharm\.?\b/g, "bpharm")
-    .replace(/\bm\.?\s*pharm\.?\b/g, "mpharm");
+    .replace(/\bm\.?\s*pharm\.?\b/g, "mpharm")
+    .replace(/\bp\.?\s*g\.?\s*diploma\b/g, "pgdiploma");
 
   // Remove common connecting prepositions between degree and specialization:
-  // e.g. "btech in computer science" -> "btech computer science"
-  // e.g. "bachelor of technology in civil engineering" -> "btech civil engineering"
   norm = norm
     .replace(/\bbachelor\s+of\s+technology\b/g, "btech")
     .replace(/\bbachelor\s+of\s+engineering\b/g, "be")
@@ -62,7 +79,19 @@ export function getCourseDeduplicationKey(title: string): string {
     .replace(/\bbachelor\s+of\s+science\b/g, "bsc")
     .replace(/\bmaster\s+of\s+science\b/g, "msc")
     .replace(/\bbachelor\s+of\s+commerce\b/g, "bcom")
-    .replace(/\bmaster\s+of\s+commerce\b/g, "mcom");
+    .replace(/\bmaster\s+of\s+commerce\b/g, "mcom")
+    .replace(/\bbachelor\s+of\s+arts\b/g, "ba")
+    .replace(/\bmaster\s+of\s+arts\b/g, "ma")
+    .replace(/\bbachelor\s+of\s+business\s+administration\b/g, "bba")
+    .replace(/\bmaster\s+of\s+business\s+administration\b/g, "mba")
+    .replace(/\bbachelor\s+of\s+computer\s+applications\b/g, "bca")
+    .replace(/\bmaster\s+of\s+computer\s+applications\b/g, "mca")
+    .replace(/\bmaster\s+of\s+philosophy\b/g, "mphil")
+    .replace(/\bdoctor\s+of\s+philosophy\b/g, "phd")
+    .replace(/\bbachelor\s+of\s+vocation\b/g, "bvoc")
+    .replace(/\bmaster\s+of\s+vocation\b/g, "mvoc")
+    .replace(/\bbachelor\s+of\s+social\s+work\b/g, "bsw")
+    .replace(/\bmaster\s+of\s+social\s+work\b/g, "msw");
 
   // Normalize " - " or " : " or " in " separating degree and branch
   norm = norm.replace(/\b(in|of)\b/g, " ");

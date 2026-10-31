@@ -13,6 +13,7 @@
 
 import http from "http";
 import https from "https";
+import zlib from "zlib";
 
 export interface HarvestedSubpage {
   url: string;
@@ -44,13 +45,15 @@ export interface OfficialHarvestResult {
   };
   discoveredVideos: string[];
   consolidatedEvidenceText: string;
+  academicEvidenceText?: string;
+  academicPdfs?: Array<{ url: string; title: string; buffer: Buffer; sourceUrl: string }>;
   logs: string[];
 }
 
 // Bypass SSL errors for governmental and legacy educational institutions
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-function fetchHtml(url: string, timeoutMs = 12000): Promise<string> {
+export function fetchHtml(url: string, timeoutMs = 12000): Promise<string> {
   return new Promise((resolve, reject) => {
     const isHttps = url.startsWith("https");
     const client = isHttps ? https : http;
@@ -63,6 +66,7 @@ function fetchHtml(url: string, timeoutMs = 12000): Promise<string> {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
           Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Encoding": "gzip, deflate, br",
           "Accept-Language": "en-US,en;q=0.9",
         },
       },
@@ -70,9 +74,9 @@ function fetchHtml(url: string, timeoutMs = 12000): Promise<string> {
         // Handle HTTP 3xx redirects
         if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
           let redirectUrl = res.headers.location;
-          if (!redirectUrl.startsWith("http")) {
+          try {
             redirectUrl = new URL(redirectUrl, url).toString();
-          }
+          } catch {}
           return fetchHtml(redirectUrl, timeoutMs).then(resolve).catch(reject);
         }
 
@@ -80,9 +84,74 @@ function fetchHtml(url: string, timeoutMs = 12000): Promise<string> {
           return reject(new Error(`HTTP ${res.statusCode} loading ${url}`));
         }
 
+        let stream: NodeJS.ReadableStream = res;
+        const encoding = (res.headers["content-encoding"] || "").toLowerCase();
+        if (encoding === "gzip") {
+          stream = res.pipe(zlib.createGunzip());
+        } else if (encoding === "deflate") {
+          stream = res.pipe(zlib.createInflate());
+        } else if (encoding === "br") {
+          stream = res.pipe(zlib.createBrotliDecompress());
+        }
+
         let data = "";
-        res.on("data", (chunk) => (data += chunk));
-        res.on("end", () => resolve(data));
+        stream.on("data", (chunk) => (data += chunk.toString("utf8")));
+        stream.on("end", () => resolve(data));
+        stream.on("error", (err) => reject(err));
+      }
+    );
+
+    req.on("error", reject);
+    req.setTimeout(timeoutMs, () => {
+      req.destroy();
+      reject(new Error(`Timeout (${timeoutMs}ms) connecting to ${url}`));
+    });
+  });
+}
+
+export function fetchBinary(url: string, timeoutMs = 15000): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const isHttps = url.startsWith("https");
+    const client = isHttps ? https : http;
+
+    const req = client.get(
+      url,
+      {
+        rejectUnauthorized: false,
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          Accept: "application/pdf,*/*",
+          "Accept-Encoding": "gzip, deflate, br",
+        },
+      },
+      (res) => {
+        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          let redirectUrl = res.headers.location;
+          try {
+            redirectUrl = new URL(redirectUrl, url).toString();
+          } catch {}
+          return fetchBinary(redirectUrl, timeoutMs).then(resolve).catch(reject);
+        }
+
+        if (res.statusCode && res.statusCode >= 400) {
+          return reject(new Error(`HTTP ${res.statusCode} loading binary ${url}`));
+        }
+
+        let stream: NodeJS.ReadableStream = res;
+        const encoding = (res.headers["content-encoding"] || "").toLowerCase();
+        if (encoding === "gzip") {
+          stream = res.pipe(zlib.createGunzip());
+        } else if (encoding === "deflate") {
+          stream = res.pipe(zlib.createInflate());
+        } else if (encoding === "br") {
+          stream = res.pipe(zlib.createBrotliDecompress());
+        }
+
+        const chunks: Buffer[] = [];
+        stream.on("data", (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+        stream.on("end", () => resolve(Buffer.concat(chunks)));
+        stream.on("error", (err) => reject(err));
       }
     );
 
@@ -230,24 +299,18 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
     }
 
     if (/\.pdf/i.test(raw)) {
-      let pdfUrl = raw;
-      if (pdfUrl.startsWith("//")) pdfUrl = `https:${pdfUrl}`;
-      else if (pdfUrl.startsWith("/")) pdfUrl = `${domainOrigin}${pdfUrl}`;
-      else if (!/^https?:\/\//i.test(pdfUrl)) pdfUrl = `${domainOrigin}/${pdfUrl}`;
-
-      const pdfTitle = raw.split("/").pop()?.replace(/[\-_]/g, " ").replace(/\.pdf.*/i, "") || "Official Document";
-      if (!pdfLinks.some((p) => p.url === pdfUrl)) {
-        pdfLinks.push({ url: pdfUrl, title: pdfTitle, sourceUrl: effectiveUrl });
-      }
+      try {
+        const absPdfUrl = new URL(raw, effectiveUrl).toString().split("#")[0];
+        const pdfTitle = raw.split("/").pop()?.replace(/[\-_]/g, " ").replace(/\.pdf.*/i, "") || "Official Document";
+        if (!pdfLinks.some((p) => p.url === absPdfUrl)) {
+          pdfLinks.push({ url: absPdfUrl, title: pdfTitle, sourceUrl: effectiveUrl });
+        }
+      } catch {}
       continue;
     }
 
     try {
-      let absUrl = "";
-      if (raw.startsWith("//")) absUrl = `https:${raw}`;
-      else if (raw.startsWith("/")) absUrl = `${domainOrigin}${raw}`;
-      else if (/^https?:\/\//i.test(raw)) absUrl = raw;
-      else absUrl = `${domainOrigin}/${raw}`;
+      const absUrl = new URL(raw, effectiveUrl).toString().split("#")[0];
 
       // Capture official social links & YouTube channels/videos
       if (/youtube\.com\/(?:@|c\/|channel\/|user\/)|youtu\.be\/|youtube\.com\/watch|youtube\.com\/embed/i.test(absUrl)) {
@@ -299,25 +362,23 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
     // 1. og:image
     const ogMatch = htmlContent.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
     if (ogMatch && ogMatch[1]) {
-      let ogUrl = ogMatch[1].trim();
-      if (ogUrl.startsWith("//")) ogUrl = `https:${ogUrl}`;
-      else if (ogUrl.startsWith("/")) ogUrl = `${domainOrigin}${ogUrl}`;
-      else if (!/^https?:\/\//i.test(ogUrl)) ogUrl = `${domainOrigin}/${ogUrl}`;
-      if (!media.some((m) => m.url === ogUrl) && !/chart|flow|icon/i.test(ogUrl)) {
-        media.push({ url: ogUrl, alt: `${collegeTitle} Campus Banner`, sourceUrl: sourcePageUrl, tag: "BANNER" });
-      }
+      try {
+        const ogUrl = new URL(ogMatch[1].trim(), sourcePageUrl).toString();
+        if (!media.some((m) => m.url === ogUrl) && !/chart|flow|icon/i.test(ogUrl)) {
+          media.push({ url: ogUrl, alt: `${collegeTitle} Campus Banner`, sourceUrl: sourcePageUrl, tag: "BANNER" });
+        }
+      } catch {}
     }
 
     // 2. High-res Favicons / Logos
     const iconMatches = [...htmlContent.matchAll(/<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+href=["']([^"']+)["']/gi)];
     for (const iconMatch of iconMatches) {
-      let iconUrl = iconMatch[1].trim();
-      if (iconUrl.startsWith("//")) iconUrl = `https:${iconUrl}`;
-      else if (iconUrl.startsWith("/")) iconUrl = `${domainOrigin}${iconUrl}`;
-      else if (!/^https?:\/\//i.test(iconUrl)) iconUrl = `${domainOrigin}/${iconUrl}`;
-      if (!media.some((m) => m.url === iconUrl) && /180|192|logo|crest|seal/i.test(iconUrl)) {
-        media.push({ url: iconUrl, alt: `${collegeTitle} Official Crest`, sourceUrl: sourcePageUrl, tag: "LOGO" });
-      }
+      try {
+        const iconUrl = new URL(iconMatch[1].trim(), sourcePageUrl).toString();
+        if (!media.some((m) => m.url === iconUrl) && /180|192|logo|crest|seal/i.test(iconUrl)) {
+          media.push({ url: iconUrl, alt: `${collegeTitle} Official Crest`, sourceUrl: sourcePageUrl, tag: "LOGO" });
+        }
+      } catch {}
     }
 
     // 3. Regular <img> tags including data-src, data-lazy-src, srcset
@@ -328,21 +389,24 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
       const altM = tag.match(/alt=["']([^"']*)["']/i);
       if (!srcM || !srcM[1]) continue;
 
-      let src = srcM[1].trim();
-      if (src.startsWith("data:image") || src.includes("blank.gif")) {
+      let rawSrc = srcM[1].trim();
+      if (rawSrc.startsWith("data:image") || rawSrc.includes("blank.gif")) {
         const srcsetM = tag.match(/srcset=["']([^"']+)["']/i);
         if (srcsetM && srcsetM[1]) {
           const firstCandidate = srcsetM[1].split(",")[0].trim().split(" ")[0];
           if (firstCandidate && !firstCandidate.startsWith("data:image")) {
-            src = firstCandidate;
+            rawSrc = firstCandidate;
           }
         }
       }
-      if (src.startsWith("data:image") || !src) continue;
+      if (rawSrc.startsWith("data:image") || !rawSrc) continue;
 
-      if (src.startsWith("//")) src = `https:${src}`;
-      else if (src.startsWith("/")) src = `${domainOrigin}${src}`;
-      else if (!/^https?:\/\//i.test(src)) src = `${domainOrigin}/${src}`;
+      let src = "";
+      try {
+        src = new URL(rawSrc, sourcePageUrl).toString();
+      } catch {
+        continue;
+      }
 
       const alt = altM ? altM[1].trim() : "";
       const textToAnalyze = `${src.toLowerCase()} ${alt.toLowerCase()}`;
@@ -379,7 +443,7 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
 
   processImagesFromHtml(homeHtml, effectiveUrl, "Home");
 
-  // Categorize discovered URLs
+  // Comprehensive academic and department categorization
   const aboutUrls: string[] = [];
   const courseUrls: string[] = [];
   const deptUrls: string[] = [];
@@ -392,54 +456,63 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
   const placementUrls: string[] = [];
   const contactUrls: string[] = [];
 
-  for (const url of discoveredUrls) {
-    if (url === effectiveUrl || url === `${domainOrigin}/`) continue;
+  const categorizeAndEnqueue = (url: string) => {
+    if (url === effectiveUrl || url === `${domainOrigin}/` || url === `${domainOrigin}`) return;
 
     if (/hostel|residential|accommodation|mess/i.test(url)) hostelUrls.push(url);
     else if (/transport|bus|commute|route|conveyance/i.test(url)) transportUrls.push(url);
     else if (/testimonial|alumni-speak|student-speak|feedback|review/i.test(url)) reviewUrls.push(url);
-    else if (/about|history|memoir|vision|mission/i.test(url)) aboutUrls.push(url);
-    else if (/computer-science|commerce|mathematics|physics|chemistry|botany|zoology|economics|history-2|english-2|tamil-2|geography/i.test(url))
+    else if (/about|history|memoir|vision|mission|leadership/i.test(url)) aboutUrls.push(url);
+    else if (/courses-offered|course|program|curriculum|academic|syllab|degree|intake|stream|shift|ug-|pg-|undergraduate|postgraduate|doctoral/i.test(url)) {
+      courseUrls.push(url);
+    } else if (
+      /department|dept|school|faculty|arts|science|commerce|engineering|technology|management|medical|law|humanities|social|language|physics|chemistry|math|computer|botany|zoology|biology|biotech|biochem|english|tamil|hindi|history|economics|geography|sociology|philosophy|psychology|business|bba|mba|mca|bca|viscom|visual-communication|media|journalism|design|fine-arts|pharmacy|nursing|education/i.test(
+        url
+      )
+    ) {
       deptUrls.push(url);
-    else if (/courses-offered|course|curriculum|academic|syllab/i.test(url)) courseUrls.push(url);
-    else if (/application-course-fees|fee|tuition/i.test(url)) feeUrls.push(url);
+    } else if (/application-course-fees|fee|tuition/i.test(url)) feeUrls.push(url);
     else if (/admission|prospectus|eligib/i.test(url)) admissionUrls.push(url);
     else if (/placement|recruit|career/i.test(url)) placementUrls.push(url);
     else if (/facilit|library|sport|lab|instrumentation/i.test(url)) facilityUrls.push(url);
     else if (/contact/i.test(url)) contactUrls.push(url);
+  };
+
+  for (const url of discoveredUrls) {
+    categorizeAndEnqueue(url);
   }
 
-  // Curate balanced subpages to harvest
+  // Curate comprehensive subpages to harvest (up to 38 subpages)
   const targetedSubpages: string[] = [];
   const addIfNew = (u: string) => {
-    if (u && !targetedSubpages.includes(u) && targetedSubpages.length < 18) {
+    if (u && !targetedSubpages.includes(u) && targetedSubpages.length < 38) {
       targetedSubpages.push(u);
     }
   };
 
-  // High-signal distribution
-  aboutUrls.slice(0, 2).forEach(addIfNew);
-  courseUrls.slice(0, 3).forEach(addIfNew);
+  // High-signal distribution giving maximum depth to Courses & Departments
+  courseUrls.slice(0, 10).forEach(addIfNew);
+  deptUrls.slice(0, 20).forEach(addIfNew);
+  admissionUrls.slice(0, 3).forEach(addIfNew);
   feeUrls.slice(0, 2).forEach(addIfNew);
+  aboutUrls.slice(0, 2).forEach(addIfNew);
   hostelUrls.slice(0, 2).forEach(addIfNew);
   transportUrls.slice(0, 2).forEach(addIfNew);
-  admissionUrls.slice(0, 2).forEach(addIfNew);
   placementUrls.slice(0, 2).forEach(addIfNew);
   reviewUrls.slice(0, 2).forEach(addIfNew);
   facilityUrls.slice(0, 2).forEach(addIfNew);
-  deptUrls.slice(0, 3).forEach(addIfNew);
   contactUrls.slice(0, 1).forEach(addIfNew);
 
-  log(`Discovered ${discoveredUrls.size} internal pages. Harvesting top ${targetedSubpages.length} prioritized subpages (including key departments)...`);
+  log(`Discovered ${discoveredUrls.size} internal pages. Harvesting top ${targetedSubpages.length} prioritized subpages (including all academic departments)...`);
 
-  // Fetch subpages in parallel batches of 3
-  const BATCH_SIZE = 3;
+  // Fetch subpages in parallel batches of 5
+  const BATCH_SIZE = 5;
   for (let i = 0; i < targetedSubpages.length; i += BATCH_SIZE) {
     const batch = targetedSubpages.slice(i, i + BATCH_SIZE);
     await Promise.all(
       batch.map(async (subUrl) => {
         try {
-          const subHtml = await fetchHtml(subUrl, 8000);
+          const subHtml = await fetchHtml(subUrl, 9000);
           const subTitleM = subHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
           const subTitle = subTitleM ? subTitleM[1].replace(/\s+/g, " ").trim() : subUrl;
           const cleanText = cleanHtmlToText(subHtml);
@@ -456,13 +529,51 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
             }
           }
 
+          // Discover 2nd-level links and PDFs on academic hub pages
+          const isAcademicHub = /course|academic|department|school|admission/i.test(subUrl);
+          if (isAcademicHub) {
+            const subLinkMatches = subHtml.matchAll(/href=["']([^"']+)["']/gi);
+            for (const sm of subLinkMatches) {
+              const rawSub = (sm[1] || "").trim();
+              if (!rawSub || rawSub.startsWith("#") || rawSub.startsWith("javascript:") || rawSub.startsWith("mailto:")) continue;
+
+              if (/\.pdf/i.test(rawSub)) {
+                try {
+                  const absPdf = new URL(rawSub, subUrl).toString().split("#")[0];
+                  const pdfTitle = rawSub.split("/").pop()?.replace(/[\-_]/g, " ").replace(/\.pdf.*/i, "") || "Official Document";
+                  if (!pdfLinks.some((p) => p.url === absPdf)) {
+                    pdfLinks.push({ url: absPdf, title: pdfTitle, sourceUrl: subUrl });
+                  }
+                } catch {}
+                continue;
+              }
+
+              try {
+                const absSub = new URL(rawSub, subUrl).toString().split("#")[0];
+                const uh = new URL(absSub).hostname.replace(/^www\./i, "");
+                if (uh === domainHostname || uh.endsWith(`.${domainHostname}`)) {
+                  if (!discoveredUrls.has(absSub)) {
+                    discoveredUrls.add(absSub);
+                    if (
+                      /department|dept|school|courses-offered|stream|shift/i.test(absSub) &&
+                      !targetedSubpages.includes(absSub) &&
+                      targetedSubpages.length < 42
+                    ) {
+                      targetedSubpages.push(absSub);
+                    }
+                  }
+                }
+              } catch {}
+            }
+          }
+
           if (cleanText.length > 50) {
             const pageCategory = classifyUrlCategory(subUrl, subTitle);
             pages.push({
               url: subUrl,
               title: subTitle,
               category: pageCategory,
-              cleanText: cleanText.slice(0, 12000),
+              cleanText: cleanText.slice(0, 15000),
             });
             processImagesFromHtml(subHtml, subUrl, pageCategory);
             log(`Harvested: [${pageCategory}] ${subTitle} (${cleanText.length} chars)`);
@@ -474,14 +585,59 @@ export async function harvestOfficialCollegeWebsite(inputUrl: string): Promise<O
     );
   }
 
-  log(`Harvest complete. Visited ${pages.length} pages. Discovered ${pdfLinks.length} PDFs, ${media.length} media items, and ${discoveredRecruiters.length} recruiter partners.`);
+  // Course PDFs Discovery & Download (e.g. COURSES-OFFERED.pdf, Prospectus, Seat Matrix)
+  const academicPdfs: Array<{ url: string; title: string; buffer: Buffer; sourceUrl: string }> = [];
+  const coursePdfs = pdfLinks.filter((p) =>
+    /course|program|prospectus|intake|seat|admission|brochure|handbook|syllabus/i.test(p.url + " " + p.title)
+  );
 
-  // Build structured evidence text with provenance markers
+  if (coursePdfs.length > 0) {
+    log(`Found ${coursePdfs.length} official course/prospectus PDFs. Downloading high-priority documents for multimodal course analysis...`);
+    for (const pdfItem of coursePdfs.slice(0, 2)) {
+      try {
+        const buf = await fetchBinary(pdfItem.url, 15000);
+        if (buf && buf.length > 1000 && buf.length <= 6 * 1024 * 1024) {
+          academicPdfs.push({
+            url: pdfItem.url,
+            title: pdfItem.title,
+            buffer: buf,
+            sourceUrl: pdfItem.sourceUrl,
+          });
+          log(`Successfully downloaded course document: ${pdfItem.title} (${buf.length} bytes)`);
+        }
+      } catch (pdfErr: any) {
+        log(`Could not fetch PDF ${pdfItem.url}: ${pdfErr?.message}`);
+      }
+    }
+  }
+
+  log(`Harvest complete. Visited ${pages.length} pages. Discovered ${pdfLinks.length} PDFs (${academicPdfs.length} downloaded), ${media.length} media items, and ${discoveredRecruiters.length} recruiter partners.`);
+
+  // Build structured general evidence text
   const consolidatedEvidenceText = pages
     .map((p) => {
       return `================================================================================
 OFFICIAL SOURCE PAGE: ${p.url}
 PAGE TITLE: ${p.title}
+CATEGORY: ${p.category}
+================================================================================
+${p.cleanText}`;
+    })
+    .join("\n\n\n");
+
+  // Build dedicated academic evidence text for complete course discovery
+  const academicPages = pages.filter((p) =>
+    p.category === "Courses" ||
+    p.category === "Admissions" ||
+    p.category === "Fees" ||
+    /department|school|curriculum|syllabus|stream|degree|bachelor|master|faculty|shift/i.test(p.url + " " + p.title)
+  );
+
+  const academicEvidenceText = (academicPages.length > 0 ? academicPages : pages)
+    .map((p) => {
+      return `================================================================================
+OFFICIAL ACADEMIC SOURCE: ${p.url}
+TITLE: ${p.title}
 CATEGORY: ${p.category}
 ================================================================================
 ${p.cleanText}`;
@@ -499,6 +655,8 @@ ${p.cleanText}`;
     discoveredSocialLinks,
     discoveredVideos,
     consolidatedEvidenceText,
+    academicEvidenceText,
+    academicPdfs,
     logs,
   };
 }

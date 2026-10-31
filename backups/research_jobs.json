@@ -431,5 +431,137 @@
         "completedAt": "2026-10-28T07:26:46.071Z"
       }
     ]
+  },
+  "job_1793177392599_d6i9b": {
+    "jobId": "job_1793177392599_d6i9b",
+    "totalCount": 5,
+    "completedCount": 5,
+    "failedCount": 0,
+    "status": "COMPLETED",
+    "createdAt": "2026-10-28T08:49:52.600Z",
+    "updatedAt": "2026-10-28T08:52:25.102Z",
+    "items": [
+      {
+        "id": "item_1793177392601_0_wcl3",
+        "collegeName": "AMET Deemed-to-be University",
+        "url": "https://www.ametuniv.ac.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-28T08:49:52.600Z",
+        "draftId": "8c9aa31b-c681-458e-b9e3-8fde196f3677",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=8c9aa31b-c681-458e-b9e3-8fde196f3677",
+        "completedAt": "2026-10-28T08:50:06.664Z"
+      },
+      {
+        "id": "item_1793177392601_1_2hms",
+        "collegeName": "Bharathi Women's College",
+        "url": "https://bwc.edu.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-28T08:49:52.600Z",
+        "draftId": "ec65ddca-436d-4f1c-b8e7-2f496300e19b",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=ec65ddca-436d-4f1c-b8e7-2f496300e19b",
+        "completedAt": "2026-10-28T08:50:51.057Z"
+      },
+      {
+        "id": "item_1793177392601_2_hyee",
+        "collegeName": "Misrimal Navajee Munoth Jain Engineering College",
+        "url": "https://www.mnmjec.ac.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-28T08:49:52.600Z",
+        "draftId": "d7700522-3bfe-4dfa-b96f-5a92521b577b",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=d7700522-3bfe-4dfa-b96f-5a92521b577b",
+        "completedAt": "2026-10-28T08:51:20.385Z"
+      },
+      {
+        "id": "item_1793177392601_3_pnv0",
+        "collegeName": "Hindustan College of Arts and Science",
+        "url": "https://hcaschennai.edu.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-28T08:49:52.600Z",
+        "draftId": "a9c51df7-9a9f-48ce-812a-078919500af8",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=a9c51df7-9a9f-48ce-812a-078919500af8",
+        "completedAt": "2026-10-28T08:51:58.128Z"
+      },
+      {
+        "id": "item_1793177392601_4_00im",
+        "collegeName": "Sri Sairam Engineering College",
+        "url": "https://sairam.edu.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-28T08:49:52.600Z",
+        "draftId": "32173f3f-3809-4fd5-bbf5-9204740f63a2",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=32173f3f-3809-4fd5-bbf5-9204740f63a2",
+        "completedAt": "2026-10-28T08:52:25.100Z"
+      }
+    ]
+  },
+  "job_1793185281609_7dxrn": {
+    "jobId": "job_1793185281609_7dxrn",
+    "totalCount": 5,
+    "completedCount": 5,
+    "failedCount": 0,
+    "status": "COMPLETED",
+    "createdAt": "2026-10-28T11:01:21.609Z",
+    "updatedAt": "2026-10-28T11:06:57.283Z",
+    "items": [
+      {
+        "id": "item_1793185281610_0_sus3",
+        "collegeName": "AMET Deemed-to-be University",
+        "url": "https://www.ametuniv.ac.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-28T11:01:21.609Z",
+        "draftId": "90596610-1ee1-46ba-b37b-fd346f319c30",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=90596610-1ee1-46ba-b37b-fd346f319c30",
+        "completedAt": "2026-10-28T11:01:34.111Z"
+      },
+      {
+        "id": "item_1793185281610_1_k7it",
+        "collegeName": "Bharathi Women's College",
+        "url": "https://bwc.edu.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-28T11:01:21.609Z",
+        "draftId": "5999e7cf-38c7-4c4d-a1ca-ff8e5790c5b0",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=5999e7cf-38c7-4c4d-a1ca-ff8e5790c5b0",
+        "completedAt": "2026-10-28T11:02:57.155Z"
+      },
+      {
+        "id": "item_1793185281610_2_5hu7",
+        "collegeName": "Misrimal Navajee Munoth Jain Engineering College",
+        "url": "https://www.mnmjec.ac.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-28T11:01:21.609Z",
+        "draftId": "30bbdd62-4335-4aa7-b238-a7d303b078bb",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=30bbdd62-4335-4aa7-b238-a7d303b078bb",
+        "completedAt": "2026-10-28T11:04:38.427Z"
+      },
+      {
+        "id": "item_1793185281610_3_euh2",
+        "collegeName": "Hindustan College of Arts and Science",
+        "url": "https://hcaschennai.edu.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-28T11:01:21.609Z",
+        "draftId": "3ceeb192-e9fb-4213-8eba-6e00460601a8",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=3ceeb192-e9fb-4213-8eba-6e00460601a8",
+        "completedAt": "2026-10-28T11:06:07.946Z"
+      },
+      {
+        "id": "item_1793185281610_4_8irs",
+        "collegeName": "Sri Sairam Engineering College",
+        "url": "https://sairam.edu.in/",
+        "status": "READY_FOR_REVIEW",
+        "notified": true,
+        "createdAt": "2026-10-28T11:01:21.609Z",
+        "draftId": "5e7391e5-b096-4784-a07f-e808f104d4c1",
+        "reviewUrl": "/manager/submitted-colleges?reviewId=5e7391e5-b096-4784-a07f-e808f104d4c1",
+        "completedAt": "2026-10-28T11:06:57.282Z"
+      }
+    ]
   }
 }

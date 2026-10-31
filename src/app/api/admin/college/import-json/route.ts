@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { normalizeCollegeJson, validateCollegeJson } from "@/lib/college/collegeFormSchema";
 
 export async function POST(req: Request) {
   try {
@@ -90,51 +91,27 @@ export async function POST(req: Request) {
       );
     }
 
-    // Helper to safely extract value from AI-generated structured objects or raw strings
-    const extractVal = (obj: any, key: string) => {
-      const val = obj ? obj[key] : null;
-      if (val && typeof val === "object" && "value" in val) return val.value;
-      return val;
-    };
+    // Normalize incoming data to complete canonical 14-section schema
+    const normalizedData = normalizeCollegeJson(rootData);
 
-    // Validate required fields (supporting root, aliases, and section wrappers like basicInfo)
-    const collegeName =
-      extractVal(rootData, "name") ||
-      extractVal(rootData, "collegeName") ||
-      extractVal(rootData, "college_name") ||
-      extractVal(rootData, "officialName") ||
-      extractVal(rootData, "institutionName") ||
-      extractVal(rootData.basicInfo, "name") ||
-      extractVal(rootData.basic_info, "name") ||
-      extractVal(rootData.basicInfo, "collegeName") ||
-      extractVal(rootData.basicInfo, "officialName") ||
-      extractVal(rootData.basic_info, "college_name") ||
-      extractVal(parsedData, "name") ||
-      extractVal(parsedData, "officialName") ||
-      extractVal(parsedData, "institutionName") ||
-      extractVal(parsedData.basicInfo, "name");
-
-    if (!collegeName || typeof collegeName !== "string" || collegeName.trim() === "") {
+    // Validate required college name
+    if (!normalizedData.name || typeof normalizedData.name !== "string" || normalizedData.name.trim() === "") {
       return NextResponse.json(
-        { success: false, error: "Validation Error: Missing required field 'name' (or 'collegeName' / 'officialName' / 'institutionName' / 'basicInfo.name'). The AI must provide the college name." },
+        { success: false, error: "Validation Error: Missing required field 'name' (or 'collegeName' / 'officialName' / 'basicInfo.name'). The college name is mandatory." },
         { status: 400 }
       );
     }
 
-    // Count populated fields across root and section wrappers
-    let fieldsCount = keys.length;
-    for (const key of keys) {
-      if (rootData[key] && typeof rootData[key] === "object" && !Array.isArray(rootData[key])) {
-        fieldsCount += Object.keys(rootData[key]).length;
-      }
-    }
+    // Run strict field-by-field validation across all 14 sections
+    const validationReport = validateCollegeJson(normalizedData);
 
     return NextResponse.json({
       success: true,
-      data: rootData,
-      fieldsCount,
+      data: normalizedData,
+      fieldsCount: validationReport.fieldsPresentInJson,
+      validationReport,
       filename,
-      message: `Successfully validated and parsed JSON (${fieldsCount} fields detected).`,
+      message: `Successfully validated and parsed JSON (${validationReport.verifiedCount} verified fields, ${validationReport.coursesIncludedInJson} courses detected).`,
     });
   } catch (error: any) {
     console.error("[IMPORT JSON API] Error:", error);
@@ -144,3 +121,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

@@ -139,7 +139,12 @@ export default function StandaloneManagerLoginPage({ onLoginSuccess }: Standalon
         body: JSON.stringify({ email: email.trim(), password }),
       });
 
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(`Server returned status ${res.status} (${res.statusText || "non-JSON response"}).`);
+      }
 
       if (res.ok && data.success) {
         if (typeof window !== "undefined" && data.token) {
@@ -160,10 +165,11 @@ export default function StandaloneManagerLoginPage({ onLoginSuccess }: Standalon
           }
         }
       } else {
-        setError(data.error || "Invalid login credentials.");
+        setError(data?.error || data?.message || "Invalid login credentials.");
       }
     } catch (err: any) {
-      setError("Network connection error. Please try again.");
+      console.error("[ADMIN LOGIN ERROR]:", err);
+      setError(err?.message || "Network connection error. Please try again.");
     } finally {
       setLoading(false);
     }

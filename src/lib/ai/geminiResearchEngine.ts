@@ -13,6 +13,7 @@ import { callGeminiJson } from "./geminiClient";
 import { harvestOfficialCollegeWebsite, OfficialHarvestResult } from "./officialSiteHarvester";
 import { parseCourseFee } from "@/lib/courses/courseDeduplication";
 import { normalizeAndDeduplicateContactNumbers } from "./contactNormalizer";
+import { discoverAndExtractAllCourses, CourseExtractionStats } from "./courseDiscoveryEngine";
 
 export interface ResearchEngineOptions {
   collegeName?: string;
@@ -80,7 +81,27 @@ export async function conductGeminiCollegeResearch(
     throw new Error(`No readable official content could be extracted from ${officialWebsiteUrl}. Research failed.`);
   }
 
-  log(`Harvested ${harvest.pages.length} official pages (${harvest.consolidatedEvidenceText.length} characters). Prompting Gemini...`);
+  log(`Harvested ${harvest.pages.length} official pages (${harvest.consolidatedEvidenceText.length} characters).`);
+
+  // Execute dedicated Two-Pass Course Discovery & Extraction Engine
+  log(`Executing dedicated Two-Pass Course Discovery Engine to extract all courses without omission...`);
+  let courseDiscoveryResult: { courses: CourseData[]; stats: CourseExtractionStats };
+  try {
+    courseDiscoveryResult = await discoverAndExtractAllCourses(
+      harvest,
+      collegeName || harvest.collegeTitle,
+      "Government"
+    );
+    log(
+      `Two-Pass Course Discovery complete: ${courseDiscoveryResult.courses.length} courses extracted (Discovered: ${courseDiscoveryResult.stats.discoveredCount}, Saved: ${courseDiscoveryResult.stats.savedCount}, Unresolved: ${courseDiscoveryResult.stats.unresolvedCount}).`
+    );
+  } catch (courseErr: any) {
+    log(`Course discovery error: ${courseErr?.message}. Falling back to standard prompt extraction.`);
+    courseDiscoveryResult = {
+      courses: [],
+      stats: { discoveredCount: 0, processedCount: 0, deduplicatedCount: 0, savedCount: 0, unresolvedCount: 0 },
+    };
+  }
 
   // Discovered media/social hints from official harvest
   const videoHints = harvest.discoveredVideos && harvest.discoveredVideos.length > 0
@@ -90,6 +111,12 @@ export async function conductGeminiCollegeResearch(
   const socialHints = harvest.discoveredSocialLinks
     ? `OFFICIAL SOCIAL LINKS DISCOVERED: YouTube: ${harvest.discoveredSocialLinks.youtube || "None"}, Facebook: ${harvest.discoveredSocialLinks.facebook || "None"}, Instagram: ${harvest.discoveredSocialLinks.instagram || "None"}, LinkedIn: ${harvest.discoveredSocialLinks.linkedin || "None"}`
     : "";
+
+  const courseCatalogHint = courseDiscoveryResult.courses.length > 0
+    ? `OFFICIAL DEGREE CATALOGUE (${courseDiscoveryResult.courses.length} TOTAL VERIFIED PROGRAMMES DISCOVERED):
+${courseDiscoveryResult.courses.slice(0, 25).map((c) => `• ${c.title} (${c.duration})`).join("\n")}
+${courseDiscoveryResult.courses.length > 25 ? `[...plus ${courseDiscoveryResult.courses.length - 25} additional verified degree programmes across departments]` : ""}`
+    : "Course catalogue extracted from evidence text.";
 
   const systemInstruction = `You are the lead academic data verifier, fee structure researcher, and factual content specialist for C2 Talents, a premier higher education platform.
 Your mission is to research and extract authentic, evidence-backed facts from the provided official college website pages and statutory regulatory frameworks.
@@ -172,6 +199,8 @@ Input Target Name: ${collegeName || harvest.collegeTitle}
 
 ${videoHints}
 ${socialHints}
+
+${courseCatalogHint}
 
 OFFICIAL EVIDENCE TEXT:
 ${harvest.consolidatedEvidenceText.slice(0, 38000)}
@@ -390,48 +419,46 @@ Extract and produce a complete JSON object matching the exact 14-section C2 Tale
       order: idx,
     }));
 
-  // Clean courses: guarantee duration, eligibility, authentic fees, careerPath & demand (no NaN, no ₹60,000 hallucination)
-  const cleanedCourses: CourseData[] = Array.isArray(rawAiResult.courses)
-    ? rawAiResult.courses.map((c: any, index: number) => {
-        let feeVal: any = c.feesPerYear;
-        // Never allow universal 60000 default hallucination
-        if (feeVal === 60000 || feeVal === "60000") {
-          feeVal = "";
-        } else if (typeof feeVal === "number" && !isNaN(feeVal) && feeVal > 0) {
-          feeVal = Math.round(feeVal);
-        } else if (typeof feeVal === "string" && feeVal.trim()) {
-          const parsed = parseCourseFee(feeVal);
-          feeVal = parsed > 0 && parsed !== 60000 ? parsed : "";
-        } else {
-          feeVal = "";
-        }
+  // Final Courses: Prioritize courses discovered by the dedicated Two-Pass Course Engine
+  const rawAiCourses = Array.isArray(rawAiResult.courses) ? rawAiResult.courses : [];
+  let cleanedCourses: CourseData[] = [];
 
-        // Clean seats / sanctioned intake (integer or empty)
-        const rawSeats = c.seats ?? c.intake ?? c.sanctionedIntake ?? c.capacity ?? "";
-        let cleanSeats: any = "";
-        if (typeof rawSeats === "number" && !isNaN(rawSeats) && rawSeats > 0) {
-          cleanSeats = Math.round(rawSeats);
-        } else if (typeof rawSeats === "string" && rawSeats.trim()) {
-          const m = rawSeats.match(/\d+/);
-          cleanSeats = m ? parseInt(m[0], 10) : "";
-        }
+  if (courseDiscoveryResult.courses.length > 0) {
+    cleanedCourses = courseDiscoveryResult.courses;
+  } else if (rawAiCourses.length > 0) {
+    cleanedCourses = rawAiCourses.map((c: any, index: number) => {
+      let feeVal: any = c.feesPerYear;
+      if (feeVal === 60000 || feeVal === "60000") feeVal = "";
+      else if (typeof feeVal === "number" && !isNaN(feeVal) && feeVal > 0) feeVal = Math.round(feeVal);
+      else if (typeof feeVal === "string" && feeVal.trim()) {
+        const parsed = parseCourseFee(feeVal);
+        feeVal = parsed > 0 && parsed !== 60000 ? parsed : "";
+      } else feeVal = "";
 
-        return {
-          id: `crs_${Date.now()}_${index}`,
-          title: String(c.title || `Degree Course ${index + 1}`).trim(),
-          duration: String(c.duration || "3 Years").trim(),
-          feesPerYear: feeVal !== undefined && feeVal !== null ? feeVal : "",
-          eligibility: String(c.eligibility || "10+2 Pass as per university norms").trim(),
-          minGpa: c.minGpa ? String(c.minGpa) : "",
-          seats: cleanSeats !== "" ? cleanSeats : "",
-          entranceExam: String(c.entranceExam || "Merit Based").trim(),
-          careerPath: c.careerPath ? String(c.careerPath).trim() : "",
-          demand: c.demand ? String(c.demand).trim() : "High",
-          sourceUrl: c.sourceUrl || harvest.officialUrl,
-          verificationStatus: c.verificationStatus || (feeVal ? "VERIFIED" : "NEEDS_VERIFICATION"),
-        };
-      })
-    : [];
+      const rawSeats = c.seats ?? c.intake ?? c.sanctionedIntake ?? c.capacity ?? "";
+      let cleanSeats: any = "";
+      if (typeof rawSeats === "number" && !isNaN(rawSeats) && rawSeats > 0) cleanSeats = Math.round(rawSeats);
+      else if (typeof rawSeats === "string" && rawSeats.trim()) {
+        const m = rawSeats.match(/\d+/);
+        cleanSeats = m ? parseInt(m[0], 10) : "";
+      }
+
+      return {
+        id: `crs_${Date.now()}_${index}`,
+        title: String(c.title || `Degree Course ${index + 1}`).trim(),
+        duration: String(c.duration || "3 Years").trim(),
+        feesPerYear: feeVal !== undefined && feeVal !== null ? feeVal : "",
+        eligibility: String(c.eligibility || "10+2 Pass as per university norms").trim(),
+        minGpa: c.minGpa ? String(c.minGpa) : "",
+        seats: cleanSeats !== "" ? cleanSeats : "",
+        entranceExam: String(c.entranceExam || "Merit Based").trim(),
+        careerPath: c.careerPath ? String(c.careerPath).trim() : "",
+        demand: c.demand ? String(c.demand).trim() : "High",
+        sourceUrl: c.sourceUrl || harvest.officialUrl,
+        verificationStatus: c.verificationStatus || (feeVal ? "VERIFIED" : "NEEDS_VERIFICATION"),
+      };
+    });
+  }
 
   // Top recruiters: combine discovered recruiters from official website and AI extraction
   const rawTopRecruiters = rawAiResult.placement?.topRecruiters || "";
@@ -566,7 +593,11 @@ Extract and produce a complete JSON object matching the exact 14-section C2 Tale
   const evidenceMap: Record<string, { sourceUrl: string; snippet?: string; status: string; note?: string }> = {
     ...(rawAiResult.evidenceMap || {}),
     name: { sourceUrl: harvest.officialUrl, status: "VERIFIED" },
-    courses: { sourceUrl: harvest.officialUrl, status: cleanedCourses.length > 0 ? "VERIFIED" : "NEEDS_VERIFICATION" },
+    courses: {
+      sourceUrl: harvest.officialUrl,
+      status: cleanedCourses.length > 0 ? "VERIFIED" : "NEEDS_VERIFICATION",
+      note: `Extracted ${cleanedCourses.length} authentic courses (Discovered: ${courseDiscoveryResult.stats.discoveredCount}, Saved: ${courseDiscoveryResult.stats.savedCount}, Deduplicated: ${courseDiscoveryResult.stats.deduplicatedCount}).`,
+    },
     totalSeats: {
       sourceUrl: harvest.officialUrl,
       status: cleanedCourses.some((c) => c.seats) ? "VERIFIED" : "NEEDS_VERIFICATION",

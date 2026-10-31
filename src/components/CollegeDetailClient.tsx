@@ -318,7 +318,7 @@ export function CollegeDetailClient({ college }: Props) {
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className={`grid gap-8 ${activeTab === "Apply" ? "grid-cols-1" : "md:grid-cols-3"}`}>
           {/* Main Content */}
-          <div className={`${activeTab === "Apply" ? "col-span-1" : "md:col-span-2"} space-y-6`}>
+          <div className={`${activeTab === "Apply" ? "col-span-1" : "md:col-span-2"} min-w-0 space-y-6`}>
 
             {/* Overview Tab */}
             {activeTab === "Overview" && (
@@ -606,29 +606,88 @@ export function CollegeDetailClient({ college }: Props) {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                 <h2 className="text-lg font-bold text-stone-900">Courses Offered & Fee Structure</h2>
                 <div className="space-y-3">
-                  {college.courses.map((c: any) => (
-                    <div key={c.id} className="bg-white border border-stone-200 rounded-xl p-5 hover-card-trigger">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="font-bold text-stone-900 text-[15px]">{c.title}</div>
-                          <div className="flex items-center gap-3 text-xs text-stone-500">
-                            <span className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" />{c.duration}</span>
-                            <span className={`px-2 py-0.5 rounded-full font-bold ${c.demand === "Exponential" ? "bg-red-100 text-red-700" : c.demand === "Very High" ? "bg-orange-100 text-orange-700" : "bg-yellow-100 text-yellow-700"}`}>
-                              {c.demand} Demand
-                            </span>
+                  {college.courses.map((c: any) => {
+                    const eligibilityText = formatCourseEligibility(c);
+                    const rawDemand = typeof c.demand === "string" ? c.demand.trim() : "";
+                    const hasDemand = rawDemand && rawDemand.toLowerCase() !== "demand";
+                    const demandLabel = hasDemand
+                      ? (rawDemand.toLowerCase().includes("demand") ? rawDemand : `${rawDemand} Demand`)
+                      : null;
+                    const durationText = c.duration?.trim()
+                      ? (/year|month|day/i.test(c.duration) ? c.duration : `${c.duration} Years`)
+                      : null;
+
+                    return (
+                      <div key={c.id} className="bg-white border border-stone-200 rounded-xl p-5 hover-card-trigger transition-all">
+                        <div className="flex items-start justify-between gap-4">
+                          {/* Course Title & Key Badges */}
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <h3 className="font-bold text-stone-900 text-[15px] sm:text-base leading-snug break-words">
+                              {c.title}
+                            </h3>
+                            <div className="flex items-center gap-2.5 text-xs text-stone-500 flex-wrap">
+                              {durationText && (
+                                <span className="flex items-center gap-1 font-medium text-stone-600">
+                                  <CalendarDays className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                  {durationText}
+                                </span>
+                              )}
+                              {demandLabel && (
+                                <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
+                                  rawDemand === "Exponential" ? "bg-red-100 text-red-700" :
+                                  rawDemand === "Very High" ? "bg-orange-100 text-orange-700" :
+                                  "bg-yellow-100 text-yellow-700"
+                                }`}>
+                                  {demandLabel}
+                                </span>
+                              )}
+                              {c.seats && (
+                                <span className="px-2 py-0.5 rounded-md font-semibold text-[11px] bg-stone-100 text-stone-700 border border-stone-200">
+                                  {c.seats} Seats
+                                </span>
+                              )}
+                              {c.entranceExam && (
+                                <span className="px-2 py-0.5 rounded-md font-semibold text-[11px] bg-blue-50 text-blue-700 border border-blue-100">
+                                  {c.entranceExam}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-xs text-stone-500 mt-1">
-                            <span className="font-semibold text-stone-700">Career paths:</span> {c.careerPath}
+
+                          {/* Annual Fee (Clean & Right-Aligned) */}
+                          <div className="text-right shrink-0 sm:min-w-[130px]">
+                            <div className="text-[11px] text-stone-400 font-semibold uppercase tracking-wider">Annual Fee</div>
+                            <div className="text-lg sm:text-xl font-extrabold text-stone-900 mt-0.5">
+                              {formatINR(c.feesPerYear)}
+                            </div>
+                            {c.feesPerYear > 0 ? (
+                              <div className="text-[10px] text-stone-400 font-medium">Per Year</div>
+                            ) : null}
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <div className="text-[11px] text-stone-400 font-semibold uppercase">Annual Fee</div>
-                          <div className="text-lg font-extrabold text-stone-900">{formatINR(c.feesPerYear)}</div>
-                          <div className="text-[11px] text-stone-500 mt-0.5">{formatCourseEligibility(c)}</div>
-                        </div>
+
+                        {/* Full Width Footer: Eligibility & Career Paths */}
+                        {(eligibilityText || c.careerPath?.trim()) && (
+                          <div className="mt-3 pt-3 border-t border-stone-100 space-y-1.5 text-xs">
+                            {eligibilityText && (
+                              <div className="flex items-start gap-1.5 leading-relaxed">
+                                <span className="font-semibold text-stone-700 shrink-0">Eligibility:</span>
+                                <span className={`break-words flex-1 min-w-0 ${eligibilityText === "Eligibility not specified" ? "text-stone-400 italic" : "text-stone-600"}`}>
+                                  {eligibilityText}
+                                </span>
+                              </div>
+                            )}
+                            {c.careerPath?.trim() && (
+                              <div className="flex items-start gap-1.5 leading-relaxed">
+                                <span className="font-semibold text-stone-700 shrink-0">Career paths:</span>
+                                <span className="text-stone-600 break-words flex-1 min-w-0">{c.careerPath}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
@@ -1082,7 +1141,7 @@ export function CollegeDetailClient({ college }: Props) {
 
           {/* Sidebar (Sticky Layout with Table of Contents & Interactive Widgets) — Hidden on Apply tab */}
           {activeTab !== "Apply" && (
-            <div className="space-y-4 md:sticky md:top-[225px] self-start">
+            <div className="space-y-4 md:sticky md:top-20 self-start min-w-0">
               {/* Highlighted Key Facts Card */}
               <div className="bg-white border-2 border-orange-500/20 rounded-2xl p-5 space-y-3.5 shadow-md shadow-orange-950/5 relative overflow-hidden">
                 {/* Top Accent Gradient Bar */}
